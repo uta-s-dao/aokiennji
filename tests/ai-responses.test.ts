@@ -192,12 +192,14 @@ describe('grounded AI response and streaming', () => {
       return response;
     });
     try {
-      const first = await generateGroundedReply(context);
+      const first = await generateGroundedReply(context, {
+        usageContext: { scope: 'standalone', turnId: 'quota-pause-test' },
+      });
       expect(first).toMatchObject({ provider: 'local', reason: 'failed_or_ungrounded' });
       const second = await generateGroundedReply(context);
       expect(second).toMatchObject({ provider: 'local', reason: 'insufficient_quota' });
       expect(network).toHaveBeenCalledTimes(1);
-      expect(aiUsageReport().items[0]).toMatchObject({
+      expect(aiUsageReport({ turnId: 'quota-pause-test' }).items[0]).toMatchObject({
         outcome: 'http_error',
         errorCode: 'insufficient_quota',
       });
@@ -232,6 +234,13 @@ describe('grounded AI response and streaming', () => {
       ...response,
       body: Buffer.from(
         JSON.stringify({
+          usageMetadata: {
+            promptTokenCount: 100,
+            candidatesTokenCount: 20,
+            thoughtsTokenCount: 5,
+            totalTokenCount: 125,
+            cachedContentTokenCount: 30,
+          },
           candidates: [{ content: { parts: [{ text: JSON.stringify({ blocks: [paragraph] }) }] } }],
         }),
       ),
@@ -242,6 +251,20 @@ describe('grounded AI response and streaming', () => {
     });
     expect(result.provider).toBe('gemini');
     expect(network.mock.calls[0][1]?.headers?.['x-goog-api-key']).toBe('unit-only');
+    expect(aiUsageReport({ provider: 'gemini' }).items[0]).toMatchObject({
+      purpose: 'response',
+      model: 'gemini-2.5-flash',
+      outcome: 'accepted',
+      httpStatus: 200,
+      usage: {
+        inputTokens: 100,
+        outputTokens: 25,
+        totalTokens: 125,
+        cachedInputTokens: 30,
+        reasoningTokens: 5,
+      },
+    });
+    expect(JSON.stringify(aiUsageReport({ provider: 'gemini' }))).not.toContain('unit-only');
   });
   it('parses braces in strings and never emits incomplete JSON blocks', () => {
     expect(completedBlocks('{"blocks":[{"text":"unfinished')).toEqual([]);

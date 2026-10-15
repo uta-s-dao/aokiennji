@@ -387,24 +387,28 @@ async function adminUsageCheck() {
       const errors = [];
       page.on('pageerror', (e) => errors.push(e.message));
       await page.goto(`${baseURL}/admin?tab=ai-usage`);
-      await page.getByRole('heading', { name: 'APIごとの用途と使用量' }).waitFor();
-      await page.getByRole('heading', { name: '呼び出しの明細' }).waitFor();
+      await page.getByRole('heading', { name: '回答ごとのAI利用記録' }).waitFor();
+      await page.getByRole('heading', { name: 'お客様へ返した回答' }).waitFor();
       const api = await context.request.get(`${baseURL}/api/admin/ai-usage?scope=chat`);
       const report = (await api.json()).data;
       if (!report.total) throw Error('usage records missing in admin');
       const unknownUsage = report.summaries.find((s) => s.provider === 'jev');
       if (!unknownUsage.usageReportedCalls && unknownUsage.inputTokens !== null)
         throw Error('unknown usage shown as zero');
-      await page.getByRole('button', { name: '質問と回答を確認' }).first().click();
-      const modal = page.getByRole('dialog', { name: 'APIを使った会話の記録' });
-      await modal.getByText('このAPI呼び出しの質問', { exact: false }).waitFor();
+      await page.getByRole('button', { name: '会話と回答を確認' }).first().click();
+      const modal = page.getByRole('dialog', { name: '回答とAI処理の詳細' });
+      await modal.getByText('選択中の回答', { exact: false }).waitFor();
       await modal.getByRole('button', { name: '閉じる', exact: true }).click();
       await page.getByLabel('APIで絞り込み').selectOption('openai');
-      await page
-        .getByRole('heading', { name: 'Jev / TypeSafe', exact: true })
-        .waitFor({ state: 'hidden' });
-      await page.getByRole('heading', { name: '呼び出しの明細' }).waitFor();
-      await page.locator('details').first().locator('summary').click();
+      const answerCard = page.getByRole('article', { name: '回答の利用記録' }).first();
+      await answerCard.waitFor();
+      await answerCard.locator('.admin-answer-details > summary').click();
+      await answerCard
+        .locator('.answer-ai-calls > li')
+        .filter({ hasText: 'OpenAI /' })
+        .first()
+        .locator('.ai-call-technical > summary')
+        .click();
       await page
         .getByText('POST https://api.openai.com/v1/responses', { exact: true })
         .first()
@@ -417,9 +421,9 @@ async function adminUsageCheck() {
       for (const key of [process.env.OPENAI_API_KEY, process.env.TYPESAFE_API_KEY])
         if (key && saved.includes(key)) throw Error('credential present in usage export');
       await page.getByLabel('APIで絞り込み').selectOption('');
-      await page.getByRole('heading', { name: 'Jev / TypeSafe', exact: true }).waitFor();
+      await page.getByRole('article', { name: '回答の利用記録' }).first().waitFor();
       await page.getByLabel('用途で絞り込み').selectOption('connection_check');
-      await page.getByRole('heading', { name: '呼び出しの明細' }).waitFor();
+      await page.getByRole('heading', { name: '接続確認の明細' }).waitFor();
       const checkReport = (
         await (
           await context.request.get(`${baseURL}/api/admin/ai-usage?scope=connection_check`)
@@ -428,9 +432,9 @@ async function adminUsageCheck() {
       if (checkReport.total !== expectedConnectionChecks)
         throw Error('connection checks are not separated');
       await page.getByLabel('期間で絞り込み').selectOption('7');
-      await page.getByRole('heading', { name: '呼び出しの明細' }).waitFor();
+      await page.getByRole('heading', { name: '接続確認の明細' }).waitFor();
       await page.getByLabel('用途で絞り込み').selectOption('chat');
-      await page.getByRole('heading', { name: '呼び出しの明細' }).waitFor();
+      await page.getByRole('heading', { name: 'お客様へ返した回答' }).waitFor();
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.screenshot({ path: join(root, `${outputName}-${device}.png`), fullPage: false });
       const layout = await page.evaluate(() => ({

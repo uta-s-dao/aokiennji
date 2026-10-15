@@ -1,37 +1,43 @@
 'use client';
 import { useEffect, useState } from 'react';
-import {
-  RESEARCH_ASPECT_LABELS,
-  type Conversation,
-  type ChatMessage,
-  type Inquiry,
-  type ResearchNote,
-} from '@/lib/contracts';
-
-const sourceLabels: Record<ResearchNote['findings'][number]['source'], string> = {
-  maker: 'メーカー',
-  retailer: '通販サイト',
-  carrier: '運送会社',
-  supplier: '仕入先',
-  other: 'その他',
-};
-const checkLabels: Record<ResearchNote['findings'][number]['check'], string> = {
-  matched: 'ページで確認済み',
-  partial: '一部のみ確認',
-  mismatch: 'ページの記載と不一致',
-  unreachable: '自動取得できず未確認',
-};
+import { RefreshCw } from 'lucide-react';
+import type { Conversation, ChatMessage, Inquiry, ResearchNote, AiAnswer } from '@/lib/contracts';
 import { api, datetime, errorMessage } from './api';
 import { Empty, Modal, Notice, useNotice } from './AdminCommon';
-type Detail = { conversation: Conversation; messages: ChatMessage[]; research: ResearchNote[] };
+import AdminResearchNote from './AdminResearchNote';
+import AdminChatHistory from './AdminChatHistory';
+type Detail = {
+  conversation: Conversation;
+  messages: ChatMessage[];
+  research: ResearchNote[];
+  answers: AiAnswer[];
+};
 // A chat with its staff-only research notes. Also opened from a quote request.
-export function ConversationDetail({ id, onClose }: { id: string; onClose: () => void }) {
+export function ConversationDetail({
+  id,
+  selectedAnswerId,
+  onClose,
+}: {
+  id: string;
+  selectedAnswerId?: string;
+  onClose: () => void;
+}) {
   const [detail, setDetail] = useState<Detail | null>(null),
     [error, setError] = useState('');
   useEffect(() => {
+    let active = true;
+    setDetail(null);
+    setError('');
     api<Detail>(`/api/admin/conversations/${id}`)
-      .then(setDetail)
-      .catch((e) => setError(errorMessage(e)));
+      .then((value) => {
+        if (active) setDetail(value);
+      })
+      .catch((e) => {
+        if (active) setError(errorMessage(e));
+      });
+    return () => {
+      active = false;
+    };
   }, [id]);
   if (error)
     return (
@@ -39,96 +45,62 @@ export function ConversationDetail({ id, onClose }: { id: string; onClose: () =>
         <Notice message={error} type="error" />
       </Modal>
     );
-  if (!detail) return null;
+  if (!detail)
+    return (
+      <Modal title="会話と回答の詳細" wide onClose={onClose}>
+        <p role="status">会話を読み込んでいます…</p>
+      </Modal>
+    );
   return (
-    <Modal title={detail.conversation.title} wide onClose={onClose}>
+    <Modal
+      title={selectedAnswerId ? '回答とAI処理の詳細' : detail.conversation.title}
+      wide
+      onClose={onClose}
+    >
+      <AdminChatHistory
+        messages={detail.messages}
+        answers={detail.answers}
+        selectedAnswerId={selectedAnswerId}
+      />
       {detail.research?.length ? (
-        <section className="research-notes">
-          <h3>AI調査メモ（担当者用・お客様には表示されません）</h3>
+        <details className="research-notes">
+          <summary>AI調査メモ（担当者用・お客様には表示されません）</summary>
           {detail.research.map((note) => (
-            <div className="research-note" key={note.id}>
-              <p>
-                <strong>{note.subject}</strong>
-              </p>
-              <p className="muted">
-                {datetime(note.createdAt)}・調べた項目：
-                {note.aspects.map((a) => RESEARCH_ASPECT_LABELS[a]).join('・')}
-                {note.destination ? `・お届け先：${note.destination}` : ''}
-                {note.quantity ? `・数量：${note.quantity}` : ''}
-                ・調査の判定：{note.decidedBy === 'jev' ? 'Jev' : 'ルール'}
-              </p>
-              {note.status === 'running' && <p>調査中です。しばらくしてから開き直してください。</p>}
-              {note.status === 'failed' && (
-                <p>
-                  {note.error === 'insufficient_quota'
-                    ? 'OpenAIの利用残高（クレジット）が不足しているため、調査できませんでした。'
-                    : '調査を完了できませんでした。'}
-                </p>
-              )}
-              {note.summary && <p className="preline">{note.summary}</p>}
-              {note.findings.length > 0 && (
-                <div className="table-scroll">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>項目</th>
-                        <th>ページの記載</th>
-                        <th>出典</th>
-                        <th>確認</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {note.findings.map((f, i) => (
-                        <tr key={i}>
-                          <td>{RESEARCH_ASPECT_LABELS[f.aspect]}</td>
-                          <td>
-                            <strong>{f.value}</strong>
-                            {f.note && <small>{f.note}</small>}
-                          </td>
-                          <td>
-                            <a href={f.url} target="_blank" rel="noopener noreferrer">
-                              {f.supplierName ? `仕入先：${f.supplierName}` : f.title || f.url}
-                            </a>
-                            <small>{sourceLabels[f.source]}</small>
-                          </td>
-                          <td>
-                            {checkLabels[f.check]}
-                            {f.relevance !== null && (
-                              <small>品目の一致 {Math.round(f.relevance * 100)}%</small>
-                            )}
-                            {((f.relevance !== null && f.relevance < 0.5) ||
-                              f.itemOnPage === false) && (
-                              <small className="research-warning">別の型式・サイズの可能性</small>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+            <AdminResearchNote
+              key={note.id}
+              note={note}
+              conversationId={id}
+              onOfferSaved={(saved) =>
+                setDetail(
+                  (current) =>
+                    current && {
+                      ...current,
+                      research: current.research.map((n) =>
+                        n.id === note.id
+                          ? {
+                              ...n,
+                              offers: n.offers?.map((o) => (o.id === saved.id ? saved : o)),
+                            }
+                          : n,
+                      ),
+                    },
+                )
+              }
+            />
           ))}
-          <p className="muted">
-            「ページの記載と不一致」はAIの読み違いの可能性が高い項目です。「一部のみ確認」は数値の一部や短い語しかページで確認できなかった項目です。「自動取得できず未確認」はサイトが自動取得を受け付けないため照合できなかった項目です。「別の型式・サイズの可能性」は、ページにお客様の型番・サイズが見当たらないか、品目の一致が低い項目です。お客様への回答前に出典をご確認ください。
-          </p>
-        </section>
+          <details className="research-legend">
+            <summary>確認状況の見方</summary>
+            <ul className="research-bullets">
+              <li>ページで確認済み：取得したページに該当する記載があります。</li>
+              <li>一部のみ確認：数値の一部や短い語のみ確認できた項目です。</li>
+              <li>ページの記載と不一致：AIの読み違いの可能性があります。</li>
+              <li>自動取得できず未確認：ページを自動取得できず、照合できていません。</li>
+              <li>別の型式・サイズの可能性：お客様の品目と一致していない可能性があります。</li>
+            </ul>
+            <p>お客様への回答前に、出典URLから最新の条件をご確認ください。</p>
+          </details>
+        </details>
       ) : null}
-      <div className="admin-chat-history">
-        {detail.messages.map((m) => (
-          <div className={`chat-message ${m.role}`} key={m.id}>
-            <small>
-              {m.role === 'user' ? 'お客様' : 'ご案内'} · {datetime(m.createdAt)}
-            </small>
-            <p className="chat-bubble">{m.content}</p>
-            {m.evidence?.map((e, i) => (
-              <p className="muted" key={i}>
-                参照：{e.title} {e.url}
-              </p>
-            ))}
-          </div>
-        ))}
-      </div>
     </Modal>
   );
 }
@@ -219,7 +191,16 @@ export default function AdminConversations() {
         )}
       </section>
       <section className="admin-card">
-        <h2>チャットの履歴</h2>
+        <div className="admin-conversations-heading">
+          <h2>チャットの履歴（{conversations.length}件）</h2>
+          <button type="button" className="button secondary small" onClick={load}>
+            <RefreshCw size={14} />
+            更新
+          </button>
+        </div>
+        <p className="admin-conversations-note">
+          受け付けたすべてのチャットを保存しています。新しい相談を始めても、過去の会話は残ります。
+        </p>
         {conversations.length ? (
           <div className="conversation-list">
             {conversations.map((c) => (

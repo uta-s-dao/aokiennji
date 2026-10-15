@@ -4,6 +4,10 @@ const config: NextConfig = {
   devIndicators: false,
   allowedDevOrigins: ['localhost', '127.0.0.1'],
   serverExternalPackages: ['better-sqlite3', 'pdf-parse', 'exceljs', 'mammoth'],
+  // Runtime databases and local credentials must never become deployment files.
+  outputFileTracingExcludes: {
+    '/*': ['./.data/**/*', './.env*', './.local-admin.txt'],
+  },
   async headers() {
     return [
       {

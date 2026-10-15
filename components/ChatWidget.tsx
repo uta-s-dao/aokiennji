@@ -366,7 +366,7 @@ export default function ChatWidget({
                       </button>
                     </div>
                     <p className="chat-archive-note">
-                      この端末のブラウザにだけ保存しています（30日・10件まで）。
+                      この端末で見られる履歴です（30日・10件まで）。削除しても、お店に送信済みの会話は残ります。
                     </p>
                     {archive.map((c) => (
                       <button
@@ -569,6 +569,9 @@ export default function ChatWidget({
                           href={`/contact?${new URLSearchParams({
                             ...(conversationId ? { conversationId } : {}),
                             ...(m.handoff === 'quote' ? { quote: '1' } : {}),
+                            ...(m.handoff === 'quote' && m.requestedQuantity
+                              ? { quantity: String(m.requestedQuantity) }
+                              : {}),
                             ...(m.handoff === 'quote' && m.handoffProductId && m.products?.[0]
                               ? { productId: m.handoffProductId, subject: m.products[0].name }
                               : {}),

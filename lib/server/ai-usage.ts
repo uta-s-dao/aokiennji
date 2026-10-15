@@ -1,10 +1,11 @@
 import type { AiCall, AiUsageContext, AiUsageReport } from '../contracts';
 import { db, now, uid } from './db';
-import { DIRECT_JEV_ENDPOINT, GATEWAY_JEV_ENDPOINT } from './jev-config';
+import { DIRECT_JEV_ENDPOINT } from './jev-config';
 
 const endpoints = {
   openai: 'https://api.openai.com/v1/responses',
   jev: DIRECT_JEV_ENDPOINT,
+  gemini: 'https://generativelanguage.googleapis.com/v1beta',
 };
 const knownErrors = new Set([
   'unsupported_number',
@@ -64,7 +65,7 @@ export function beginAiCall(input: {
   model: string;
   body: string;
   requestShape: Record<string, unknown>;
-  endpoint?: typeof DIRECT_JEV_ENDPOINT | typeof GATEWAY_JEV_ENDPOINT;
+  endpoint?: string;
   context?: AiUsageContext;
 }) {
   const start = performance.now();
@@ -115,7 +116,25 @@ export function beginAiCall(input: {
     },
     usage(raw: unknown) {
       if (!raw || typeof raw !== 'object') return;
-      const value = raw as Record<string, any>;
+      let value = raw as Record<string, any>;
+      if (record.provider === 'gemini') {
+        const prompt = integer(value.promptTokenCount);
+        const total = integer(value.totalTokenCount);
+        const candidates = integer(value.candidatesTokenCount);
+        const thoughts = integer(value.thoughtsTokenCount);
+        value = {
+          input_tokens: prompt,
+          output_tokens:
+            prompt !== null && total !== null && total >= prompt
+              ? total - prompt
+              : candidates === null
+                ? null
+                : candidates + (thoughts ?? 0),
+          total_tokens: total,
+          input_tokens_details: { cached_tokens: value.cachedContentTokenCount },
+          output_tokens_details: { reasoning_tokens: thoughts },
+        };
+      }
       const inputTokens = integer(value.input_tokens),
         outputTokens = integer(value.output_tokens);
       if (inputTokens === null || outputTokens === null) return;
@@ -172,7 +191,7 @@ export function beginAiCall(input: {
 
 export function aiUsageReport(
   filters: {
-    provider?: 'openai' | 'jev';
+    provider?: AiCall['provider'];
     scope?: AiUsageContext['scope'];
     since?: string;
     until?: string;
@@ -202,7 +221,7 @@ export function aiUsageReport(
     values.push(filters.until);
   }
   const clause = where.length ? ` WHERE ${where.join(' AND ')}` : '';
-  const summaries = (['openai', 'jev'] as const).map((provider) => ({
+  const summaries = (['openai', 'jev', 'gemini'] as const).map((provider) => ({
     provider,
     calls: 0,
     httpSuccess: 0,

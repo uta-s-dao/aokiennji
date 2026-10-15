@@ -122,3 +122,22 @@ test('a consultation left for a long time moves to the past list in this browser
   await expect(panel.getByRole('button', { name: '過去の相談' })).toHaveCount(0);
   expect(await page.evaluate(() => localStorage.getItem('aoki-chat-archive'))).toBe('[]');
 });
+
+test('an unregistered item quote keeps its quantity and destination in the form', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: '商品相談チャットを開く' }).click();
+  const panel = page.getByRole('dialog', { name: '商品相談チャット' });
+  await panel
+    .getByRole('textbox', { name: '相談内容' })
+    .fill('B-300-SCIを10個、大阪までの見積をお願いします');
+  await panel.getByRole('button', { name: 'メッセージを送信' }).click();
+  const link = panel.getByRole('link', { name: 'この内容で見積を依頼する' });
+  await expect(link).toBeVisible();
+  await link.click();
+  await expect(page).toHaveURL(/quote=1/);
+  await expect(page.getByLabel('数量', { exact: false })).toHaveValue('10');
+  await expect(page.getByLabel('ご相談内容')).toHaveValue(/B-300-SCI/);
+  await expect(page.getByLabel('ご相談内容')).toHaveValue(/大阪/);
+});

@@ -592,7 +592,7 @@ function supplierSites(fields: string[]) {
 export async function researchForStaff(request: ResearchRequest, context: AiUsageContext) {
   // Without credits the search cannot run; the admin overview says so.
   if (!process.env.OPENAI_API_KEY || openaiQuotaPaused()) return;
-  const previous = researchNotes(request.conversationId);
+  const previous = researchNotes(request.conversationId).filter((note) => !note.sourcing);
   if (previous.length >= MAX_NOTES_PER_CONVERSATION) return;
   const decision = await decide(request, context);
   if (!decision.research) return;

@@ -72,7 +72,7 @@ export async function streamChat(
     credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
     body: JSON.stringify(input),
-    signal: AbortSignal.timeout(18000),
+    signal: AbortSignal.timeout(65000),
   });
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));

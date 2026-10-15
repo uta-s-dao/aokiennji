@@ -1,7 +1,7 @@
 import type { ChatMessage } from '@/lib/contracts';
 
-// Past consultations are kept in this browser only, so the site database
-// stores no second copy. The current one is restored from the server.
+// This browser keeps a limited convenience copy of past consultations.
+// The full staff transcript stays in the server database independently.
 export const ARCHIVE_AFTER_MS = 12 * 3600 * 1000;
 const CURRENT = 'aoki-chat-current';
 const ARCHIVE = 'aoki-chat-archive';

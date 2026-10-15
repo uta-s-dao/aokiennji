@@ -147,6 +147,7 @@ export const CHAT_ROUTE_LABELS = {
   clarification: '商品を特定するための確認',
   social: 'あいさつ・基本案内',
   lookup: '登録済みの商品・分野の照合',
+  sourcing: '未登録商品の検索・調達相談',
   consultation: '用途・仕様・比較の相談',
   discovery: '曖昧な商品説明の理解',
   mixed: '登録情報の回答と用途相談',

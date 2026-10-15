@@ -3,13 +3,18 @@ import { useEffect, useState } from 'react';
 import type { AppSettings, Flags, ProviderStatus, ProviderCheck } from '@/lib/contracts';
 import { api, errorMessage } from './api';
 import { Notice, useNotice } from './AdminCommon';
+import AdminEstimatePolicy from './AdminEstimatePolicy';
 const options: [keyof Flags, string, string][] = [
   ['chat', '商品相談チャット', 'サイト上で商品・製作の相談を受け付けます'],
   ['humanHandoff', '担当者への引継ぎ', '連絡先と相談内容を受付一覧に保存します'],
   ['showPrice', '価格を表示', '承認された最新の販売価格を案内します'],
   ['showStock', '在庫を表示', '確認済みの在庫数を案内します'],
   ['showLeadTime', '納期を表示', '確認済みの納期目安を案内します'],
-  ['webSearch', 'Web検索', '登録情報がない場合に公開情報を検索します'],
+  [
+    'webSearch',
+    '未登録商品のWeb検索・調達先調査',
+    '台帳にない型番も検索し、調達候補と掲載価格を会話のAI調査メモに残します。お客様には当社への取り寄せ・見積相談を案内します',
+  ],
   [
     'aiResearch',
     'AIによる価格・納期の調査（担当者向け）',
@@ -31,15 +36,22 @@ export default function AdminSettings() {
   const [checking, setChecking] = useState('');
   const n = useNotice();
   useEffect(() => {
+    let active = true;
     Promise.all([
       api<AppSettings>('/api/admin/settings'),
       api<ProviderStatus[]>('/api/admin/providers'),
     ])
       .then(([s, p]) => {
+        if (!active) return;
         setForm(s);
         setProviders(p);
       })
-      .catch((e) => n.fail(errorMessage(e)));
+      .catch((e) => {
+        if (active) n.fail(errorMessage(e));
+      });
+    return () => {
+      active = false;
+    };
   }, []);
   function toggle(key: keyof Flags) {
     if (!form) return;
@@ -228,6 +240,7 @@ export default function AdminSettings() {
                   }
                 >
                   <option value="none">利用しない</option>
+                  <option value="openai">OpenAI（商品・調達候補の検索）</option>
                   <option value="exa">Exa</option>
                   <option value="tavily">Tavily</option>
                 </select>
@@ -380,6 +393,18 @@ export default function AdminSettings() {
               </label>
             ))}
           </section>
+          <AdminEstimatePolicy
+            value={form.sourcingEstimate}
+            onChange={(patch) =>
+              setForm(
+                (current) =>
+                  current && {
+                    ...current,
+                    sourcingEstimate: { ...current.sourcingEstimate, ...patch },
+                  },
+              )
+            }
+          />
           <button className="button primary" disabled={busy}>
             {busy ? '保存中…' : '設定を保存する'}
           </button>

@@ -60,7 +60,9 @@ import { answerChat, currentMessages } from '@/lib/server/chat';
 import { commitPreview, previewUpload, sourceById, syncSource } from '@/lib/server/ingestion';
 import { aiProviderStatuses, checkAiProvider } from '@/lib/server/ai-setup';
 import { aiUsageReport } from '@/lib/server/ai-usage';
+import { aiAnswerReport } from '@/lib/server/ai-answer-history';
 import { researchNotes } from '@/lib/server/research';
+import { updateProcurementOffer } from '@/lib/server/sourcing-estimate';
 import {
   inquirySchema,
   productSchema,
@@ -71,6 +73,7 @@ import {
   supplierSchema,
 } from '@/lib/server/validation';
 import { validateExternalUrl } from '@/lib/server/safe-fetch';
+import { responseBudgets } from '@/lib/server/response-transport';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -149,7 +152,11 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
       if (req.headers.get('accept')?.includes('text/event-stream')) {
         const encoder = new TextEncoder();
         const controller = new AbortController();
-        const signal = AbortSignal.any([req.signal, controller.signal, AbortSignal.timeout(13000)]);
+        const signal = AbortSignal.any([
+          req.signal,
+          controller.signal,
+          AbortSignal.timeout(responseBudgets(getSettings().flags.webSearch).chat),
+        ]);
         const stream = new ReadableStream<Uint8Array>({
           async start(streamController) {
             const send = (type: string, data: unknown) => {
@@ -258,10 +265,22 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
       }
     }
     if (path === 'admin/providers' && method === 'GET') return ok(aiProviderStatuses());
+    if (path === 'admin/ai-answers' && method === 'GET') {
+      const filters = z
+        .object({
+          provider: z.enum(['openai', 'jev', 'gemini', 'local']).optional(),
+          since: z.iso.datetime().optional(),
+          until: z.iso.datetime().optional(),
+          conversationId: z.string().max(100).optional(),
+          limit: z.coerce.number().int().min(1).max(500).optional(),
+        })
+        .parse(Object.fromEntries(req.nextUrl.searchParams));
+      return ok(aiAnswerReport(filters));
+    }
     if (path === 'admin/ai-usage' && method === 'GET') {
       const filters = z
         .object({
-          provider: z.enum(['openai', 'jev']).optional(),
+          provider: z.enum(['openai', 'jev', 'gemini']).optional(),
           scope: z.enum(['chat', 'connection_check', 'standalone']).optional(),
           since: z.iso.datetime().optional(),
           until: z.iso.datetime().optional(),
@@ -424,12 +443,28 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
         return ok(supplier);
       }
     }
+    if (
+      p[0] === 'admin' &&
+      p[1] === 'conversations' &&
+      p.length === 7 &&
+      p[3] === 'research' &&
+      p[5] === 'offers' &&
+      method === 'PUT'
+    ) {
+      return ok(updateProcurementOffer(p[2], p[4], p[6], await body(req)));
+    }
     if (p[0] === 'admin' && p[1] === 'conversations' && method === 'GET') {
-      if (p.length === 2) return ok(list<Conversation>('conversations').toReversed());
+      if (p.length === 2)
+        return ok(
+          list<Conversation>('conversations').sort((a, b) =>
+            b.updatedAt.localeCompare(a.updatedAt),
+          ),
+        );
       return ok({
         conversation: found<Conversation>('conversations', p[2]),
         messages: conversationMessages(p[2]),
         research: researchNotes(p[2]),
+        answers: aiAnswerReport({ conversationId: p[2], limit: 500 }).items,
       });
     }
     if (p[0] === 'admin' && p[1] === 'inquiries') {

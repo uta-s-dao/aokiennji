@@ -189,6 +189,7 @@ export function getSettings(): AppSettings {
     ...saved,
     flags: { ...DEFAULT_SETTINGS.flags, ...saved.flags },
     faq: { ...DEFAULT_SETTINGS.faq, ...saved.faq },
+    sourcingEstimate: { ...DEFAULT_SETTINGS.sourcingEstimate, ...saved.sourcingEstimate },
   };
 }
 export function putSettings(s: AppSettings) {

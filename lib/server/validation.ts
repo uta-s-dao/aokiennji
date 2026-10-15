@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { DEFAULT_SOURCING_ESTIMATE } from '../contracts';
+import { PREFECTURES } from '../sourcing-estimate';
 const text = (max = 1000) => z.string().trim().max(max);
 const count = z.number().int().min(0).max(1000000000);
 export const productSchema = z.object({
@@ -79,7 +81,69 @@ const flags = z.object({
   // Older saved settings and clients omit this optional feature.
   aiResearch: z.boolean().default(false),
 });
+export const sourcingEstimatePolicySchema = z
+  .object({
+    enabled: z.boolean(),
+    markupPercent: z.number().min(0).max(1000).multipleOf(0.01).nullable(),
+    minimumProfitYen: count.nullable(),
+    handlingFeeYen: count.nullable(),
+    roundingYen: z.union([z.literal(1), z.literal(10), z.literal(100)]),
+    fulfillment: z.enum(['direct', 'via_company']),
+    shippingRates: z
+      .array(
+        z.object({
+          destination: z.enum(PREFECTURES),
+          shippingNet: count,
+        }),
+      )
+      .max(47)
+      .refine(
+        (v) => new Set(v.map((r) => r.destination)).size === v.length,
+        '都道府県が重複しています',
+      ),
+    extraBusinessDays: z.number().int().min(0).max(365).nullable(),
+    taxRate: z.union([z.literal(0), z.literal(8), z.literal(10)]),
+    validityHours: z.number().int().min(1).max(168),
+  })
+  .superRefine((v, ctx) => {
+    if (
+      v.enabled &&
+      [v.markupPercent, v.minimumProfitYen, v.handlingFeeYen, v.extraBusinessDays].some(
+        (n) => n === null,
+      )
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          '概算を有効にする前に上乗せ率・最低利益・手配料・追加営業日を入力してください（なしの場合は0）',
+      });
+  });
+export const procurementOfferSchema = z
+  .object({
+    price: count.positive().nullable(),
+    taxIncluded: z.boolean().nullable(),
+    purchaseTaxRate: z.union([z.literal(0), z.literal(8), z.literal(10)]).nullable(),
+    packQuantity: z.number().int().min(1).max(100000).nullable(),
+    availableQuantity: z.number().int().min(0).max(1000000000).nullable(),
+    procurementShippingNet: count.nullable(),
+    customerShippingNet: count.nullable(),
+    destination: z.union([z.literal(''), z.enum(PREFECTURES)]),
+    deliveryMinDays: z.number().int().min(0).max(365).nullable(),
+    deliveryMaxDays: z.number().int().min(0).max(365).nullable(),
+    approved: z.boolean(),
+  })
+  .refine(
+    (v) =>
+      v.deliveryMinDays === null ||
+      v.deliveryMaxDays === null ||
+      v.deliveryMinDays <= v.deliveryMaxDays,
+    '配送日数の範囲を確認してください',
+  );
 export const settingsSchema = z.object({
+  sourcingEstimate: sourcingEstimatePolicySchema.default({
+    ...DEFAULT_SOURCING_ESTIMATE,
+    shippingRates: [],
+  }),
   flags,
   faq: z
     .object({
@@ -89,7 +153,7 @@ export const settingsSchema = z.object({
       pickup: text(300).default(''),
     })
     .default({ hours: '', quoteResponse: '', shipping: '', pickup: '' }),
-  searchProvider: z.enum(['none', 'exa', 'tavily']),
+  searchProvider: z.enum(['none', 'exa', 'tavily', 'openai']),
   decisionProvider: z.enum(['local', 'gemini', 'jev']),
   model: text(100),
   responseProvider: z.enum(['local', 'openai', 'gemini']).default('local'),

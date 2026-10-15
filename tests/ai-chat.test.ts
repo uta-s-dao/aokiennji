@@ -10,6 +10,7 @@ import { documentCandidates } from '../lib/server/retrieval';
 import { localIntent } from '../lib/server/providers';
 import { aiProviderStatuses, checkAiProvider } from '../lib/server/ai-setup';
 import { aiUsageReport } from '../lib/server/ai-usage';
+import { aiAnswerReport } from '../lib/server/ai-answer-history';
 vi.mock('../lib/server/safe-fetch', () => ({ safeFetch: vi.fn() }));
 import { safeFetch } from '../lib/server/safe-fetch';
 const network = vi.mocked(safeFetch);
@@ -274,6 +275,23 @@ it('records both providers with usage and links calls to one actual customer mes
   mockServices();
   const result = await answerChat('液体の流れを止める部品を探したい', 'usage-owner');
   const report = aiUsageReport({ conversationId: result.conversationId });
+  expect(aiAnswerReport({ conversationId: result.conversationId }).items).toMatchObject([
+    {
+      id: result.message.id,
+      responseProvider: 'openai',
+      linkage: 'recorded',
+      processing: {
+        classificationProvider: 'jev',
+        responseProvider: 'openai',
+        responseReason: 'success',
+        responseModel: expect.any(String),
+      },
+      calls: expect.arrayContaining([
+        expect.objectContaining({ provider: 'jev', purpose: 'classification' }),
+        expect.objectContaining({ provider: 'openai', purpose: 'response' }),
+      ]),
+    },
+  ]);
   expect(report.total).toBe(2);
   expect(report.items.every((c) => c.outcome === 'accepted' && c.httpStatus === 200)).toBe(true);
   expect(report.summaries.find((s) => s.provider === 'jev')).toMatchObject({
@@ -302,11 +320,51 @@ it('records both providers with usage and links calls to one actual customer mes
     expect(saved).not.toContain(secret);
   expect(aiUsageReport({ provider: 'openai', limit: 1 }).total).toBe(1);
 });
+it('keeps the model used for each answer after the response settings change', async () => {
+  mockServices();
+  putSettings({
+    ...DEFAULT_SETTINGS,
+    responseProvider: 'openai',
+    responseModel: 'recorded-model-first',
+  });
+  const first = await answerChat('DEMO-GLASS-01の用途を相談したい', 'model-history');
+  putSettings({
+    ...DEFAULT_SETTINGS,
+    responseProvider: 'openai',
+    responseModel: 'recorded-model-second',
+  });
+  const second = await answerChat(
+    'DEMO-CAST-01の用途を相談したい',
+    'model-history',
+    first.conversationId,
+  );
+  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local', responseModel: 'current-setting' });
+  const answers = aiAnswerReport({ conversationId: first.conversationId }).items;
+  for (const [id, model] of [
+    [first.message.id, 'recorded-model-first'],
+    [second.message.id, 'recorded-model-second'],
+  ]) {
+    expect(answers.find((a) => a.id === id)).toMatchObject({
+      responseProvider: 'openai',
+      processing: { responseModel: model },
+      calls: [expect.objectContaining({ purpose: 'response', model })],
+    });
+  }
+});
 it('rewrites a rejected draft once and keeps the billed usage and reason of each attempt', async () => {
   mockServices('直径は25ミリです。');
   const result = await answerChat('DEMO-GLASS-01の用途を相談したい', 'rejected-usage');
   expect(result.message.responseProvider).toBe('local');
   const report = aiUsageReport();
+  expect(aiAnswerReport().items[0]).toMatchObject({
+    id: result.message.id,
+    responseProvider: 'local',
+    processing: { responseReason: 'failed_or_ungrounded', responseModel: null },
+    calls: [
+      expect.objectContaining({ outcome: 'rejected' }),
+      expect.objectContaining({ outcome: 'rejected' }),
+    ],
+  });
   expect(report.items).toHaveLength(2);
   for (const item of report.items)
     expect(item).toMatchObject({

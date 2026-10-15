@@ -105,6 +105,14 @@ describe('provider contracts', () => {
     expect(result.provider).toBe('gemini');
     expect(result.model).toBe('ABC-123');
     expect(result.terms).not.toContain('INVENTED-999');
+    expect(aiUsageReport({ provider: 'gemini' }).items[0]).toMatchObject({
+      provider: 'gemini',
+      purpose: 'classification',
+      outcome: 'accepted',
+      httpStatus: 200,
+      model: 'gemini-2.5-flash',
+      usage: null,
+    });
     delete process.env.GEMINI_API_KEY;
   });
   it('passes bounded conversation context to Gemini while rejecting invented identifiers', async () => {

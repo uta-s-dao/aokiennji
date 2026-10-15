@@ -34,10 +34,60 @@ export interface CompanyFaq {
   shipping: string;
   pickup: string;
 }
+// Private commercial rules. Null means the owner has not decided the value.
+export interface SourcingEstimatePolicy {
+  enabled: boolean;
+  markupPercent: number | null;
+  minimumProfitYen: number | null;
+  handlingFeeYen: number | null;
+  roundingYen: 1 | 10 | 100;
+  fulfillment: 'direct' | 'via_company';
+  shippingRates: { destination: string; shippingNet: number }[];
+  extraBusinessDays: number | null;
+  taxRate: 0 | 8 | 10;
+  validityHours: number;
+}
+// Private facts for one source; never merge prices and delivery from different sellers.
+export interface ProcurementOffer {
+  id: string;
+  model: string;
+  title: string;
+  url: string;
+  price: number | null;
+  taxIncluded: boolean | null;
+  purchaseTaxRate: 0 | 8 | 10 | null;
+  packQuantity: number | null;
+  availableQuantity: number | null;
+  procurementShippingNet: number | null;
+  customerShippingNet: number | null;
+  destination: string;
+  deliveryMinDays: number | null;
+  deliveryMaxDays: number | null;
+  approved: boolean;
+  checkedAt: string;
+  confirmedAt: string | null;
+}
+// Public selling terms only: excludes acquisition cost, supplier and margin.
+export interface SourcingEstimate {
+  model: string;
+  quantity: number;
+  destination: string;
+  unitPrice: number;
+  subtotal: number;
+  shipping: number;
+  tax: number;
+  taxRate: number;
+  total: number;
+  minBusinessDays: number;
+  maxBusinessDays: number;
+  calculatedAt: string;
+  validUntil: string;
+}
 export interface AppSettings {
   flags: Flags;
   faq: CompanyFaq;
-  searchProvider: 'none' | 'exa' | 'tavily';
+  sourcingEstimate: SourcingEstimatePolicy;
+  searchProvider: 'none' | 'exa' | 'tavily' | 'openai';
   decisionProvider: 'local' | 'gemini' | 'jev';
   model: string;
   responseProvider: 'local' | 'openai' | 'gemini';
@@ -162,10 +212,22 @@ export interface QueryIntent {
   topicField?: string;
   evidenceIndex?: number;
 }
+export interface ProductSourcing {
+  model: string;
+  status: 'candidate' | 'identified' | 'not_found' | 'failed';
+  checkedAt: string;
+}
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  // A streamed reply retained for staff before it has completed.
+  incomplete?: boolean;
+  // Public outcome only. Supplier URLs and acquisition prices stay in research notes.
+  sourcing?: ProductSourcing;
+  estimate?: SourcingEstimate;
+  // Private fingerprint used to invalidate an old estimate after staff edits.
+  estimateRevision?: string;
   knowledge?: KnowledgeTopic;
   createdAt: string;
   products?: Product[];
@@ -175,6 +237,7 @@ export interface ChatMessage {
   factualIntents?: ('price' | 'stock' | 'lead_time' | 'quote' | 'order')[];
   presentation?: 'products' | 'reply' | 'selection';
   requestedQuantity?: number;
+  requestedDestination?: string;
   // Parts of a fact question answered from registered values, kept so the
   // reply can be rebuilt with the same wording.
   factDetail?: { unit?: string; taxIncluded?: boolean; shipping?: boolean; deadline?: boolean };
@@ -191,8 +254,9 @@ export interface ChatMessage {
   handoffProductId?: string;
   handoffDraft?: string;
 }
-export type ResearchAspect = 'price' | 'lead_time' | 'stock' | 'shipping';
+export type ResearchAspect = 'price' | 'lead_time' | 'stock' | 'shipping' | 'availability';
 export const RESEARCH_ASPECT_LABELS: Record<ResearchAspect, string> = {
+  availability: '商品・調達候補',
   price: '価格',
   lead_time: '出荷・納期',
   stock: '在庫',
@@ -227,6 +291,8 @@ export interface ResearchNote {
   completedAt: string | null;
   status: 'running' | 'done' | 'failed';
   subject: string;
+  sourcing?: ProductSourcing;
+  offers?: ProcurementOffer[];
   aspects: ResearchAspect[];
   destination?: string;
   // As the customer wrote it ("10個、6個"); older notes hold a number.
@@ -334,7 +400,7 @@ export interface AiCall {
   id: string;
   createdAt: string;
   completedAt: string | null;
-  provider: 'openai' | 'jev';
+  provider: 'openai' | 'jev' | 'gemini';
   purpose: 'classification' | 'response' | 'research' | 'research_decision';
   context: AiUsageContext;
   model: string;
@@ -359,7 +425,7 @@ export interface AiUsageReport {
   recordingStartedAt: string | null;
   total: number;
   summaries: {
-    provider: 'openai' | 'jev';
+    provider: AiCall['provider'];
     calls: number;
     httpSuccess: number;
     accepted: number;
@@ -373,6 +439,36 @@ export interface AiUsageReport {
     cachedUsageReportedCalls: number;
   }[];
   items: AiCall[];
+}
+// Staff-only execution metadata, stored with the reply and stripped from public history.
+export interface AnswerProcessing {
+  classificationProvider: string;
+  responseProvider: NonNullable<ChatMessage['responseProvider']>;
+  responseMode: 'local' | 'ai' | 'mixed';
+  responseReason: string;
+  responseModel: string | null;
+  durationMs: number;
+  webSearch: boolean;
+}
+export interface StoredChatMessage extends ChatMessage {
+  replyToId?: string;
+  processing?: AnswerProcessing;
+}
+export interface AiAnswer {
+  id: string;
+  conversationId: string;
+  content: string;
+  createdAt: string;
+  incomplete: boolean;
+  responseProvider: ChatMessage['responseProvider'] | null;
+  route: string | null;
+  processing: AnswerProcessing | null;
+  linkage: 'recorded' | 'legacy' | 'unknown';
+  calls: AiCall[];
+}
+export interface AiAnswerReport {
+  total: number;
+  items: AiAnswer[];
 }
 export interface Overview {
   products: number;
@@ -438,7 +534,20 @@ export interface ApiResult<T> {
   error?: { code: string; message: string };
 }
 
+export const DEFAULT_SOURCING_ESTIMATE: SourcingEstimatePolicy = {
+  enabled: false,
+  markupPercent: null,
+  minimumProfitYen: null,
+  handlingFeeYen: null,
+  roundingYen: 1,
+  fulfillment: 'direct',
+  shippingRates: [],
+  extraBusinessDays: null,
+  taxRate: 10,
+  validityHours: 24,
+};
 export const DEFAULT_SETTINGS: AppSettings = {
+  sourcingEstimate: DEFAULT_SOURCING_ESTIMATE,
   flags: {
     chat: true,
     webSearch: false,

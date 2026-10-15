@@ -24,17 +24,27 @@ export default function Contact() {
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     const subject = p.get('subject');
+    const requestedQuantity = Number(p.get('quantity'));
+    const quantity =
+      Number.isSafeInteger(requestedQuantity) &&
+      requestedQuantity > 0 &&
+      requestedQuantity <= 100000
+        ? requestedQuantity
+        : undefined;
     // Written by the chat's hand-off button: what the customer already told us.
     const draft = p.get('conversationId') ? sessionStorage.getItem('aoki-handoff-draft') : null;
     sessionStorage.removeItem('aoki-handoff-draft');
     setProductId(p.get('productId') || undefined);
     setQuote(p.get('quote') === '1');
-    if (draft || subject)
+    if (draft || subject || quantity)
       setForm((f) => ({
         ...f,
+        quantity: quantity ?? f.quantity,
         message: draft
           ? `${subject ? `${subject}について相談したいです。\n` : ''}${draft}\n`
-          : `${subject}について相談したいです。\n`,
+          : subject
+            ? `${subject}について相談したいです。\n`
+            : f.message,
       }));
     api<PublicConfig>('/api/config')
       .then(setConfig)

@@ -8,6 +8,7 @@ import type {
   QueryIntent,
   Source,
   Supplier,
+  StoredChatMessage,
 } from '../contracts';
 import { audit, byId, db, getSettings, list, normalize, now, save, uid } from './db';
 import {
@@ -36,7 +37,11 @@ import {
   stripCourtesy,
 } from '../chat-policy';
 import { documentCandidates } from './retrieval';
-import { generateGroundedReply, groundingHash } from './ai-responses';
+import { generateGroundedReply, groundingHash, responseModel } from './ai-responses';
+import { responseBudgets } from './response-transport';
+import { sourceProduct, sourcingReply } from './sourcing';
+import { sourcingEstimate, sourcingContextRevision } from './sourcing-estimate';
+import { estimateReply } from '../sourcing-estimate';
 import { company } from '../company';
 import { destinationIn, researchForStaff, statedQuantities } from './research';
 import {
@@ -79,10 +84,13 @@ export async function answerChat(
     defer?: (work: () => Promise<void>) => void;
   } = {},
 ): Promise<ChatResponse> {
-  output = { ...output, signal: output.signal || AbortSignal.timeout(13000) };
   requireFlag('chat');
   const userCreatedAt = now();
   const settings = getSettings();
+  output = {
+    ...output,
+    signal: output.signal || AbortSignal.timeout(responseBudgets(settings.flags.webSearch).chat),
+  };
   const conversation: Conversation = conversationId
     ? verifyConversation(conversationId, owner)
     : {
@@ -94,6 +102,46 @@ export async function answerChat(
       };
   const previous = conversationId ? currentMessages(conversation.id) : [];
   const usageContext = { scope: 'chat' as const, conversationId: conversation.id, turnId: uid() };
+  // Record receipt before any external service runs. An interrupted reply must
+  // not erase the customer's question or the conversation from the admin list.
+  db().transaction(() => {
+    save('conversations', { ...conversation, updatedAt: userCreatedAt }, { owner_id: owner });
+    save(
+      'messages',
+      {
+        id: usageContext.turnId,
+        conversationId: conversation.id,
+        role: 'user',
+        content: message,
+        createdAt: userCreatedAt,
+      },
+      { conversation_id: conversation.id },
+    );
+    if (!conversationId) audit('conversation.created', conversation.id, '商品相談を受け付けました');
+  })();
+  const assistantId = uid();
+  const onText = output.onText;
+  if (onText) {
+    output.onText = (content) => {
+      // Keep the latest text offered to the stream, even if delivery fails.
+      // Completion replaces this same row, without duplicating the reply.
+      if (content.trim())
+        save(
+          'messages',
+          {
+            id: assistantId,
+            conversationId: conversation.id,
+            role: 'assistant',
+            replyToId: usageContext.turnId,
+            content,
+            incomplete: true,
+            createdAt: now(),
+          },
+          { conversation_id: conversation.id },
+        );
+      onText(content);
+    };
+  }
   const privateQuestion = privateSupplierQuestion(message);
   const safeHistory = previous.filter((m) => !privateSupplierQuestion(m.content));
   // The customer's own words, oldest first: conditions to keep and summarize.
@@ -123,8 +171,24 @@ export async function answerChat(
       ? []
       : documentCandidates(message, local);
   // Independent I/O starts together, only when the server policy requests it.
+  const sourcingFollowup =
+    !!lastReply?.sourcing &&
+    !consultationTopic([request]) &&
+    !/別の(?:商品|製品)|他の(?:商品|製品)/.test(request) &&
+    (local.referencesPrevious ||
+      isBareReply(message) ||
+      /^\d+\s*(?:個|台|枚|本|セット)/.test(request) ||
+      !!destinationIn([message]) ||
+      ['price', 'stock', 'lead_time', 'quote', 'order'].includes(local.intent) ||
+      policyKeys(request).some((k) =>
+        ['sourcing', 'estimate', 'shipping', 'discount'].includes(k),
+      ));
   const shouldSearchWeb =
-    planned.search && settings.flags.webSearch && settings.searchProvider !== 'none';
+    planned.search &&
+    settings.flags.webSearch &&
+    settings.searchProvider !== 'none' &&
+    !local.model &&
+    !sourcingFollowup;
   const webWork = shouldSearchWeb
     ? searchWeb(
         message,
@@ -248,7 +312,7 @@ export async function answerChat(
           ? last.intent
           : 'stock';
   }
-  const requestedQuantity =
+  let requestedQuantity =
     statedQuantity || (continued ? continuedFrom?.requestedQuantity : undefined);
   // "1個あたり8,400円で合っていますか？" asks the unit price; the amount of
   // the conversation is kept for the next question.
@@ -287,11 +351,86 @@ export async function answerChat(
     route.response = 'ai';
     route.reason = planned.reason;
   }
+  const sourceModel =
+    intent.model ||
+    (!namedTopic &&
+    (sourcingFollowup || intent.referencesPrevious || quantityFollowup || isBareReply(message))
+      ? lastReply?.sourcing?.model
+      : undefined);
+  const sourcing =
+    !privateQuestion &&
+    !matches.length &&
+    sourceModel &&
+    !['privacy', 'social', 'summary', 'handoff'].includes(route.reason) &&
+    (route.reason !== 'policy' ||
+      policyKeys(request).some((key) =>
+        ['sourcing', 'estimate', 'shipping', 'discount'].includes(key),
+      )) &&
+    settings.flags.webSearch &&
+    settings.searchProvider !== 'none'
+      ? await sourceProduct({
+          model: sourceModel,
+          settings,
+          context: usageContext,
+          signal: output.signal,
+        })
+      : undefined;
+  // Keep conditions only from the current sourced item, including later quantity/destination turns.
+  const sameSource =
+    sourceModel &&
+    lastReply?.sourcing &&
+    normalize(lastReply.sourcing.model) === normalize(sourceModel);
+  if (sourcing)
+    requestedQuantity = statedQuantity || (sameSource ? lastReply?.requestedQuantity : undefined);
+  const sourceDestination = sourcing
+    ? destinationIn([message]) || (sameSource ? lastReply?.requestedDestination : undefined)
+    : undefined;
+  const estimateResult = sourcing
+    ? sourcingEstimate(conversation.id, sourcing, requestedQuantity, sourceDestination, settings)
+    : undefined;
+  const sourcedReply = () => {
+    if (estimateResult?.estimate) return estimateReply(estimateResult.estimate);
+    const text = sourcingReply(sourcing!, !!requestedQuantity);
+    if (!requestedQuantity) return text;
+    if (!sourceDestination) return `${text}\nお届け先の都道府県を教えていただけますか？`;
+    if (
+      settings.sourcingEstimate.enabled &&
+      settings.flags.showPrice &&
+      settings.flags.showLeadTime
+    ) {
+      const missing = estimateResult?.missing || [];
+      const packs = missing.find((m) => m.startsWith('入数に合う数量'));
+      if (packs)
+        return `${text}\nこちらは${packs.match(/（(.+)）/)?.[1] || '梱包単位'}での販売です。ご希望の数量をご指定ください。`;
+      const pending = [
+        ...new Set(
+          missing.map((m) =>
+            /送料/.test(m)
+              ? '送料'
+              : /営業日/.test(m)
+                ? '納期'
+                : /配送条件/.test(m)
+                  ? `${sourceDestination}への配送条件`
+                  : /調達可否/.test(m)
+                    ? 'ご希望数量の在庫'
+                    : '販売価格・販売単位',
+          ),
+        ),
+      ];
+      return `${text}\n${sourceDestination}への${requestedQuantity}個のお届けについて、${pending.join('・')}を確認中です。未確認の金額や日数は、確認でき次第ご案内します。`;
+    }
+    return text;
+  };
+  if (sourcing) {
+    topic = undefined;
+    route.reason = 'sourcing';
+    route.response = 'local';
+  }
   const evidence: Evidence[] = matches.flatMap((p) => p.evidence || []);
   let externalWarning = '';
   const external = await webWork;
   if (external.failed) externalWarning = ' Web検索は現在利用できません。';
-  if (!topic && !matches.length && intent.intent !== 'general') {
+  if (!sourcing && !topic && !matches.length && intent.intent !== 'general') {
     if (intent.evidenceIndex !== undefined && candidates[intent.evidenceIndex])
       evidence.push(candidates[intent.evidenceIndex].evidence);
     else
@@ -322,6 +461,7 @@ export async function answerChat(
   // A question about buying this item: the reply offers the quote request.
   // Naming quantities or asking whether an item is handled counts too.
   const buying =
+    !!sourcing ||
     route.facts.length > 0 ||
     /買い|買う|購入|見積|発注|注文|手配|扱って|取り?扱い|置いて(?:ます|る|い)/.test(request) ||
     /\d+\s*(?:個|台|枚|本|セット|巻|pcs)/i.test(request) ||
@@ -526,6 +666,7 @@ export async function answerChat(
     };
     const join = (...parts: string[]) => parts.filter(Boolean).join('\n');
     const policy = once(policyFull);
+    if (sourcing) return sourcedReply();
     if (route.reason === 'social')
       return socialOnly(message)
         ? thanks
@@ -604,6 +745,7 @@ export async function answerChat(
   const aiReady =
     settings.responseProvider !== 'local' &&
     !!process.env[settings.responseProvider === 'gemini' ? 'GEMINI_API_KEY' : 'OPENAI_API_KEY'];
+  if (sourcing && !fixed.trim()) fixed = sourcedReply();
   const repeated = !fixed.trim() && route.response !== 'ai';
   // Taken before the route changes: the fixed answer given again is what the
   // response model restates, and what is shown if it cannot answer.
@@ -746,10 +888,15 @@ export async function answerChat(
             usageContext,
             // A rejected draft is rewritten only while the reply can still
             // finish within the response time budget.
-            retryUntil: Date.parse(userCreatedAt) + 7000,
+            retryUntil: Date.parse(userCreatedAt) + responseBudgets().retry,
             signal: AbortSignal.any([
               output.signal!,
-              AbortSignal.timeout(Math.max(100, 12000 - (Date.now() - Date.parse(userCreatedAt)))),
+              AbortSignal.timeout(
+                Math.max(
+                  100,
+                  responseBudgets().generation - (Date.now() - Date.parse(userCreatedAt)),
+                ),
+              ),
             ]),
             onText: (text) =>
               output.onText?.(
@@ -805,33 +952,46 @@ export async function answerChat(
       finish(givenBefore || fixedPart(true)) ||
       finish(composeConsultation(compose, 'next')) ||
       'ご相談の内容は、担当者がこの会話を確認してご案内します。';
-  output.onText?.(content);
   if (output.signal?.aborted) throw new Error('処理が中断されました');
+  if (estimateResult?.estimate) content = estimateReply(estimateResult.estimate);
   const assistant: ChatMessage = {
-    id: uid(),
+    id: assistantId,
     role: 'assistant',
     content,
+    ...(sourcing ? { sourcing } : {}),
+    ...(estimateResult?.estimate
+      ? { estimate: estimateResult.estimate, estimateRevision: estimateResult.revision }
+      : {}),
     responseProvider: generated.provider,
-    groundingHash: groundingHash(matches, topic, evidence, settings.flags),
+    groundingHash: groundingHash(
+      matches,
+      topic,
+      evidence,
+      settings.flags,
+      sourcingContextRevision(conversation.id, settings),
+    ),
     knowledge: topic,
     products: matches,
     evidence,
     intent: intent.intent,
     factualIntents: route.facts,
     requestedQuantity,
+    ...(sourceDestination ? { requestedDestination: sourceDestination } : {}),
     ...(Object.keys(detail).length ? { factDetail: detail } : {}),
     route: route.reason,
     ...(composed || quoteInvite ? { composed: true } : {}),
     ...(handoff
       ? {
           handoff,
-          handoffDraft: handoffDraft(
-            customerTexts,
-            route.reason === 'summary' && generated.provider !== 'local'
-              ? generated.content
-              : undefined,
-            compose.destination,
-          ),
+          handoffDraft:
+            (estimateResult?.estimate ? estimateReply(estimateResult.estimate) + '\n\n' : '') +
+            handoffDraft(
+              customerTexts,
+              route.reason === 'summary' && generated.provider !== 'local'
+                ? generated.content
+                : undefined,
+              compose.destination,
+            ),
           ...(handoff === 'quote' && quoteProduct ? { handoffProductId: quoteProduct.id } : {}),
         }
       : {}),
@@ -873,30 +1033,39 @@ export async function answerChat(
     createdAt: now(),
   };
   db().transaction(() => {
-    save('conversations', { ...conversation, updatedAt: now() }, { owner_id: owner });
+    save(
+      'conversations',
+      { ...verifyConversation(conversation.id, owner), updatedAt: now() },
+      { owner_id: owner },
+    );
     save(
       'messages',
       {
-        id: usageContext.turnId,
+        ...assistant,
         conversationId: conversation.id,
-        role: 'user',
-        content: message,
-        createdAt: userCreatedAt,
+        replyToId: usageContext.turnId,
+        processing: {
+          classificationProvider: intent.provider,
+          responseProvider: estimateResult?.estimate ? 'local' : generated.provider,
+          responseMode: estimateResult?.estimate ? 'local' : route.response,
+          responseReason: estimateResult?.estimate ? 'estimate' : generated.reason,
+          responseModel:
+            generated.provider === 'local' || estimateResult?.estimate
+              ? null
+              : responseModel(settings),
+          durationMs: Date.now() - Date.parse(userCreatedAt),
+          webSearch: !!(shouldSearchWeb || sourcing),
+        },
       },
       { conversation_id: conversation.id },
     );
-    save(
-      'messages',
-      { ...assistant, conversationId: conversation.id },
-      { conversation_id: conversation.id },
-    );
-    if (!conversationId) audit('conversation.created', conversation.id, '商品相談を受け付けました');
     audit(
       'chat.routed',
       conversation.id,
-      `振り分け:${CHAT_ROUTE_LABELS[route.reason]} / ${route.reason} / 分類:${intent.provider} / 回答:${generated.provider} / ${generated.reason} / Web:${shouldSearchWeb ? '実行' : '省略'} / ${Date.now() - Date.parse(userCreatedAt)}ms`,
+      `振り分け:${CHAT_ROUTE_LABELS[route.reason]} / ${route.reason} / 分類:${intent.provider} / 回答:${generated.provider} / ${generated.reason} / Web:${shouldSearchWeb || sourcing ? '実行' : '省略'} / ${Date.now() - Date.parse(userCreatedAt)}ms`,
     );
   })();
+  onText?.(content);
   // Staff-only research of the price, stock, lead time or shipping of an item
   // the registry cannot answer. It runs after the reply and never reaches the
   // customer.
@@ -912,6 +1081,7 @@ export async function answerChat(
   const aspects = registered ? asked.filter((a) => a === 'shipping') : asked;
   if (
     settings.flags.aiResearch &&
+    !sourcing &&
     output.defer &&
     !privateQuestion &&
     !['privacy', 'social'].includes(route.reason) &&
@@ -950,7 +1120,8 @@ export async function answerChat(
       ),
     );
   }
-  return { conversationId: conversation.id, message: assistant };
+  const { estimateRevision: _privateRevision, ...publicAssistant } = assistant;
+  return { conversationId: conversation.id, message: publicAssistant };
 }
 // Every item the customer described, without demo records, which are not
 // researched. A long conversation keeps its start (the items) and its end
@@ -1018,67 +1189,99 @@ function buttonLabels(content: string, label?: string) {
 export function currentMessages(id: string): ChatMessage[] {
   const settings = getSettings();
   const fields = availableFields();
-  return conversationMessages(id).map((m) => {
-    const knowledge = m.knowledge
-      ? { ...m.knowledge, fields: m.knowledge.fields.filter((f) => fields.includes(f)) }
-      : undefined;
-    const products = m.products
-      ?.map((p) => byId<Product>('products', p.id))
-      .filter((p): p is Product => !!p)
-      .map(publicProduct)
-      .filter((p): p is Product => !!p);
-    const evidence = m.evidence?.filter((e) => {
-      const source = e.sourceId ? byId<Source>('sources', e.sourceId) : undefined;
-      if (
-        e.visibility !== 'public' ||
-        (e.sourceId && !source?.enabled) ||
-        (source?.visibility === 'internal' &&
-          (e.url || !['社内資料の関連情報', '社内確認済み情報'].includes(e.title)))
-      )
-        return false;
-      if (e.id) {
-        const document = byId<{ createdAt: string }>('documents', e.id);
-        if (!document || document.createdAt !== e.retrievedAt) return false;
+  const sourceContext = sourcingContextRevision(id, settings);
+  // Partial replies remain in the staff transcript; only completed replies
+  // can be restored publicly or used as context for the next answer.
+  return (conversationMessages(id) as StoredChatMessage[])
+    .filter((m) => !m.incomplete)
+    .map(({ replyToId: _replyToId, processing: _processing, ...message }) => message)
+    .map((m) => {
+      if (m.estimate && m.sourcing) {
+        const latest = sourcingEstimate(
+          id,
+          m.sourcing,
+          m.estimate.quantity,
+          m.estimate.destination,
+          settings,
+        );
+        const valid =
+          latest.estimate &&
+          latest.revision === m.estimateRevision &&
+          Date.parse(m.estimate.validUntil) > Date.now();
+        const { estimateRevision: _privateRevision, ...publicMessage } = m;
+        return valid
+          ? publicMessage
+          : {
+              ...publicMessage,
+              estimate: undefined,
+              content: `「${m.sourcing.model}」の概算条件が更新されたか、有効期限を過ぎました。最新の価格・送料・納期を確認するため、もう一度ご質問ください。`,
+              handoffDraft: `「${m.sourcing.model}」${m.estimate.quantity}個・${m.estimate.destination}への価格・送料・納期の再確認をお願いします。`,
+            };
       }
-      return (
-        !privateSupplierQuestion([e.title, e.excerpt].join(' ')) &&
-        !containsPrivateSupplierIdentity(e.url || '')
-      );
+      const knowledge = m.knowledge
+        ? { ...m.knowledge, fields: m.knowledge.fields.filter((f) => fields.includes(f)) }
+        : undefined;
+      const products = m.products
+        ?.map((p) => byId<Product>('products', p.id))
+        .filter((p): p is Product => !!p)
+        .map(publicProduct)
+        .filter((p): p is Product => !!p);
+      const evidence = m.evidence?.filter((e) => {
+        const source = e.sourceId ? byId<Source>('sources', e.sourceId) : undefined;
+        if (
+          e.visibility !== 'public' ||
+          (e.sourceId && !source?.enabled) ||
+          (source?.visibility === 'internal' &&
+            (e.url || !['社内資料の関連情報', '社内確認済み情報'].includes(e.title)))
+        )
+          return false;
+        if (e.id) {
+          const document = byId<{ createdAt: string }>('documents', e.id);
+          if (!document || document.createdAt !== e.retrievedAt) return false;
+        }
+        return (
+          !privateSupplierQuestion([e.title, e.excerpt].join(' ')) &&
+          !containsPrivateSupplierIdentity(e.url || '')
+        );
+      });
+      // Generated text and replies built from this conversation are kept only
+      // while the facts they relied on are unchanged.
+      const contextual = m.composed || (m.responseProvider && m.responseProvider !== 'local');
+      const stillValid =
+        contextual &&
+        m.groundingHash ===
+          groundingHash(products, knowledge, evidence, settings.flags, sourceContext);
+      return {
+        ...m,
+        // Rebuild factual replies against today's permissions and facts, including
+        // when a source is disabled or price/stock visibility changes after a turn.
+        content: stillValid
+          ? m.content
+          : m.role === 'assistant' && knowledge && m.intent !== 'general'
+            ? knowledgeReply(knowledge, settings, m.factualIntents)
+            : m.role === 'assistant' &&
+                m.products?.length &&
+                m.intent &&
+                (m.factualIntents?.length || !['general', 'custom'].includes(m.intent))
+              ? factualReply(
+                  products || [],
+                  m.factualIntents || [],
+                  m.intent,
+                  settings,
+                  m.requestedQuantity,
+                  m.factDetail,
+                )
+              : contextual
+                ? '現在の登録情報が更新されているため、もう一度ご質問ください。最新の情報でご案内します。'
+                : m.content,
+        ...(contextual && !stillValid && sourceContext && m.handoffDraft
+          ? { handoffDraft: '現在の販売条件で、価格・送料・納期の再確認をお願いします。' }
+          : {}),
+        knowledge,
+        products,
+        evidence,
+      };
     });
-    // Generated text and replies built from this conversation are kept only
-    // while the facts they relied on are unchanged.
-    const contextual = m.composed || (m.responseProvider && m.responseProvider !== 'local');
-    const stillValid =
-      contextual &&
-      m.groundingHash === groundingHash(products, knowledge, evidence, settings.flags);
-    return {
-      ...m,
-      // Rebuild factual replies against today's permissions and facts, including
-      // when a source is disabled or price/stock visibility changes after a turn.
-      content: stillValid
-        ? m.content
-        : m.role === 'assistant' && knowledge && m.intent !== 'general'
-          ? knowledgeReply(knowledge, settings, m.factualIntents)
-          : m.role === 'assistant' &&
-              m.products?.length &&
-              m.intent &&
-              (m.factualIntents?.length || !['general', 'custom'].includes(m.intent))
-            ? factualReply(
-                products || [],
-                m.factualIntents || [],
-                m.intent,
-                settings,
-                m.requestedQuantity,
-                m.factDetail,
-              )
-            : contextual
-              ? '現在の登録情報が更新されているため、もう一度ご質問ください。最新の情報でご案内します。'
-              : m.content,
-      knowledge,
-      products,
-      evidence,
-    };
-  });
 }
 
 function matchCatalog(message: string, intent: QueryIntent, catalog: Product[]): Product[] {

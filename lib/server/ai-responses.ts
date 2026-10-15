@@ -8,7 +8,7 @@ import type {
   KnowledgeTopic,
   Product,
 } from '../contracts';
-import { safeFetch } from './safe-fetch';
+import { fetchOpenaiResponse, responseBudgets, responseEndpoint } from './response-transport';
 import { jsonRequest } from './providers';
 import { beginAiCall, openaiQuotaPaused, pauseOpenaiForQuota, quotaError } from './ai-usage';
 
@@ -26,9 +26,10 @@ export function groundingHash(
   knowledge?: KnowledgeTopic,
   evidence: Evidence[] = [],
   flags?: AppSettings['flags'],
+  sourcingContext?: string,
 ) {
   return createHash('sha256')
-    .update(JSON.stringify({ products, knowledge, evidence, flags }))
+    .update(JSON.stringify({ products, knowledge, evidence, flags, sourcingContext }))
     .digest('hex');
 }
 export interface ReplyContext {
@@ -402,6 +403,7 @@ async function generateOnce(
       });
       usage = beginAiCall({
         provider: 'openai',
+        endpoint: responseEndpoint(),
         purpose: 'response',
         model,
         body,
@@ -434,11 +436,11 @@ async function generateOnce(
           },
         },
       });
-      const response = await safeFetch('https://api.openai.com/v1/responses', {
+      const response = await fetchOpenaiResponse({
         method: 'POST',
         headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
         body,
-        timeoutMs: 8000,
+        timeoutMs: responseBudgets().request,
         signal: options.signal,
         maxBytes: 300000,
         maxRedirects: 0,
@@ -475,21 +477,40 @@ async function generateOnce(
         throw Error(quotaError(buffer) ? 'insufficient_quota' : 'generation_failed');
       if (validationError) throw validationError;
     } else {
-      const result = await jsonRequest(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        { 'x-goog-api-key': key },
-        {
-          systemInstruction: { parts: [{ text: system }] },
-          contents: [{ role: 'user', parts: [{ text: input }] }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseJsonSchema: outputSchema,
-            maxOutputTokens: 900,
-          },
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+      const body = {
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ role: 'user', parts: [{ text: input }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseJsonSchema: outputSchema,
+          maxOutputTokens: 900,
         },
+      };
+      usage = beginAiCall({
+        provider: 'gemini',
+        purpose: 'response',
+        model,
+        endpoint,
+        body: JSON.stringify(body),
+        context: options.usageContext,
+        requestShape: {
+          contentType: 'application/json',
+          bodyKeys: Object.keys(body),
+          mode: context.mode || 'consult',
+          retry: !!rejected,
+          responseFormat: 'JSON blocks',
+        },
+      });
+      const result = await jsonRequest(
+        endpoint,
+        { 'x-goog-api-key': key },
+        body,
         8000,
         options.signal,
+        (status, headers) => usage?.response(status, headers),
       );
+      usage.usage(result.usageMetadata);
       output =
         result.candidates?.[0]?.content?.parts
           ?.map((p: { text?: string }) => p.text || '')
