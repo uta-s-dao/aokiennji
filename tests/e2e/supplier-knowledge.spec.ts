@@ -114,7 +114,7 @@ test('private supplier Excel to customer field guidance, contact and disable', a
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
     ).toBeTruthy();
-    await chat.getByRole('link', { name: '担当者へのお問い合わせ' }).click();
+    await chat.getByRole('link', { name: '当社へのお問い合わせ' }).click();
     await page.getByLabel('お名前').fill('分野案内の確認');
     await page.getByLabel('メールアドレス').fill('knowledge-test@example.com');
     await page.getByLabel('ご相談内容').fill('パッキンの仕様について相談したい');

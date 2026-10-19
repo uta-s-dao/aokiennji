@@ -17,7 +17,7 @@ test('admin distinguishes missing credentials and can save the AI configuration'
     await expect(page.getByRole('button', { name: '接続を確認' }).first()).toBeDisabled();
     await page.getByRole('button', { name: 'Jev＋OpenAIの構成を選ぶ' }).press('Enter');
     const responseModel = page.getByRole('combobox', { name: '回答生成のモデル名', exact: true });
-    await expect(responseModel).toHaveValue('gpt-6-astra');
+    await expect(responseModel).toHaveValue('gpt-4.1');
     await expect(
       page.getByRole('combobox', { name: 'モデル名（省略時は標準）', exact: true }),
     ).toHaveValue('jev-latest');

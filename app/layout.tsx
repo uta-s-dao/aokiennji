@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 export const metadata: Metadata = {
   title: {
-    default: 'アオキエンジ株式会社 | ものづくりの、その先まで。',
+    default: 'アオキエンジ株式会社 | 鋼構造物・機械装置の設計・製作・据付',
     template: '%s | アオキエンジ株式会社',
   },
   description:

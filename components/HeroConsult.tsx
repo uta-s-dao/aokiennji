@@ -11,12 +11,11 @@ export default function HeroConsult() {
   ];
   return (
     <div className="hero-consult">
-      <p className="eyebrow light">PRODUCT CONSULTATION</p>
-      <h2>
-        お探しの製品を、
-        <br />
-        一緒に見つけます。
-      </h2>
+      <p className="eyebrow light">CONTACT</p>
+      <h2>製品・製作のご相談</h2>
+      <p className="hero-consult-description">
+        商品名・型番・用途など、分かる範囲でご入力ください。
+      </p>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -38,7 +37,7 @@ export default function HeroConsult() {
         </button>
       </form>
       <div className="hero-examples">
-        <span>たとえば</span>
+        <span>入力例</span>
         {examples.map((x) => (
           <button key={x} type="button" onClick={() => openChat(x)}>
             {x}

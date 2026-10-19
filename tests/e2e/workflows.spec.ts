@@ -347,7 +347,7 @@ test('customer chat and admin import forms work through the browser', async ({ p
   await expect(chat).toBeVisible();
   await chat.getByRole('button', { name: 'メッセージを送信' }).click();
   await expect(chat.getByText('取扱あり', { exact: true })).toBeVisible();
-  await chat.getByRole('link', { name: '担当者へのお問い合わせ' }).click();
+  await chat.getByRole('link', { name: '当社へのお問い合わせ' }).click();
   await page.getByLabel('お名前').fill('ブラウザー確認');
   await page.getByLabel('会社名').fill('検証会社');
   await page.getByLabel('メールアドレス').fill('browser@example.com');

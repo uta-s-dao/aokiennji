@@ -107,7 +107,7 @@ export default function Contact() {
           <p>製品のお探しもの、製作や施工のご相談をお聞かせください。</p>
         </div>
       </div>
-      <section className="section">
+      <section className="section contact-section">
         <div className="container contact-layout">
           <div className="contact-info">
             <p className="eyebrow">GET IN TOUCH</p>
@@ -149,14 +149,16 @@ export default function Contact() {
                 )}
               </div>
             ) : (
-              <form onSubmit={submit}>
+              <form className="contact-form" onSubmit={submit}>
                 <h2>{quote && quoteEnabled ? '見積依頼フォーム' : 'お問い合わせフォーム'}</h2>
                 <p className="form-required-note">
                   <span>*</span> は必須項目です
                 </p>
                 <div className="form-row">
                   <label>
-                    お名前 <span>*</span>
+                    <span className="field-label">
+                      お名前 <b className="required-mark">*</b>
+                    </span>
                     <input
                       required
                       maxLength={100}
@@ -166,7 +168,7 @@ export default function Contact() {
                     />
                   </label>
                   <label>
-                    会社名
+                    <span className="field-label">会社名</span>
                     <input
                       maxLength={100}
                       autoComplete="organization"
@@ -176,7 +178,9 @@ export default function Contact() {
                   </label>
                 </div>
                 <label>
-                  メールアドレス <span>*</span>
+                  <span className="field-label">
+                    メールアドレス <b className="required-mark">*</b>
+                  </span>
                   <input
                     required
                     type="email"
@@ -188,7 +192,9 @@ export default function Contact() {
                 </label>
                 {quote && quoteEnabled && (
                   <label>
-                    数量 <span>*</span>
+                    <span className="field-label">
+                      数量 <b className="required-mark">*</b>
+                    </span>
                     <input
                       required
                       type="number"
@@ -200,7 +206,9 @@ export default function Contact() {
                   </label>
                 )}
                 <label>
-                  ご相談内容 <span>*</span>
+                  <span className="field-label">
+                    ご相談内容 <b className="required-mark">*</b>
+                  </span>
                   <textarea
                     required
                     rows={8}

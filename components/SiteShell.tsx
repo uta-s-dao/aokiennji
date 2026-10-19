@@ -27,6 +27,9 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
   }, []);
   return (
     <>
+      <a className="skip-link" href="#main-content">
+        本文へ移動
+      </a>
       <div
         className={`site-content${chatState.open ? ' chat-is-open' : ''}`}
         inert={chatState.modal}
@@ -39,11 +42,8 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
               onClick={() => setMenu(false)}
               aria-label="アオキエンジ ホーム"
             >
-              <span className="brand-mark">A</span>
-              <span className="brand-words">
-                <strong>AOKI ENG</strong>
-                <small>アオキエンジ株式会社</small>
-              </span>
+              <span className="legacy-brand-logo" aria-hidden="true" />
+              <span className="sr-only">アオキエンジ株式会社</span>
             </Link>
             <nav className={`main-nav ${menu ? 'is-open' : ''}`} aria-label="メインナビゲーション">
               {nav.map((n) => (
@@ -71,6 +71,14 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </header>
+        {menu && (
+          <button
+            className="mobile-nav-scrim"
+            type="button"
+            aria-label="メニューを閉じる"
+            onClick={() => setMenu(false)}
+          />
+        )}
         {config?.demoMode && (
           <div className="demo-banner">デモ環境：商品・価格・注文は確認用です</div>
         )}
@@ -79,16 +87,13 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
           <div className="container footer-grid">
             <div>
               <Link className="brand brand-light" href="/">
-                <span className="brand-mark">A</span>
-                <span className="brand-words">
-                  <strong>AOKI ENG</strong>
-                  <small>アオキエンジ株式会社</small>
-                </span>
+                <span className="legacy-brand-logo" aria-hidden="true" />
+                <span className="sr-only">アオキエンジ株式会社</span>
               </Link>
               <p>
-                ものづくりの、その先まで。
+                鋼構造物及び機械装置の設計・製作・据付。
                 <br />
-                設計から製作、据付まで一貫して支えます。
+                耐火物製品から設備工事まで対応いたします。
               </p>
             </div>
             <div>

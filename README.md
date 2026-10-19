@@ -36,7 +36,7 @@ npm run dev
 
 旧サイトの `/products/`, `/profile/`, `/contact/` に対応するパスを維持しています。移行先はNext.jsが末尾スラッシュを正規化します。写真の取得元は [image-sources.json](docs/research/image-sources.json) に記録しています。
 
-和文フォントはNoto Sans JPを同梱しています。取得元・ライセンスは [実装結果](docs/IMPLEMENTATION_REPORT.md#素材) に記録しています。
+和文フォントはZen Kaku Gothic Newを同梱しています。取得元・ライセンスは [実装結果](docs/IMPLEMENTATION_REPORT.md#素材) に記録しています。
 
 ## 情報源を追加する
 

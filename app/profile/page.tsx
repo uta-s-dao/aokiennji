@@ -23,7 +23,7 @@ export default function Profile() {
       </div>
       <section className="section">
         <div className="container profile-intro">
-          <div>
+          <div className="contact-band-copy">
             <p className="eyebrow">OUR COMPANY</p>
             <h2 className="section-title">
               現場の課題に、
@@ -84,11 +84,11 @@ export default function Profile() {
       </section>
       <section className="section contact-band">
         <div className="container contact-band-inner">
-          <div>
+          <div className="contact-band-copy">
             <p className="eyebrow">CONTACT</p>
             <h2>製品・製作のご相談はこちら</h2>
           </div>
-          <div>
+          <div className="contact-band-actions">
             <Link className="button primary" href="/contact">
               お問い合わせ <ArrowUpRight size={19} />
             </Link>

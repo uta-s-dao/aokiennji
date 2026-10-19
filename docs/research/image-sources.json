@@ -33,5 +33,25 @@
     "file": "heat-exchanger.jpg",
     "source": "http://www.aokieng.co.jp/products/images/b/118.jpg",
     "bytes": 404069
+  },
+  {
+    "file": "legacy/header-logo.png",
+    "source": "http://aokieng.co.jp/images/hd.png",
+    "bytes": 17453
+  },
+  {
+    "file": "legacy/hero-01.jpg",
+    "source": "http://aokieng.co.jp/images/hd_image01.jpg",
+    "bytes": 720720
+  },
+  {
+    "file": "legacy/hero-02.jpg",
+    "source": "http://aokieng.co.jp/images/hd_image02.jpg",
+    "bytes": 715554
+  },
+  {
+    "file": "legacy/hero-03.jpg",
+    "source": "http://aokieng.co.jp/images/hd_image03.jpg",
+    "bytes": 820000
   }
 ]
