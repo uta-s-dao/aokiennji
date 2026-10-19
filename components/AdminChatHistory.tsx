@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import type { AiAnswer, ChatMessage } from '@/lib/contracts';
 import { datetime } from './api';
 import AdminAnswerDetails, { answerMethod } from './AdminAnswerDetails';
+import AdminSourceTrace from './AdminSourceTrace';
 
 export default function AdminChatHistory({
   messages,
@@ -52,6 +53,7 @@ export default function AdminChatHistory({
                   <p className="admin-answer-method">回答文の作成：{answerMethod(answer)}</p>
                 )}
                 <AdminAnswerDetails answer={answer} open={isSelected} />
+                {answer.sourceTrace && <AdminSourceTrace trace={answer.sourceTrace} />}
               </>
             )}
           </article>

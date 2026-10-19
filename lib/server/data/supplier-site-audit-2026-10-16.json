@@ -1,0 +1,275 @@
+[
+  {
+    "website": "https://namitakiko.co.jp/",
+    "registeredNames": ["並田機工"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "材料在庫・受注生産・一部即納の併記。完成品の必要数は要確認"
+  },
+  {
+    "website": "https://www.itmo.jp/",
+    "registeredNames": ["ITM"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "企業紹介を取得。製品・在庫照会先の追加確認が必要"
+  },
+  {
+    "website": "https://www.kyu-seki.jp/home/",
+    "registeredNames": ["キューセキ"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "製品紹介・他社カタログへのリンク。自社の調達可能数は要確認"
+  },
+  {
+    "website": "https://www.welmatech.jp/",
+    "registeredNames": ["鳥谷溶接"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "現在はウェルマテック。製品紹介と製造対応の説明"
+  },
+  {
+    "website": "https://yamagataya-ube.com/company/",
+    "registeredNames": ["山縣屋"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "会社概要と金網等の製品説明。在庫・発送は要確認"
+  },
+  {
+    "website": "https://daian-industry.co.jp/",
+    "registeredNames": ["大安産業"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "パッキン等の製品紹介。数量・製作日数は要確認"
+  },
+  {
+    "website": "https://www.aa-material.co.jp/",
+    "registeredNames": ["A&A M"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "製品紹介・受注生産色のお知らせ。品目単位の確認が必要"
+  },
+  {
+    "website": "https://www.nitivy.co.jp/",
+    "registeredNames": ["ニチビ"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "耐熱繊維製品の説明。数量・納期は要確認"
+  },
+  {
+    "website": "https://www.promat.com/ja-jp/industry/technologies/microporous/microporous-products/",
+    "registeredNames": ["日本マイクロサーム"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "製品構造化データはあるが在庫availabilityは取得できず"
+  },
+  {
+    "website": "https://www.hiraoka-sg.co.jp/",
+    "registeredNames": ["平岡特殊硝子"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "ガラスの製品・加工紹介。仕様・数量・加工日数は要確認"
+  },
+  {
+    "website": "https://www.asiagiken.co.jp/",
+    "registeredNames": ["アジア技研"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "○は在庫保証ではないと明記。小箱入数を在庫と誤認しない"
+  },
+  {
+    "website": "https://www.onoken.co.jp/jp/",
+    "registeredNames": ["小野建"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "大量在庫・物流の一般説明。指定材質・寸法・必要数は要確認"
+  },
+  {
+    "website": "https://flobal.jp/",
+    "registeredNames": ["フローバル"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "標準在庫・即納体制の一般説明。個別照会先を確認する"
+  },
+  {
+    "website": "https://www.almedio.co.jp/",
+    "registeredNames": ["アルセラ", "アルメディオ"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "同一URLの2登録。断熱材製品の導線を追加確認。正式名は会社確認"
+  },
+  {
+    "website": "https://www.mcctr.co.jp/",
+    "registeredNames": ["エムコマース", "MCCトレーディング"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "held",
+    "reason": "robots.txtが403のため巡回停止。別のWeb閲覧では公式本文を確認"
+  },
+  {
+    "website": "https://nitigura.co.jp/",
+    "registeredNames": ["日本グラスファイバー"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "製品・品番検索の紹介。必要数量の在庫は要確認"
+  },
+  {
+    "website": "https://www.ataka-ac.com/",
+    "registeredNames": ["アタカ"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "企業・鉄鋼設備部品の紹介。個別の商品照会先が必要"
+  },
+  {
+    "website": "https://kyoueidenki.jp/",
+    "registeredNames": ["協栄電気"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "電気工事会社の紹介を表示。登録会社・取扱品との一致を会社確認"
+  },
+  {
+    "website": "https://sinwakouats.jp/",
+    "registeredNames": ["新和高圧機工"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "充実在庫の一般説明。必要数量の完成品在庫は要確認"
+  },
+  {
+    "website": "https://www.nkweb.co.jp/",
+    "registeredNames": ["日本鏡板工業"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "鏡板の製品・加工紹介。仕様・数量・製作日数を確認"
+  },
+  {
+    "website": "https://www.fujikozai.com/",
+    "registeredNames": ["不二鉱材"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "held",
+    "reason": "robots.txtの通信エラーで巡回停止。別のWeb閲覧では公式本文を確認"
+  },
+  {
+    "website": "https://www.rix.co.jp/company/group/",
+    "registeredNames": ["リックス"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "登録先はグループ会社一覧。製品紹介は取得できるが調達条件は別"
+  },
+  {
+    "website": "https://murakami-nameplate.com/",
+    "registeredNames": ["村上製作所"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "銘板・加工サービスの紹介。個別製作条件を確認"
+  },
+  {
+    "website": "https://www.shigotomarugoto.info/JobOffers/view-c?company_id=IIS068002",
+    "registeredNames": ["石松測器"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "第三者の求人・企業紹介。商品在庫の取得先としては使わない"
+  },
+  {
+    "website": "https://net.kitakyushucci.or.jp/mono-db/companys/index/201076",
+    "registeredNames": ["九州黄銅"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "商工会議所の企業紹介。商品在庫の取得先としては使わない"
+  },
+  {
+    "website": "https://www.kikuchi-sheet.co.jp/",
+    "registeredNames": ["菊池シート工業"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "シート製品の説明。品番・数量・納期は要確認"
+  },
+  {
+    "website": "https://kowakinzoku.com/",
+    "registeredNames": ["宏和金属"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "鋼種別の総量在庫の説明。指定寸法の調達可能数量ではない"
+  },
+  {
+    "website": "https://www.yamaichi-net.co.jp/",
+    "registeredNames": ["山一製作所"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "チタン加工品の紹介。仕様・数量・製作日数を確認"
+  },
+  {
+    "website": "https://www.marutoshoji.co.jp/",
+    "registeredNames": ["丸戸商事"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "塗料等の製品説明。必要数量・納期は要確認"
+  },
+  {
+    "website": "https://www.nihon-mesh.co.jp/",
+    "registeredNames": ["日本メッシュ工業"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "金網製品の紹介。仕様・数量・製作日数を確認"
+  },
+  {
+    "website": "https://www.magtec.co.jp/",
+    "registeredNames": ["マグテック"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "製品紹介と通販入口あり。今回の標本では必要数量・発送日未確認"
+  },
+  {
+    "website": "http://www.s-s-p.jp/",
+    "registeredNames": ["エス・エス・ピー"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "Shift_JIS。従来の商品調査は文字化け。修正し実HTMLで再確認"
+  },
+  {
+    "website": "https://www.hisakado.co.jp/",
+    "registeredNames": ["久門製作所"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "取扱メーカー・製品リンク。メーカー在庫と当社調達可能数を分ける"
+  },
+  {
+    "website": "https://www.edenki.co.jp/",
+    "registeredNames": ["イーデンキ"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "EUC-JP。文字化けを修正。商品詳細は数量未確認、一般出荷案内のみ"
+  },
+  {
+    "website": "https://douguya-risakuworks.com/",
+    "registeredNames": ["安達屋金物"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "現在は利作カンパニーの紹介。安達屋金物との関係を会社確認"
+  },
+  {
+    "website": "https://www.dry-fog.com/jp/",
+    "registeredNames": ["いけうち"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "製品紹介に受注生産の記載。必要数量・製作日数を確認"
+  },
+  {
+    "website": "https://www.kk-inoue.co.jp/",
+    "registeredNames": ["イノウエ"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "金属材商社の紹介。指定材料・寸法・数量の照会先を確認"
+  },
+  {
+    "website": "https://www.takigen.co.jp/",
+    "registeredNames": ["タキゲン製造"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "通販・詳細ページあり。静的HTMLに在庫・納期の値なし。ブラウザー追加確認はタイムアウト"
+  },
+  {
+    "website": "https://www.tsurumipump.co.jp/",
+    "registeredNames": ["鶴見"],
+    "checkedOn": "2026-10-16",
+    "fetchStatus": "fetched",
+    "reason": "ポンプ等の製品紹介。仕様・数量・納期は要確認"
+  }
+]

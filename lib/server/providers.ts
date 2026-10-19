@@ -5,6 +5,7 @@ import type {
   ChatMessage,
   DispatchResult,
   Evidence,
+  SearchTelemetry,
   Order,
   ProviderStatus,
   QueryIntent,
@@ -349,11 +350,26 @@ export async function searchWeb(
   query: string,
   settings: AppSettings,
   domains: string[],
-  options: { context?: AiUsageContext; signal?: AbortSignal } = {},
+  options: {
+    context?: AiUsageContext;
+    signal?: AbortSignal;
+    onSearch?: (search: SearchTelemetry) => void;
+  } = {},
 ): Promise<Evidence[]> {
   if (!settings.flags.webSearch || settings.searchProvider === 'none') return [];
+  if (domains.length > 100) {
+    const batches = [];
+    for (let i = 0; i < domains.length; i += 100)
+      batches.push(await searchWeb(query, settings, domains.slice(i, i + 100), options));
+    const seen = new Set<string>();
+    return batches.flat().filter((e) => {
+      if (!e.url || seen.has(e.url)) return false;
+      seen.add(e.url);
+      return true;
+    });
+  }
   if (settings.searchProvider === 'openai')
-    return searchOpenai(query, domains, options.context, options.signal);
+    return searchOpenai(query, domains, options.context, options.signal, options.onSearch);
   const key = process.env[settings.searchProvider === 'exa' ? 'EXA_API_KEY' : 'TAVILY_API_KEY'];
   if (!key) throw Error('Web検索の接続キーが未設定です');
   const result =
@@ -384,6 +400,25 @@ export async function searchWeb(
           options.signal,
         );
   const evidence: Evidence[] = [];
+  const consultedUrls: string[] = (Array.isArray(result.results) ? result.results : []).flatMap(
+    (item: { url?: unknown }) => (typeof item.url === 'string' ? [item.url] : []),
+  );
+  options.onSearch?.({
+    provider: settings.searchProvider,
+    queries: [query],
+    consultedUrls,
+    discardedUrls: consultedUrls.filter((raw) => {
+      try {
+        const url = new URL(raw);
+        return (
+          domains.length > 0 &&
+          !domains.some((domain) => url.hostname === domain || url.hostname.endsWith(`.${domain}`))
+        );
+      } catch {
+        return true;
+      }
+    }),
+  });
   for (const item of Array.isArray(result.results) ? result.results.slice(0, 5) : []) {
     let url: URL;
     try {

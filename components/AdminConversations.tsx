@@ -1,17 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
-import type { Conversation, ChatMessage, Inquiry, ResearchNote, AiAnswer } from '@/lib/contracts';
+import { Download, RefreshCw } from 'lucide-react';
+import type { Inquiry } from '@/lib/contracts';
+import type { AdminConversation, AdminConversationDetail } from '@/lib/source-verification';
 import { api, datetime, errorMessage } from './api';
 import { Empty, Modal, Notice, useNotice } from './AdminCommon';
 import AdminResearchNote from './AdminResearchNote';
 import AdminChatHistory from './AdminChatHistory';
-type Detail = {
-  conversation: Conversation;
-  messages: ChatMessage[];
-  research: ResearchNote[];
-  answers: AiAnswer[];
-};
 // A chat with its staff-only research notes. Also opened from a quote request.
 export function ConversationDetail({
   id,
@@ -22,13 +17,13 @@ export function ConversationDetail({
   selectedAnswerId?: string;
   onClose: () => void;
 }) {
-  const [detail, setDetail] = useState<Detail | null>(null),
+  const [detail, setDetail] = useState<AdminConversationDetail | null>(null),
     [error, setError] = useState('');
   useEffect(() => {
     let active = true;
     setDetail(null);
     setError('');
-    api<Detail>(`/api/admin/conversations/${id}`)
+    api<AdminConversationDetail>(`/api/admin/conversations/${encodeURIComponent(id)}`)
       .then((value) => {
         if (active) setDetail(value);
       })
@@ -51,12 +46,115 @@ export function ConversationDetail({
         <p role="status">会話を読み込んでいます…</p>
       </Modal>
     );
+  function download() {
+    if (!detail?.verification) return;
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(detail.verification, null, 2)], { type: 'application/json' }),
+    );
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${detail.verification.id}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
   return (
     <Modal
       title={selectedAnswerId ? '回答とAI処理の詳細' : detail.conversation.title}
       wide
       onClose={onClose}
     >
+      {detail.conversation.verification && (
+        <div className="admin-toolbar">
+          <p className="muted">
+            {detail.verification?.simulation
+              ? `顧客会話検証（${detail.verification.simulation.turnCount}往復）`
+              : '実API検証'}
+            ・OpenAI（{detail.conversation.verification.responseModel}）・優先参照先
+            {detail.conversation.verification.preferredSiteCount}サイト
+          </p>
+          <button className="button secondary small" type="button" onClick={download}>
+            <Download size={15} />
+            {detail.verification?.simulation
+              ? 'この会話の全記録をJSON保存'
+              : 'この質問の全記録をJSON保存'}
+          </button>
+        </div>
+      )}
+      {detail.verification?.simulation && (
+        <details className="research-notes">
+          <summary>会話の検証結果</summary>
+          <p>
+            {detail.verification.simulation.label}：{detail.verification.simulation.customerGoal}
+          </p>
+          <p className="muted">
+            {detail.verification.simulation.questionAgent}
+            。回答ごとの出典とAPI利用記録は下の会話内で確認できます。
+          </p>
+          {detail.verification.simulation.quoteOutcome && (
+            <p>
+              見積依頼：受付済み ／ 正式見積：
+              {detail.verification.simulation.quoteOutcome.issued ? '発行済み' : '未発行'}
+              {' ／ 注文：'}
+              {detail.verification.simulation.quoteOutcome.ordered ? 'あり' : 'なし'}
+              <br />
+              {detail.verification.simulation.quoteOutcome.lineName}・
+              {detail.verification.simulation.quoteOutcome.quantity}個
+              {!!detail.verification.simulation.quoteOutcome.blockers.length && (
+                <span className="muted">
+                  <br />
+                  発行前の確認：{detail.verification.simulation.quoteOutcome.blockers.join('、')}
+                </span>
+              )}
+            </p>
+          )}
+          {detail.verification.simulation.review && (
+            <>
+              <p>
+                <strong>
+                  {
+                    { pass: '大きな問題なし', needs_review: '確認が必要', fail: '問題あり' }[
+                      detail.verification.simulation.review.verdict
+                    ]
+                  }
+                </strong>
+                ：{detail.verification.simulation.review.summary}
+              </p>
+              <ul className="research-bullets">
+                {detail.verification.simulation.review.findings.map((finding, index) => (
+                  <li key={index}>
+                    第{finding.turn}回答：{finding.detail}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {!!detail.verification.simulation.customerUiErrors?.length && (
+            <details>
+              <summary>お客様役の操作の再試行</summary>
+              {detail.verification.simulation.customerUiErrors.map((item) => (
+                <p key={item.round}>
+                  {item.round}回目：{item.message}
+                </p>
+              ))}
+            </details>
+          )}
+          {!!detail.verification.simulation.technicalFindings?.length && (
+            <>
+              <p>
+                <strong>回答と検索記録の照合で見つかった問題</strong>
+              </p>
+              <ul className="research-bullets">
+                {detail.verification.simulation.technicalFindings.map((finding, index) => (
+                  <li key={index}>
+                    第{finding.turn}回答：{finding.detail}
+                    <p className="muted">根拠：{finding.evidence}</p>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </details>
+      )}
       <AdminChatHistory
         messages={detail.messages}
         answers={detail.answers}
@@ -70,6 +168,7 @@ export function ConversationDetail({
               key={note.id}
               note={note}
               conversationId={id}
+              readOnly={!!detail.conversation.verification}
               onOfferSaved={(saved) =>
                 setDetail(
                   (current) =>
@@ -105,29 +204,47 @@ export function ConversationDetail({
   );
 }
 export default function AdminConversations() {
-  const [conversations, setConversations] = useState<Conversation[]>([]),
+  const [conversations, setConversations] = useState<AdminConversation[]>([]),
     [inquiries, setInquiries] = useState<Inquiry[]>([]),
     [viewing, setViewing] = useState<string | null>(null),
     [edit, setEdit] = useState<Inquiry | null>(null),
     [busy, setBusy] = useState(false);
   const n = useNotice();
-  async function load() {
+  async function load(openRequested = false) {
     try {
       const [c, i] = await Promise.all([
-        api<Conversation[]>('/api/admin/conversations'),
+        api<AdminConversation[]>('/api/admin/conversations'),
         api<Inquiry[]>('/api/admin/inquiries'),
       ]);
       setConversations(c);
       setInquiries(i);
+      if (openRequested) {
+        const params = new URLSearchParams(location.search);
+        const requested = c.find(
+          (conversation) =>
+            conversation.id === params.get('conversation') ||
+            conversation.verification?.id === params.get('case'),
+        );
+        if (requested) view(requested.id);
+      }
     } catch (e) {
       n.fail(errorMessage(e));
     }
   }
   useEffect(() => {
-    load();
+    load(true);
   }, []);
   function view(id: string) {
     setViewing(id);
+    history.replaceState(
+      null,
+      '',
+      `/admin?tab=conversations&conversation=${encodeURIComponent(id)}`,
+    );
+  }
+  function closeConversation() {
+    setViewing(null);
+    history.replaceState(null, '', '/admin?tab=conversations');
   }
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -193,20 +310,32 @@ export default function AdminConversations() {
       <section className="admin-card">
         <div className="admin-conversations-heading">
           <h2>チャットの履歴（{conversations.length}件）</h2>
-          <button type="button" className="button secondary small" onClick={load}>
+          <button type="button" className="button secondary small" onClick={() => load()}>
             <RefreshCw size={14} />
             更新
           </button>
         </div>
         <p className="admin-conversations-note">
           受け付けたすべてのチャットを保存しています。新しい相談を始めても、過去の会話は残ります。
+          各会話を開くと、回答の情報源と検索経路も確認できます。
         </p>
         {conversations.length ? (
           <div className="conversation-list">
             {conversations.map((c) => (
-              <button key={c.id} onClick={() => view(c.id)}>
+              <button key={c.id} data-conversation-id={c.id} onClick={() => view(c.id)}>
                 <strong>{c.title}</strong>
-                <span>{c.status === 'handed_off' ? '担当者に引継ぎ済み' : '相談中'}</span>
+                {c.verification && <small>{c.verification.responseModel}</small>}
+                <span>
+                  {c.verification
+                    ? c.verification.kind === 'customer_simulation'
+                      ? `顧客会話検証（${c.verification.turnCount}往復）`
+                      : '実API検証'
+                    : c.status === 'handed_off'
+                      ? '担当者に引継ぎ済み'
+                      : c.status === 'closed'
+                        ? '終了'
+                        : '相談中'}
+                </span>
                 <small>{datetime(c.updatedAt)}</small>
               </button>
             ))}
@@ -215,7 +344,7 @@ export default function AdminConversations() {
           <Empty title="まだチャットの履歴はありません" />
         )}
       </section>
-      {viewing && <ConversationDetail id={viewing} onClose={() => setViewing(null)} />}
+      {viewing && <ConversationDetail id={viewing} onClose={closeConversation} />}
       {edit && (
         <Modal title="お問い合わせの対応" onClose={() => setEdit(null)}>
           <form className="admin-form" onSubmit={save}>

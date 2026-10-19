@@ -1,0 +1,261 @@
+{
+  "checkedAt": "2026-10-18T14:30:54.613Z",
+  "conversations": 10,
+  "customerTurns": 52,
+  "quoteRequests": 7,
+  "issued": 0,
+  "orders": 0,
+  "originalUnchanged": true,
+  "scenarios": [
+    {
+      "id": "staged-natural-01-bearing",
+      "label": "型番が読めないコンベヤ用ベアリング",
+      "turns": 6,
+      "finalStage": "review",
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "stageOrder": true,
+        "quoteFormOnlyAfterConsent": true,
+        "noUnverifiedSelection": true,
+        "noAutomaticIssue": true,
+        "quoteQuantityPreserved": true,
+        "quoteDestinationPreserved": true,
+        "registeredSourcesFirst": true,
+        "noPrivateTraceInPublicMessages": true,
+        "noInternalTermsInReplies": true,
+        "noExecutionErrors": true
+      },
+      "review": {
+        "verdict": "pass",
+        "summary": "会話は顧客要件（寸法・シールド条件・数量・地域・到着日の補足質問）をすべてカバーし、段階を正しく踏んで進行した。質問の意図（掲載出荷日と到着日の違い）にも一度だけ適切に対応している。指定メーカーなし・型番（6204ZZ）・必要条件も網羅して進めている。必要数量の確保が未確定な点は見積時の確認と案内しており、事実の誤認や段階飛ばしもない。特筆すべき問題は見当たらない。",
+        "findings": []
+      },
+      "quote": "requested"
+    },
+    {
+      "id": "staged-natural-02-cart",
+      "label": "狭い通路で使う300kgの台車",
+      "turns": 6,
+      "finalStage": "review",
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "stageOrder": true,
+        "quoteFormOnlyAfterConsent": true,
+        "noUnverifiedSelection": true,
+        "noAutomaticIssue": true,
+        "quoteQuantityPreserved": true,
+        "quoteDestinationPreserved": true,
+        "registeredSourcesFirst": true,
+        "noPrivateTraceInPublicMessages": true,
+        "noInternalTermsInReplies": true,
+        "noExecutionErrors": true
+      },
+      "review": {
+        "verdict": "pass",
+        "summary": "一連のやり取りの中で顧客が求めていた荷重・幅の必須条件は初期に明確にされ、候補出しの段階でも在庫状況・一致条件について丁寧に回答している。候補決定後も社内雛形に従い見積希望の最終確認を一度行い、納品先県も確認されている。型番・数量・納品先の完全な指定がなされてから見積依頼フォーム案内になり、指摘すべきフロー違反、見積送信の混同などが発生していない。未回答や繰り返し、条件漏れもなかった。",
+        "findings": []
+      },
+      "quote": "requested"
+    },
+    {
+      "id": "staged-natural-03-beaker",
+      "label": "研究室で使うHARIOの300mLビーカー",
+      "turns": 5,
+      "finalStage": "review",
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "stageOrder": true,
+        "quoteFormOnlyAfterConsent": true,
+        "noUnverifiedSelection": true,
+        "noAutomaticIssue": true,
+        "quoteQuantityPreserved": true,
+        "quoteDestinationPreserved": true,
+        "registeredSourcesFirst": true,
+        "noPrivateTraceInPublicMessages": true,
+        "noInternalTermsInReplies": true,
+        "noExecutionErrors": true
+      },
+      "review": {
+        "verdict": "pass",
+        "summary": "全体として、会話の流れは自然であり、条件の抜けや質問の無視、見積依頼と正式発行の混同、段階の飛ばしやループなどの大きな問題は見られませんでした。すべての指定条件（メーカー・容量・材質）は保持されており、必要数の確保と納期確認も見積事項に含め、段階的な誘導も適切でした。見積依頼後の受付・案内も過不足なく行われています。改善すべき重大な指摘事項はありません。",
+        "findings": []
+      },
+      "quote": "requested"
+    },
+    {
+      "id": "staged-natural-04-belt",
+      "label": "三ツ星ベルトのB-60を交換したい",
+      "turns": 3,
+      "finalStage": "candidates",
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "stageOrder": true,
+        "quoteFormOnlyAfterConsent": true,
+        "noUnverifiedSelection": true,
+        "noAutomaticIssue": true,
+        "quoteQuantityPreserved": true,
+        "quoteDestinationPreserved": true,
+        "registeredSourcesFirst": true,
+        "noPrivateTraceInPublicMessages": true,
+        "noInternalTermsInReplies": true,
+        "noExecutionErrors": true
+      },
+      "review": {
+        "verdict": "pass",
+        "summary": "一連の応答は、情報の確認・制約条件の尊重・保留時の案内が要件を満たしていた。余計な型番提案や誤った進行もなく、現物と同じもの以外への誘導や段階の飛ばしもなかった。",
+        "findings": []
+      },
+      "quote": "未依頼"
+    },
+    {
+      "id": "staged-natural-05-bolt",
+      "label": "SUS304のM8×30全ねじ六角ボルト",
+      "turns": 6,
+      "finalStage": "review",
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "stageOrder": true,
+        "quoteFormOnlyAfterConsent": true,
+        "noUnverifiedSelection": true,
+        "noAutomaticIssue": true,
+        "quoteQuantityPreserved": true,
+        "quoteDestinationPreserved": true,
+        "registeredSourcesFirst": true,
+        "noPrivateTraceInPublicMessages": true,
+        "noInternalTermsInReplies": true,
+        "noExecutionErrors": true
+      },
+      "review": {
+        "verdict": "pass",
+        "summary": "顧客の指定した仕様（六角ボルト、SUS304、M8、首下30mm、全ねじ、メーカー不問、30本、福岡県納品）を外すことなく、候補型番の適合性や確認事項も明確に伝え、適切な段階分けで見積手順に進めている。要望通り30本単位での確保も見積時に確認する手順として十分な案内がされている。特定のメーカーや型番、仕様の抜けや曖昧な条件飛ばし、既知情報の再質問、誤った数の操作もなかった。",
+        "findings": []
+      },
+      "quote": "requested"
+    },
+    {
+      "id": "staged-natural-06-sensor",
+      "label": "オムロンの近接センサーの同一品交換",
+      "turns": 5,
+      "finalStage": "review",
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "stageOrder": true,
+        "quoteFormOnlyAfterConsent": true,
+        "noUnverifiedSelection": true,
+        "noAutomaticIssue": true,
+        "quoteQuantityPreserved": true,
+        "quoteDestinationPreserved": true,
+        "registeredSourcesFirst": true,
+        "noPrivateTraceInPublicMessages": true,
+        "noInternalTermsInReplies": true,
+        "noExecutionErrors": true
+      },
+      "review": {
+        "verdict": "pass",
+        "summary": "全体を通して自然な応答が続き、完全型番・数量・配送先・出荷日と到着日の違いについて質問された際も正確な説明がされている。見積希望の確認や進み方も要件通り。見積確定前に条件の抜けもなく、全ての情報がカバーされていた。重複質問や誘導、ループも発生していない。正式依頼と見積依頼の混同もない。現時点で顧客目標に対して適切な応答をしている。指摘事項なし。",
+        "findings": []
+      },
+      "quote": "requested"
+    },
+    {
+      "id": "staged-natural-07-cylinder",
+      "label": "会話途中でシリンダーの型番を訂正する",
+      "turns": 4,
+      "finalStage": "candidates",
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "stageOrder": true,
+        "quoteFormOnlyAfterConsent": true,
+        "noUnverifiedSelection": true,
+        "noAutomaticIssue": true,
+        "quoteQuantityPreserved": true,
+        "quoteDestinationPreserved": true,
+        "registeredSourcesFirst": true,
+        "noPrivateTraceInPublicMessages": true,
+        "noInternalTermsInReplies": true,
+        "noExecutionErrors": true
+      },
+      "review": {
+        "verdict": "pass",
+        "summary": "指定型番の訂正指示が正しく処理され、そのまま見積調査・保留の流れも適切に案内されている。不要な旧型番や仕様の混在もなく、ユーザーの指示どおり75Zのみ候補として扱われている。",
+        "findings": []
+      },
+      "quote": "未依頼"
+    },
+    {
+      "id": "staged-natural-08-caster",
+      "label": "ストッパー付きの100mmキャスター",
+      "turns": 6,
+      "finalStage": "review",
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "stageOrder": true,
+        "quoteFormOnlyAfterConsent": true,
+        "noUnverifiedSelection": true,
+        "noAutomaticIssue": true,
+        "quoteQuantityPreserved": true,
+        "quoteDestinationPreserved": true,
+        "registeredSourcesFirst": true,
+        "noPrivateTraceInPublicMessages": true,
+        "noInternalTermsInReplies": true,
+        "noExecutionErrors": true
+      },
+      "review": {
+        "verdict": "pass",
+        "summary": "要件の聞き取り、候補の提示、見積依頼への誘導、依頼受付まで自然に段階を踏んで進行しており、各段階での条件確認や不足仕様（取付穴ピッチ）の扱いにも問題は認められない。選定根拠や条件の再確認も明確で不備なし。ピッチ確認なしで進めて良い型番と状況下での見積進行もしっかり整理されている。",
+        "findings": []
+      },
+      "quote": "requested"
+    },
+    {
+      "id": "staged-natural-09-valve",
+      "label": "水配管向けの黄銅ボールバルブ",
+      "turns": 6,
+      "finalStage": "review",
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "stageOrder": true,
+        "quoteFormOnlyAfterConsent": true,
+        "noUnverifiedSelection": true,
+        "noAutomaticIssue": true,
+        "quoteQuantityPreserved": true,
+        "quoteDestinationPreserved": true,
+        "registeredSourcesFirst": true,
+        "noPrivateTraceInPublicMessages": true,
+        "noInternalTermsInReplies": true,
+        "noExecutionErrors": true
+      },
+      "review": {
+        "verdict": "pass",
+        "summary": "会話は目的通り、候補選定から見積依頼まで段階を守って進行され、不明な圧力条件について断定や不要な約束を避けて対応できている。既知情報の再質問もなく、条件の抜けも見られない。",
+        "findings": []
+      },
+      "quote": "requested"
+    },
+    {
+      "id": "staged-natural-10-seal",
+      "label": "減速機用NOKオイルシールの交換",
+      "turns": 5,
+      "finalStage": "candidates",
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "stageOrder": true,
+        "quoteFormOnlyAfterConsent": true,
+        "noUnverifiedSelection": true,
+        "noAutomaticIssue": true,
+        "quoteQuantityPreserved": true,
+        "quoteDestinationPreserved": true,
+        "registeredSourcesFirst": true,
+        "noPrivateTraceInPublicMessages": true,
+        "noInternalTermsInReplies": true,
+        "noExecutionErrors": true
+      },
+      "review": {
+        "verdict": "pass",
+        "summary": "会話は顧客要件を守り、各段階で適切に対応されている。不明点の誤魔化しや決めつけはなく、不用意な推測や段階飛ばしもなかった。仕様抜けもない。",
+        "findings": []
+      },
+      "quote": "未依頼"
+    }
+  ]
+}

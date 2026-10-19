@@ -20,6 +20,7 @@ import {
 import { hashPassword, verifyPassword } from '../lib/server/auth';
 import { answerChat, currentMessages } from '../lib/server/chat';
 import { commitPreview, previewUpload } from '../lib/server/ingestion';
+import { procurementHistory } from '../lib/server/procurement-memory';
 const directory = mkdtempSync(join(tmpdir(), 'aoki-business-'));
 process.env.DATA_DIR = directory;
 process.env.DEMO_MODE = 'true';
@@ -180,6 +181,7 @@ describe('quotes and orders', () => {
     );
     updateQuote(quote.id, {
       status: 'issued',
+      aokiReviewed: true,
       lines: [{ productId: 'demo-1', name: '永続化確認用商品', quantity: 2, unitPrice: 2500 }],
     });
     const order = acceptQuote(quote.token, true, 'persistent-key');
@@ -204,6 +206,7 @@ describe('quotes and orders', () => {
     const q = createQuote({ ...request, productId: 'demo-1' }, null);
     updateQuote(q.id, {
       status: 'issued',
+      aokiReviewed: true,
       lines: [{ productId: 'demo-1', name: '確認用部品', quantity: 2, unitPrice: 2500 }],
       shipping: 500,
     });
@@ -220,18 +223,31 @@ describe('quotes and orders', () => {
     expect(() => approveOrder('unknown')).toThrow();
     approveOrder(o.id);
     expect((await dispatchOrder(o.id)).status).toBe('simulated');
+    const memory = procurementHistory({ kind: 'order', orderId: o.id, line: 0 });
+    expect(memory.events).toHaveLength(1);
+    expect(memory.cases[0]).toMatchObject({ quantity: 2, receivedQuantity: 0, isDemo: true });
+    expect(memory.summary.completed).toBe(0);
     await expect(dispatchOrder(o.id)).rejects.toThrow();
     expect(getQuoteByToken(q.token).status).toBe('accepted');
   });
-  it('automatically issues only priced, approved available products', () => {
+  it('requires Aoki review even when automatic quotation was enabled', () => {
     putSettings({ ...DEFAULT_SETTINGS, flags: { ...DEFAULT_SETTINGS.flags, autoQuote: true } });
-    expect(createQuote({ ...request, productId: 'demo-1' }, null).status).toBe('issued');
+    const q = createQuote({ ...request, productId: 'demo-1' }, null);
+    expect(q.status).toBe('requested');
+    expect(() =>
+      updateQuote(q.id, {
+        status: 'issued',
+        lines: [{ productId: 'demo-1', name: '確認用部品', quantity: 2, unitPrice: 2500 }],
+      }),
+    ).toThrow('青木');
+    expect(list<Quote>('quotes').find((item) => item.id === q.id)?.reviewedAt).toBeUndefined();
     expect(createQuote({ ...request, productId: 'demo-5' }, null).status).toBe('requested');
   });
   it('blocks expired quotes and orders when the option is disabled', () => {
     const q = createQuote({ ...request, productId: 'demo-1' }, null);
     updateQuote(q.id, {
       status: 'issued',
+      aokiReviewed: true,
       lines: [{ productId: 'demo-1', name: '部品', quantity: 1, unitPrice: 100 }],
     });
     expect(() => acceptQuote(q.token, true, 'test-key')).toThrow('利用');

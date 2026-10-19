@@ -5,7 +5,7 @@ import type { Source } from '../../lib/contracts';
 test('private supplier Excel to customer field guidance, contact and disable', async ({
   page,
   playwright,
-}) => {
+}, testInfo) => {
   const login = await page.request.post('/api/auth/login', {
     data: { password: 'aoki-e2e-test-password-only' },
   });
@@ -51,6 +51,8 @@ test('private supplier Excel to customer field guidance, contact and disable', a
       { text: '公式HP', hyperlink: 'https://private-supplier.example.test' },
       987654321,
     ]);
+    const auditedUrl = 'https://www.shigotomarugoto.info/JobOffers/view-c?company_id=IIS068002';
+    sheet.addRow(['石松測器', '測量機器', { text: '点検対象URL', hyperlink: auditedUrl }, 0]);
     sheet.getCell('D5334').value = 987654321;
     await page.locator('input[type=file]').setInputFiles({
       name: 'private-ledger.xlsx',
@@ -64,7 +66,7 @@ test('private supplier Excel to customer field guidance, contact and disable', a
     await expect(modal).not.toContainText('987654321');
     await page.getByLabel('回答に使う分野を確認しました').check();
     await page.getByRole('button', { name: 'この内容で取り込む' }).click();
-    await expect(page.getByRole('dialog', { name: '取込結果' })).toContainText('追加 1件');
+    await expect(page.getByRole('dialog', { name: '取込結果' })).toContainText('追加 2件');
     await page
       .getByRole('dialog', { name: '取込結果' })
       .getByRole('button', { name: '閉じる', exact: true })
@@ -73,7 +75,30 @@ test('private supplier Excel to customer field guidance, contact and disable', a
     await card.getByRole('button', { name: '登録内容', exact: true }).click();
     await expect(
       page.getByRole('dialog', { name: '登録した仕入先情報（社内のみ）' }),
-    ).toContainText('承認済み 1件');
+    ).toContainText('承認済み 2件');
+    const audit = page.getByRole('region', { name: '参照URLと点検理由' });
+    await expect(audit.getByRole('listitem')).toHaveCount(2);
+    await audit.getByLabel('会社名・URL・理由で絞り込む').fill('石松');
+    await expect(audit.getByRole('listitem')).toHaveCount(1);
+    await expect(audit.getByRole('link', { name: auditedUrl, exact: true })).toHaveAttribute(
+      'href',
+      auditedUrl,
+    );
+    await expect(audit).toContainText('点検日：2026-10-16');
+    await expect(audit).toContainText('第三者の求人・企業紹介。商品在庫の取得先としては使わない');
+    await page.screenshot({ path: testInfo.outputPath('supplier-site-audit.png'), fullPage: true });
+    await audit.getByLabel('会社名・URL・理由で絞り込む').fill('非公開テスト');
+    await expect(audit).toContainText('未点検：このURLに対応する点検記録はありません。');
+    const registered = (
+      await (await page.request.get(`/api/admin/sources/${source.id}/knowledge`)).json()
+    ).data;
+    expect(
+      registered.find((r: { website: string }) => r.website === auditedUrl).siteAudit.fetchStatus,
+    ).toBe('fetched');
+    expect(
+      registered.find((r: { supplierName: string }) => r.supplierName === '非公開テスト株式会社')
+        .siteAudit,
+    ).toBeUndefined();
 
     await page.goto('/');
     await page.getByRole('button', { name: '商品相談チャットを開く', exact: true }).click();
@@ -107,6 +132,9 @@ test('private supplier Excel to customer field guidance, contact and disable', a
       '987654321',
       source.id,
       'private-ledger.xlsx',
+      '石松測器',
+      'shigotomarugoto.info',
+      '第三者の求人・企業紹介',
     ])
       expect(JSON.stringify(answerData)).not.toContain(secret);
     const denied = await customer.post('/api/chat', {

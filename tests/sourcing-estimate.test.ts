@@ -114,6 +114,7 @@ it('holds the estimate if tax, units, availability, destination, approval or tim
     { taxIncluded: null },
     { purchaseTaxRate: null },
     { packQuantity: null },
+    { availableQuantity: null },
     { availableQuantity: 9 },
     { approved: false },
     { confirmedAt: null },

@@ -1,0 +1,43 @@
+[
+  {
+    "id": "01-reference-stud",
+    "question": "M3-5-SAOを100個、大阪府へ取り寄せたいです。標準品の印や小箱1000個という表示から在庫があると考えてよいですか？"
+  },
+  {
+    "id": "02-reference-anchor",
+    "question": "YM4を20本、福岡県の工場向けに見積もりたいです。材料在庫があれば完成品をすぐに手配できますか？"
+  },
+  {
+    "id": "03-reference-handle",
+    "question": "A-452を10個、東京都に届けたいです。在庫と納期を確認して発注の相談を進めたいです。"
+  },
+  {
+    "id": "04-reference-tool",
+    "question": "BG-32YEを5個、愛知県向けに見積もれますか。掲載価格と、実際に必要数量を調達できるかを確認したいです。"
+  },
+  {
+    "id": "05-stock-not-shown",
+    "question": "M3-5-SAOを10個ほしいです。在庫表示が見つからない場合も見積の相談はできますか？"
+  },
+  {
+    "id": "06-external-glass",
+    "question": "HARIOのB-300-SCIを10個、大阪府へ取り寄せたいです。購入先と送料・納期を確認して見積を相談したいです。"
+  },
+  {
+    "id": "07-bearing-quantity",
+    "question": "6205DDUを30個、神奈川県に届けたいです。在庫が少ない場合は全数が揃うか確認して見積をお願いします。"
+  },
+  {
+    "id": "08-sensor-deadline",
+    "question": "E2E-X5ME1を5個、兵庫県向けに希望しています。最短当日出荷という表示があれば、当社への到着も確約できますか？"
+  },
+  {
+    "id": "09-not-found",
+    "question": "AOKING-VERIFY-NOITEM-20261018という確認用の架空型番を探してください。見つからない場合は、在庫や発注先を作らず、その状況を教えてください。"
+  },
+  {
+    "id": "10-imported-document",
+    "question": "M3-5-SAOについて、取り込んだ資料に情報があるか確認して、10個の見積を相談したいです。",
+    "importRealPage": "https://www.asiagiken.co.jp/products/product01.html"
+  }
+]

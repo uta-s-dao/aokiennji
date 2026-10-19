@@ -109,7 +109,7 @@ export default function QuotePage() {
                   </div>
                   {quote.status === 'requested' || quote.status === 'draft' ? (
                     <div className="state-box">
-                      <h2>担当者が見積を作成中です</h2>
+                      <h2>お見積りを作成中です</h2>
                       <p>内容を確認後、明細をご案内します。</p>
                     </div>
                   ) : (
@@ -168,7 +168,7 @@ export default function QuotePage() {
                     <CheckCircle2 size={40} />
                     <h2>注文依頼を受け付けました</h2>
                     <p>注文番号：{order.id}</p>
-                    <p>担当者が内容を確認します。</p>
+                    <p>当社で内容を確認します。</p>
                   </div>
                 ) : quote.status === 'issued' && config?.flags.orders && !expired ? (
                   <div className="quote-accept">

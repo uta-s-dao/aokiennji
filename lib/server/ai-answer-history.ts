@@ -56,6 +56,9 @@ export function aiAnswerReport(
       processing: message.processing || null,
       linkage: message.replyToId ? 'recorded' : turnId ? 'legacy' : 'unknown',
       calls: turnId ? calls.get(JSON.stringify([conversationId, turnId])) || [] : [],
+      ...(filters.conversationId && message.sourceTrace
+        ? { sourceTrace: message.sourceTrace }
+        : {}),
     };
     if (filters.since && answer.createdAt < filters.since) continue;
     if (filters.until && answer.createdAt > filters.until) continue;

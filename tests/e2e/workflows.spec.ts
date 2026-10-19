@@ -193,6 +193,7 @@ test('CSV import to issued quote, accepted order and idempotent demo dispatch', 
         expiresAt: new Date(Date.now() + 86400000).toISOString(),
         notes: '内部の確認メモ',
         status: 'issued',
+        aokiReviewed: true,
       },
     });
     expect(issued.ok(), await issued.text()).toBeTruthy();
@@ -244,7 +245,7 @@ test('admin application renders after actual login', async ({ page }) => {
   ).toBeTruthy();
 });
 
-test('automatic quote and order options complete a qualified demo order', async ({ request }) => {
+test('automatic settings still require Aoki review before issuing a quote', async ({ request }) => {
   await login(request);
   const original = await getData<AppSettings>(request, '/api/admin/settings');
   try {
@@ -274,7 +275,24 @@ test('automatic quote and order options complete a qualified demo order', async 
     });
     expect(created.ok(), await created.text()).toBeTruthy();
     const q = (await created.json()).data;
-    expect(q.status).toBe('issued');
+    expect(q.status).toBe('requested');
+    const reviewInput = {
+      lines: [{ productId: 'demo-1', name: '確認用部品', quantity: 2, unitPrice: 2500 }],
+      shipping: 0,
+      taxRate: 10,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      notes: '',
+      status: 'issued',
+    };
+    const unreviewed = await request.put(`/api/admin/quotes/${q.id}`, { data: reviewInput });
+    expect(unreviewed.status()).toBe(400);
+    expect(
+      (
+        await request.put(`/api/admin/quotes/${q.id}`, {
+          data: { ...reviewInput, aokiReviewed: true },
+        })
+      ).ok(),
+    ).toBeTruthy();
     const accepted = await request.post(`/api/quotes/${q.token}/accept`, {
       data: { confirmed: true, idempotencyKey: crypto.randomUUID() },
     });
@@ -283,6 +301,43 @@ test('automatic quote and order options complete a qualified demo order', async 
   } finally {
     await request.put('/api/admin/settings', { data: original });
   }
+});
+
+test('the quote editor requires the Aoki review checkbox before formal issuance', async ({
+  page,
+}) => {
+  await login(page.request);
+  const created = await page.request.post('/api/quotes', {
+    data: {
+      name: '青木確認フローの検証',
+      company: '',
+      email: 'review@example.invalid',
+      message: '確認後に見積を発行',
+      consent: true,
+      productId: 'demo-1',
+      quantity: 2,
+    },
+  });
+  expect(created.ok()).toBeTruthy();
+  const quote = (await created.json()).data as Quote;
+  expect(quote.status).toBe('requested');
+  await page.goto('/admin?tab=quotes');
+  await page.bringToFront();
+  const row = page.getByRole('row').filter({ hasText: quote.id.slice(0, 8) });
+  await row.getByRole('button', { name: '明細を編集' }).click();
+  const modal = page.getByRole('dialog', { name: '見積の明細を作成' });
+  const issue = modal.getByRole('button', { name: 'この金額で見積を発行' });
+  await expect(issue).toBeDisabled();
+  await modal.getByLabel('青木さんによる見積内容の確認済み').check();
+  await expect(issue).toBeEnabled();
+  await issue.click();
+  await expect(modal).toBeHidden();
+  const saved = (await (await page.request.get('/api/admin/quotes')).json()).data as Quote[];
+  expect(saved.find((q) => q.id === quote.id)).toMatchObject({
+    status: 'issued',
+    reviewedBy: '青木',
+  });
+  expect(saved.find((q) => q.id === quote.id)?.reviewedAt).toBeTruthy();
 });
 
 test('customer chat and admin import forms work through the browser', async ({ page }) => {

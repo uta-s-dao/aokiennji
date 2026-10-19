@@ -1,0 +1,121 @@
+{
+  "checkedAt": "2026-10-18T04:07:15.392Z",
+  "unitSuite": {
+    "files": 18,
+    "passed": 290
+  },
+  "finalRelatedTests": {
+    "files": 6,
+    "passed": 91,
+    "newPreferredSourceCases": 15
+  },
+  "typecheck": "passed",
+  "productionBuild": "passed",
+  "e2e": {
+    "desktop": "passed",
+    "mobile": "passed",
+    "cases": 2,
+    "initialBrowserLaunch": "Missing libnspr4.so; rerun with existing /tmp/grandazur-reset-browser-libs passed"
+  },
+  "realApi": {
+    "questions": 10,
+    "acceptedOpenaiReplies": 10,
+    "allChecksPassed": true,
+    "calls": 39,
+    "openaiCalls": 25,
+    "jevCalls": 14,
+    "recordedFailure": [
+      {
+        "purpose": "research",
+        "outcome": "rejected",
+        "errorCode": "invalid_json",
+        "httpStatus": 200
+      }
+    ],
+    "report": "docs/research/source-priority-live-2026-10-18.json"
+  },
+  "normalEnvironment": {
+    "openaiSearchEnabled": true,
+    "searchProvider": "openai",
+    "responseProvider": "openai",
+    "responseModel": "gpt-4.1-mini",
+    "existingRecordsUnchanged": true
+  },
+  "publicSourceTraceExcluded": true,
+  "publicBundlePrivateReferenceLeak": false,
+  "reportCredentialLeak": false,
+  "adminVerificationPage": {
+    "path": "/admin?tab=source-verification",
+    "api": "/api/admin/source-verification",
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "unauthenticatedStatus": 401,
+    "publicBundleDataLeak": false,
+    "e2e": {
+      "desktop": "passed",
+      "mobile": "passed",
+      "cases": 2
+    },
+    "verified": [
+      "ten questions",
+      "actual recorded answers",
+      "source URLs and search path",
+      "recorded invalid_json failure",
+      "selected question JSON download",
+      "direct case URL and reload",
+      "mobile width"
+    ],
+    "supersededBy": "/admin?tab=conversations"
+  },
+  "adminConversationHistory": {
+    "path": "/admin?tab=conversations",
+    "api": "/api/admin/conversations",
+    "checkedAt": "2026-10-18T06:35:10.152Z",
+    "separateVerificationSection": false,
+    "unitTests": {
+      "files": 3,
+      "passed": 10
+    },
+    "typecheck": "passed",
+    "e2e": {
+      "desktop": "passed",
+      "mobile": "passed",
+      "cases": 8,
+      "allTenArchivedConversationsOpened": true
+    },
+    "actualServer": {
+      "checkedAt": "2026-10-18T06:32:54.220Z",
+      "actualServer": "http://localhost:3000",
+      "totalConversations": 22,
+      "originalConversations": 12,
+      "realApiVerifications": 10,
+      "checks": [
+        {
+          "width": 1440,
+          "unifiedHistory": true,
+          "referenceUrlVisible": true,
+          "noOverflow": true
+        },
+        {
+          "width": 390,
+          "unifiedHistory": true,
+          "referenceUrlVisible": true,
+          "noOverflow": true
+        }
+      ],
+      "pageErrors": []
+    },
+    "verified": [
+      "customer conversations retained",
+      "ten real API runs in the same history list",
+      "original answers and source URLs",
+      "recorded invalid_json API failure",
+      "complete record JSON download",
+      "direct conversation URL and reload",
+      "previous verification URL opens the same conversation history",
+      "archived research is read-only",
+      "staff-only access and exclusion from public chat",
+      "no horizontal overflow on desktop or mobile"
+    ]
+  }
+}

@@ -46,6 +46,11 @@ export function db(): Database.Database {
     CREATE TABLE IF NOT EXISTS import_previews (id TEXT PRIMARY KEY, source_id TEXT NOT NULL, expires_at INTEGER NOT NULL, json TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS research_notes (id TEXT PRIMARY KEY, conversation_id TEXT NOT NULL, created_at TEXT NOT NULL, json TEXT NOT NULL);
     CREATE INDEX IF NOT EXISTS research_notes_conversation ON research_notes(conversation_id);
+    CREATE TABLE IF NOT EXISTS procurement_cases (id TEXT PRIMARY KEY, context_key TEXT NOT NULL, model_key TEXT NOT NULL, json TEXT NOT NULL);
+    CREATE INDEX IF NOT EXISTS procurement_cases_context ON procurement_cases(context_key);
+    CREATE INDEX IF NOT EXISTS procurement_cases_model ON procurement_cases(model_key);
+    CREATE TABLE IF NOT EXISTS procurement_events (id TEXT PRIMARY KEY, context_key TEXT NOT NULL, case_id TEXT, json TEXT NOT NULL);
+    CREATE INDEX IF NOT EXISTS procurement_events_context ON procurement_events(context_key);
   `);
   conn
     .prepare('INSERT OR IGNORE INTO settings(id,json) VALUES(1,?)')

@@ -1,0 +1,347 @@
+{
+  "checkedAt": "2026-10-18T13:13:59.657Z",
+  "conversations": 10,
+  "customerTurns": 50,
+  "quoteRequests": 10,
+  "quotesIssued": 0,
+  "orders": 0,
+  "listedStock": 2,
+  "listedQuantity": 0,
+  "listedDispatch": 2,
+  "apiCalls": 46,
+  "providers": {
+    "jev": 14,
+    "openai": 32
+  },
+  "originalUnchanged": true,
+  "scenarios": [
+    {
+      "id": "astra-sales-01-bearing",
+      "label": "コンベヤ用の軸受を4個購入したい保全員",
+      "checks": {
+        "everyTurnAnswered": true,
+        "noStaffDeflection": true,
+        "noUnconfirmedTail": true,
+        "quoteOffered": true,
+        "quoteRequestCreated": true,
+        "quoteQuantityPreserved": true,
+        "destinationPreserved": true,
+        "noAutomaticProcurementApproval": true,
+        "publicTraceExcluded": true,
+        "noExecutionErrors": true
+      },
+      "quote": {
+        "requestId": "5db7decc-e08e-4096-b46a-289f0a0cb764",
+        "status": "requested",
+        "lineName": "6204ZZ",
+        "quantity": 4,
+        "issued": false,
+        "ordered": false,
+        "blockers": [
+          "会社承認済みの販売価格・送料・納期が未設定",
+          "新規調達候補の仕入条件が未承認",
+          "正式見積の自動発行は無効"
+        ]
+      },
+      "maxReplyCharacters": 84,
+      "failures": []
+    },
+    {
+      "id": "astra-sales-02-stud",
+      "label": "溶接用スタッドを100個購入したい購買担当",
+      "checks": {
+        "everyTurnAnswered": true,
+        "noStaffDeflection": true,
+        "noUnconfirmedTail": true,
+        "quoteOffered": true,
+        "quoteRequestCreated": true,
+        "quoteQuantityPreserved": true,
+        "destinationPreserved": true,
+        "noAutomaticProcurementApproval": true,
+        "publicTraceExcluded": true,
+        "noExecutionErrors": true
+      },
+      "quote": {
+        "requestId": "3159a913-3e78-43ca-9b83-e8d3bb174733",
+        "status": "requested",
+        "lineName": "M3-5-SAO",
+        "quantity": 100,
+        "issued": false,
+        "ordered": false,
+        "blockers": [
+          "会社承認済みの販売価格・送料・納期が未設定",
+          "新規調達候補の仕入条件が未承認",
+          "正式見積の自動発行は無効"
+        ]
+      },
+      "maxReplyCharacters": 99,
+      "failures": []
+    },
+    {
+      "id": "astra-sales-03-handle",
+      "label": "設備の交換用ハンドルを10個購入したい担当",
+      "checks": {
+        "everyTurnAnswered": true,
+        "noStaffDeflection": true,
+        "noUnconfirmedTail": true,
+        "quoteOffered": true,
+        "quoteRequestCreated": true,
+        "quoteQuantityPreserved": true,
+        "destinationPreserved": true,
+        "noAutomaticProcurementApproval": true,
+        "publicTraceExcluded": true,
+        "noExecutionErrors": true
+      },
+      "quote": {
+        "requestId": "7b010068-f38c-463b-9331-fee045158198",
+        "status": "requested",
+        "lineName": "A-452",
+        "quantity": 10,
+        "issued": false,
+        "ordered": false,
+        "blockers": [
+          "会社承認済みの販売価格・送料・納期が未設定",
+          "新規調達候補の仕入条件が未承認",
+          "正式見積の自動発行は無効"
+        ]
+      },
+      "maxReplyCharacters": 96,
+      "failures": []
+    },
+    {
+      "id": "astra-sales-04-tool",
+      "label": "工具を5個購入したい工場の購買担当",
+      "checks": {
+        "everyTurnAnswered": true,
+        "noStaffDeflection": true,
+        "noUnconfirmedTail": true,
+        "quoteOffered": true,
+        "quoteRequestCreated": true,
+        "quoteQuantityPreserved": true,
+        "destinationPreserved": true,
+        "noAutomaticProcurementApproval": true,
+        "publicTraceExcluded": true,
+        "noExecutionErrors": true
+      },
+      "quote": {
+        "requestId": "b876f498-705a-4e76-8590-475f3af49cb9",
+        "status": "requested",
+        "lineName": "BG-32YE",
+        "quantity": 5,
+        "issued": false,
+        "ordered": false,
+        "blockers": [
+          "会社承認済みの販売価格・送料・納期が未設定",
+          "新規調達候補の仕入条件が未承認",
+          "正式見積の自動発行は無効"
+        ]
+      },
+      "maxReplyCharacters": 132,
+      "failures": []
+    },
+    {
+      "id": "astra-sales-05-beaker",
+      "label": "ガラス製ビーカーを10個購入したい研究所の購買担当",
+      "checks": {
+        "everyTurnAnswered": true,
+        "noStaffDeflection": true,
+        "noUnconfirmedTail": true,
+        "quoteOffered": true,
+        "quoteRequestCreated": true,
+        "quoteQuantityPreserved": true,
+        "destinationPreserved": true,
+        "noAutomaticProcurementApproval": true,
+        "publicTraceExcluded": true,
+        "noExecutionErrors": true
+      },
+      "quote": {
+        "requestId": "6b966ba5-7911-45a9-b2d9-5004fc71f9d2",
+        "status": "requested",
+        "lineName": "B-300-SCI",
+        "quantity": 10,
+        "issued": false,
+        "ordered": false,
+        "blockers": [
+          "会社承認済みの販売価格・送料・納期が未設定",
+          "新規調達候補の仕入条件が未承認",
+          "正式見積の自動発行は無効"
+        ]
+      },
+      "maxReplyCharacters": 137,
+      "failures": []
+    },
+    {
+      "id": "astra-sales-06-sensor",
+      "label": "センサーを5個購入したい設備担当",
+      "checks": {
+        "everyTurnAnswered": true,
+        "noStaffDeflection": true,
+        "noUnconfirmedTail": true,
+        "quoteOffered": true,
+        "quoteRequestCreated": true,
+        "quoteQuantityPreserved": true,
+        "destinationPreserved": true,
+        "noAutomaticProcurementApproval": true,
+        "publicTraceExcluded": true,
+        "noExecutionErrors": true
+      },
+      "quote": {
+        "requestId": "56b49065-b867-480c-a3d4-ce50a9321883",
+        "status": "requested",
+        "lineName": "E2E-X5ME1",
+        "quantity": 5,
+        "issued": false,
+        "ordered": false,
+        "blockers": [
+          "会社承認済みの販売価格・送料・納期が未設定",
+          "新規調達候補の仕入条件が未承認",
+          "正式見積の自動発行は無効"
+        ]
+      },
+      "maxReplyCharacters": 118,
+      "failures": []
+    },
+    {
+      "id": "astra-sales-07-cylinder",
+      "label": "現物の品番を途中で訂正する設備担当",
+      "checks": {
+        "everyTurnAnswered": true,
+        "noStaffDeflection": true,
+        "noUnconfirmedTail": true,
+        "quoteOffered": true,
+        "quoteRequestCreated": true,
+        "quoteQuantityPreserved": true,
+        "destinationPreserved": true,
+        "noAutomaticProcurementApproval": true,
+        "publicTraceExcluded": true,
+        "noExecutionErrors": true
+      },
+      "quote": {
+        "requestId": "f6a49eb5-c346-45b9-8499-d4ea555bd912",
+        "status": "requested",
+        "lineName": "CDM2B25-75Z",
+        "quantity": 1,
+        "issued": false,
+        "ordered": false,
+        "blockers": [
+          "会社承認済みの販売価格・送料・納期が未設定",
+          "新規調達候補の仕入条件が未承認",
+          "正式見積の自動発行は無効"
+        ]
+      },
+      "maxReplyCharacters": 91,
+      "failures": [
+        {
+          "provider": "openai",
+          "code": "invalid_json"
+        },
+        {
+          "provider": "openai",
+          "code": "http_500"
+        }
+      ]
+    },
+    {
+      "id": "astra-sales-08-belt",
+      "label": "型番の消えたコンベヤベルトを交換したい担当",
+      "checks": {
+        "everyTurnAnswered": true,
+        "noStaffDeflection": true,
+        "noUnconfirmedTail": true,
+        "quoteOffered": true,
+        "quoteRequestCreated": true,
+        "quoteQuantityPreserved": true,
+        "destinationPreserved": true,
+        "noAutomaticProcurementApproval": true,
+        "publicTraceExcluded": true,
+        "noExecutionErrors": true
+      },
+      "quote": {
+        "requestId": "df084834-f90f-427b-9787-f28d79f2d2b1",
+        "status": "requested",
+        "lineName": "商品選定・製作のご相談（仕様は相談内容参照）",
+        "quantity": 1,
+        "issued": false,
+        "ordered": false,
+        "blockers": [
+          "会社承認済みの販売価格・送料・納期が未設定",
+          "新規調達候補の仕入条件が未承認",
+          "正式見積の自動発行は無効"
+        ]
+      },
+      "maxReplyCharacters": 123,
+      "failures": [
+        {
+          "provider": "openai",
+          "code": "invalid_json"
+        },
+        {
+          "provider": "openai",
+          "code": "invalid_json"
+        }
+      ]
+    },
+    {
+      "id": "astra-sales-09-bracket",
+      "label": "SUS304の取付金具を4個作りたい購買担当",
+      "checks": {
+        "everyTurnAnswered": true,
+        "noStaffDeflection": true,
+        "noUnconfirmedTail": true,
+        "quoteOffered": true,
+        "quoteRequestCreated": true,
+        "quoteQuantityPreserved": true,
+        "destinationPreserved": true,
+        "noAutomaticProcurementApproval": true,
+        "publicTraceExcluded": true,
+        "noExecutionErrors": true
+      },
+      "quote": {
+        "requestId": "75f23026-1081-4ba3-88c9-c7e3b8c77716",
+        "status": "requested",
+        "lineName": "商品選定・製作のご相談（仕様は相談内容参照）",
+        "quantity": 4,
+        "issued": false,
+        "ordered": false,
+        "blockers": [
+          "会社承認済みの販売価格・送料・納期が未設定",
+          "新規調達候補の仕入条件が未承認",
+          "正式見積の自動発行は無効"
+        ]
+      },
+      "maxReplyCharacters": 118,
+      "failures": []
+    },
+    {
+      "id": "astra-sales-10-seal",
+      "label": "減速機のオイルシールを2個購入したい保全担当",
+      "checks": {
+        "everyTurnAnswered": true,
+        "noStaffDeflection": true,
+        "noUnconfirmedTail": true,
+        "quoteOffered": true,
+        "quoteRequestCreated": true,
+        "quoteQuantityPreserved": true,
+        "destinationPreserved": true,
+        "noAutomaticProcurementApproval": true,
+        "publicTraceExcluded": true,
+        "noExecutionErrors": true
+      },
+      "quote": {
+        "requestId": "83e9d36a-5389-42cf-9dee-996e82046aef",
+        "status": "requested",
+        "lineName": "TC25407",
+        "quantity": 2,
+        "issued": false,
+        "ordered": false,
+        "blockers": [
+          "会社承認済みの販売価格・送料・納期が未設定",
+          "新規調達候補の仕入条件が未承認",
+          "正式見積の自動発行は無効"
+        ]
+      },
+      "maxReplyCharacters": 121,
+      "failures": []
+    }
+  ]
+}

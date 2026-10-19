@@ -176,6 +176,7 @@ export const quoteRequestSchema = inquirySchema.extend({
   quantity: z.number().int().min(1).max(100000),
 });
 export const quoteUpdateSchema = z.object({
+  aokiReviewed: z.boolean().optional(),
   lines: z
     .array(
       z.object({

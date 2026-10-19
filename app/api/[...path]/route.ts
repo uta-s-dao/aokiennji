@@ -63,6 +63,8 @@ import { aiUsageReport } from '@/lib/server/ai-usage';
 import { aiAnswerReport } from '@/lib/server/ai-answer-history';
 import { researchNotes } from '@/lib/server/research';
 import { updateProcurementOffer } from '@/lib/server/sourcing-estimate';
+import { procurementHistory, recordProcurementOutcome } from '@/lib/server/procurement-memory';
+import { withSupplierSiteAudit } from '@/lib/server/supplier-site-audit';
 import {
   inquirySchema,
   productSchema,
@@ -74,6 +76,12 @@ import {
 } from '@/lib/server/validation';
 import { validateExternalUrl } from '@/lib/server/safe-fetch';
 import { responseBudgets } from '@/lib/server/response-transport';
+import { responseModel } from '@/lib/server/ai-responses';
+import {
+  sourceVerificationReport,
+  verificationConversation,
+  withVerificationConversations,
+} from '@/lib/server/source-verification';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -155,7 +163,9 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
         const signal = AbortSignal.any([
           req.signal,
           controller.signal,
-          AbortSignal.timeout(responseBudgets(getSettings().flags.webSearch).chat),
+          AbortSignal.timeout(
+            responseBudgets(getSettings().flags.webSearch, responseModel(getSettings())).chat,
+          ),
         ]);
         const stream = new ReadableStream<Uint8Array>({
           async start(streamController) {
@@ -254,6 +264,8 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
       return ok(publicOrder(order));
     }
     if (path === 'admin/overview' && method === 'GET') return ok(overview());
+    if (path === 'admin/source-verification' && method === 'GET')
+      return ok(sourceVerificationReport());
     if (path === 'admin/settings') {
       if (method === 'GET') return ok(getSettings());
       if (method === 'PUT') {
@@ -358,7 +370,11 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
       if (method === 'GET' && p.length === 2) return ok(list<Source>('sources'));
       if (p[3] === 'knowledge' && p.length === 4 && method === 'GET') {
         sourceById(p[2]);
-        return ok(list<SupplierKnowledge>('supplier_knowledge').filter((r) => r.sourceId === p[2]));
+        return ok(
+          list<SupplierKnowledge>('supplier_knowledge')
+            .filter((r) => r.sourceId === p[2])
+            .map(withSupplierSiteAudit),
+        );
       }
       if (p[3] === 'runs' && method === 'GET')
         return ok(
@@ -446,6 +462,18 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
     if (
       p[0] === 'admin' &&
       p[1] === 'conversations' &&
+      p.length === 8 &&
+      p[3] === 'research' &&
+      p[5] === 'offers' &&
+      p[7] === 'history'
+    ) {
+      const context = { kind: 'offer' as const, conversationId: p[2], noteId: p[4], offerId: p[6] };
+      if (method === 'GET') return ok(procurementHistory(context));
+      if (method === 'POST') return ok(recordProcurementOutcome(context, await body(req)));
+    }
+    if (
+      p[0] === 'admin' &&
+      p[1] === 'conversations' &&
       p.length === 7 &&
       p[3] === 'research' &&
       p[5] === 'offers' &&
@@ -455,11 +483,9 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
     }
     if (p[0] === 'admin' && p[1] === 'conversations' && method === 'GET') {
       if (p.length === 2)
-        return ok(
-          list<Conversation>('conversations').sort((a, b) =>
-            b.updatedAt.localeCompare(a.updatedAt),
-          ),
-        );
+        return ok(withVerificationConversations(list<Conversation>('conversations')));
+      const verification = verificationConversation(p[2]);
+      if (verification) return ok(verification);
       return ok({
         conversation: found<Conversation>('conversations', p[2]),
         messages: conversationMessages(p[2]),
@@ -487,6 +513,11 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
       if (method === 'PUT') return ok(updateQuote(p[2], quoteUpdateSchema.parse(await body(req))));
     }
     if (p[0] === 'admin' && p[1] === 'orders') {
+      if (p.length === 5 && p[3] === 'history' && /^\d+$/.test(p[4])) {
+        const context = { kind: 'order' as const, orderId: p[2], line: Number(p[4]) };
+        if (method === 'GET') return ok(procurementHistory(context));
+        if (method === 'POST') return ok(recordProcurementOutcome(context, await body(req)));
+      }
       if (method === 'GET') return ok(list<Order>('orders').toReversed());
       if (method === 'POST' && p[3] === 'approve') return ok(approveOrder(p[2]));
       if (method === 'POST' && p[3] === 'dispatch') return ok(await dispatchOrder(p[2]));

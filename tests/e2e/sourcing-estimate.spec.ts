@@ -6,6 +6,7 @@ import type { ResearchNote } from '../../lib/contracts';
 
 test('staff confirms source conditions and the chat presents all selling terms with a quote handoff', async ({
   page,
+  request,
 }, testInfo) => {
   // Only the source-page facts are fixtures; the admin form, API, calculation,
   // public chat and contact form all run against the real disposable test DB.
@@ -27,7 +28,32 @@ test('staff confirms source conditions and the chat presents all selling terms w
     status: 'done',
     createdAt: checkedAt,
     completedAt: checkedAt,
-    findings: [],
+    findings: [
+      {
+        aspect: 'stock',
+        value: '掲載上は在庫あり・掲載数量20個',
+        note: '掲載先の在庫20個。3営業日以内に出荷。当社の確保在庫ではありません。',
+        title: '試験用の調達候補',
+        url: 'https://supplier.example/item',
+        source: 'other',
+        check: 'matched',
+        relevance: 0.98,
+        itemOnPage: true,
+        pageAvailability: {
+          version: 1,
+          model: 'B-300-SCI',
+          contentHash: 'a'.repeat(64),
+          stock: 'in_stock',
+          listedQuantity: 20,
+          quantityUnit: '個',
+          dispatchKind: 'supplier_dispatch',
+          dispatchText: '3営業日以内に出荷',
+          verification: 'jev',
+          reasons: [],
+          evidence: [{ id: 'b0', selector: 'p:eq(0)', text: '在庫20個。3営業日以内に出荷' }],
+        },
+      },
+    ],
     aspects: ['availability', 'price'],
     summary: 'ブラウザー試験用の架空調達条件です。',
     decidedBy: 'local',
@@ -77,8 +103,18 @@ test('staff confirms source conditions and the chat presents all selling terms w
     await page
       .getByText('AI調査メモ（担当者用・お客様には表示されません）', { exact: true })
       .click();
+    await expect(
+      page.getByText('在庫：掲載上は在庫あり・掲載数量20個', { exact: true }),
+    ).toBeVisible();
+    await page.getByText('在庫・配送表示の仕分けと根拠を開く', { exact: true }).click();
+    await expect(
+      page.getByText('掲載先の在庫20個。3営業日以内に出荷。当社の確保在庫ではありません。', {
+        exact: true,
+      }),
+    ).toBeVisible();
     await page.getByText('販売概算用の調達条件：', { exact: false }).click();
     const editor = page.locator('.procurement-offer');
+    await expect(editor.getByLabel('確認できた調達可能数量（個）')).toHaveValue('');
     await editor.getByLabel('仕入価格の税区分').selectOption('true');
     await editor.getByLabel('仕入時の税率').selectOption('10');
     await editor.getByLabel('1販売単位あたりの入数（個）').fill('1');
@@ -134,9 +170,49 @@ test('staff confirms source conditions and the chat presents all selling terms w
     await page.screenshot({ path: testInfo.outputPath('complete-selling-estimate.png') });
     const restored = (await (await page.request.get(`/api/chat/${conversationId}`)).json()).data;
     expect(JSON.stringify(restored)).not.toContain('supplier.example');
+    expect(JSON.stringify(restored)).not.toContain('掲載数量20個');
     await panel.getByRole('link', { name: 'この内容で見積を依頼する' }).last().click();
     await expect(page.getByLabel('数量')).toHaveValue('10');
     await expect(page.getByLabel('ご相談内容')).toHaveValue(/合計（税込）：14,080円/);
+
+    const historyUrl = `/api/admin/conversations/${conversationId}/research/${note.id}/offers/${note.offers![0].id}/history`;
+    expect((await request.get(historyUrl)).status()).toBe(401);
+    expect(
+      (
+        await page.request.post(historyUrl, {
+          headers: { Origin: 'https://outside.example' },
+          data: {},
+        })
+      ).status(),
+    ).toBe(403);
+    await page.goto('/admin?tab=conversations');
+    await page.locator('.conversation-list > button').first().click();
+    await page
+      .getByText('AI調査メモ（担当者用・お客様には表示されません）', { exact: true })
+      .click();
+    await page.getByText('発注・入荷の実績を記録／確認', { exact: true }).click();
+    await expect(page.getByLabel('今回発注・確認した必要数量（個）')).toHaveValue('10');
+    await page.getByRole('button', { name: '外で発注済みを記録', exact: true }).click();
+    await expect(page.getByText('進行中：10個発注・0個入荷済み', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '全数入荷を記録', exact: true }).click();
+    await expect(page.getByText(/全数入荷：10\/10個/)).toBeVisible();
+    const history = (await (await page.request.get(historyUrl)).json()).data;
+    expect(history.cases[0]).toMatchObject({
+      quantity: 10,
+      receivedQuantity: 10,
+      status: 'received',
+      isDemo: true,
+    });
+    expect(history.summary.completed).toBe(0);
+    expect(
+      history.events.some((e: { action: string }) => e.action === 'conditions_confirmed'),
+    ).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('procurement-memory.png'), fullPage: true });
+    await page.reload();
+    const persisted = (await (await page.request.get(historyUrl)).json()).data;
+    expect(persisted.cases[0].status).toBe('received');
+    const publicChat = (await (await page.request.get(`/api/chat/${conversationId}`)).json()).data;
+    expect(JSON.stringify(publicChat)).not.toMatch(/supplier\.example|procurement_cases|全数入荷/);
   } finally {
     await page.request.put('/api/admin/settings', { data: original });
   }

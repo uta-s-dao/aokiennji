@@ -1,0 +1,718 @@
+{
+  "checkedAt": "2026-10-18T06:54:04.470Z",
+  "conversations": 10,
+  "customerTurns": 50,
+  "replies": 50,
+  "responseProviders": {
+    "openai": 36,
+    "local": 14,
+    "gemini": 0
+  },
+  "apiCalls": 98,
+  "apiOutcomes": {
+    "accepted": 88,
+    "network_error": 3,
+    "rejected": 7
+  },
+  "apiErrors": [
+    {
+      "provider": "openai",
+      "purpose": "response",
+      "errorCode": "timeout",
+      "httpStatus": null,
+      "conversationId": "24f165d2-fba4-43dd-b747-0b793e27fc69",
+      "turnId": "7c849374-62d3-4e67-9e58-c3370658c114"
+    },
+    {
+      "provider": "openai",
+      "purpose": "response",
+      "errorCode": "empty_supplement",
+      "httpStatus": 200,
+      "conversationId": "e38131c9-7bed-4b91-9d5d-fd4d659229be",
+      "turnId": "82dfd643-511d-4966-809b-d0efbfda1bec"
+    },
+    {
+      "provider": "openai",
+      "purpose": "response",
+      "errorCode": "business_fact_owned_locally",
+      "httpStatus": 200,
+      "conversationId": "78f862b7-3742-4ff8-bfd2-aef75ba79a0f",
+      "turnId": "2091f32d-38d4-4bbc-8a10-8cec72dc94f5"
+    },
+    {
+      "provider": "openai",
+      "purpose": "response",
+      "errorCode": "business_fact_owned_locally",
+      "httpStatus": 200,
+      "conversationId": "78f862b7-3742-4ff8-bfd2-aef75ba79a0f",
+      "turnId": "2091f32d-38d4-4bbc-8a10-8cec72dc94f5"
+    },
+    {
+      "provider": "openai",
+      "purpose": "response",
+      "errorCode": "business_fact_owned_locally",
+      "httpStatus": 200,
+      "conversationId": "78f862b7-3742-4ff8-bfd2-aef75ba79a0f",
+      "turnId": "7cf68cfd-442a-497a-bc77-74fc25aa8106"
+    },
+    {
+      "provider": "openai",
+      "purpose": "response",
+      "errorCode": "business_fact_owned_locally",
+      "httpStatus": 200,
+      "conversationId": "78f862b7-3742-4ff8-bfd2-aef75ba79a0f",
+      "turnId": "7cf68cfd-442a-497a-bc77-74fc25aa8106"
+    },
+    {
+      "provider": "openai",
+      "purpose": "response",
+      "errorCode": "internal_terms",
+      "httpStatus": 200,
+      "conversationId": "f2e042e6-f4a7-4b67-87d9-fbb1c33e8928",
+      "turnId": "f749fff7-4ec6-4034-8802-12181dc218a3"
+    },
+    {
+      "provider": "openai",
+      "purpose": "response",
+      "errorCode": "timeout",
+      "httpStatus": null,
+      "conversationId": "d4e09b26-ce6a-4bea-9253-853b43656a63",
+      "turnId": "f3f462bd-5f99-4e54-b93f-762c1c2e0bd2"
+    },
+    {
+      "provider": "openai",
+      "purpose": "response",
+      "errorCode": "timeout",
+      "httpStatus": null,
+      "conversationId": "d4e09b26-ce6a-4bea-9253-853b43656a63",
+      "turnId": "64ebdd5c-6fa2-4217-997e-c64b220fab4d"
+    },
+    {
+      "provider": "openai",
+      "purpose": "response",
+      "errorCode": "unapproved_sale",
+      "httpStatus": 200,
+      "conversationId": "96fac562-3eb3-4b7d-86ac-684c69d31b03",
+      "turnId": "d933493f-25ca-41d7-9804-f5a3fb523cfa"
+    }
+  ],
+  "originalUnchanged": true,
+  "credentialLeak": false,
+  "configuration": {
+    "flags": {
+      "chat": true,
+      "webSearch": true,
+      "showPrice": true,
+      "showStock": true,
+      "showLeadTime": true,
+      "quoteRequests": true,
+      "autoQuote": false,
+      "orders": false,
+      "autoOrder": false,
+      "humanHandoff": true
+    },
+    "searchProvider": "openai",
+    "decisionProvider": "local",
+    "model": "",
+    "freshnessHours": 168,
+    "maxAutoOrderAmount": 100000,
+    "companyName": "アオキエンジ株式会社",
+    "welcomeMessage": "お探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。",
+    "responseProvider": "openai",
+    "responseModel": "gpt-4.1-mini"
+  },
+  "scenarios": [
+    {
+      "id": "customer-01",
+      "label": "乾燥炉の断熱材を探す設備担当",
+      "conversationId": "24f165d2-fba4-43dd-b747-0b793e27fc69",
+      "turns": 5,
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "actualOpenaiReply": true,
+        "traceStoredPerAnswer": true,
+        "externalOnlyAfterPreferred": true,
+        "allPreferredSitesInSearch": true,
+        "privateTraceExcludedFromPublic": true,
+        "noAutomaticProcurementApproval": true,
+        "noChatExecutionErrors": true
+      },
+      "review": {
+        "verdict": "needs_review",
+        "summary": "最後には、材質未定でもやけど防止の性能を含めて相談でき、写真と表面温度は後からでよいと分かった。ただ、途中で製作品の相談に変わり、選んでほしい材質をこちらに聞かれて戸惑った。10mmで足りると保証はされておらず、実際の性能はこの会話だけでは判断できない。",
+        "findings": [
+          {
+            "turn": 4,
+            "severity": "medium",
+            "detail": "第4回答の『製作品のご相談ですね』『まだ伺っていない「材質」』で、断熱材を選びたい相談が製作品の仕様確認に変わったように感じた。直前に聞いた、10mmでやけど防止になるかも相談できるのかには答えず、こちらから目的を説明し直す必要があった。第5回答では相談可能と直接回答している。"
+          }
+        ]
+      },
+      "sourcingModels": [],
+      "stages": [
+        "registered_data",
+        "preferred_sites",
+        "public_web"
+      ],
+      "sourceOrigins": [
+        "registered_data",
+        "public_web"
+      ],
+      "procurementCandidates": 0,
+      "openaiReplies": 3,
+      "localResponseReasons": [
+        "lookup",
+        "failed_or_ungrounded"
+      ]
+    },
+    {
+      "id": "customer-02",
+      "label": "コンベヤのベアリングを交換する保全員",
+      "conversationId": "0a472b40-6aeb-470b-a6bb-8a472cc50862",
+      "turns": 5,
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "actualOpenaiReply": true,
+        "traceStoredPerAnswer": true,
+        "externalOnlyAfterPreferred": true,
+        "allPreferredSitesInSearch": true,
+        "privateTraceExcludedFromPublic": true,
+        "noAutomaticProcurementApproval": true,
+        "noChatExecutionErrors": true
+      },
+      "review": {
+        "verdict": "pass",
+        "summary": "初回から型番・数量を伝えるよう案内され、見積相談へ進めた。見積依頼が注文にならないことを確認でき、最後にはメーカー・型番、交換2個と予備2個、金曜希望、届け先は購買から補足という内容を正しくまとめてもらえた。価格・在庫・納期は未確認と区別され、購買へ渡して見積相談を進められる。実際の送信や調達可否はこの会話では確認していない。",
+        "findings": []
+      },
+      "technicalFindings": [
+        {
+          "turn": 1,
+          "severity": "medium",
+          "answerId": "01e80a3b-2801-40f4-8743-478ddadff8f3",
+          "detail": "公開履歴を再取得すると、実際に返した過去の回答が「登録情報が更新されているため、もう一度ご質問ください」に差し替わった。",
+          "evidence": "実際の返答は「コンベヤのベアリングは、呼び番号やシールの種類、すきま（クリアランス）、メーカー指定などの条件で選定します。当社で扱う部品全般の相談も受け付けていますので、具体的な型番や仕様が分かれば担当者に確認いた」。同じ会話の公開履歴では「現在の登録情報が更新されているため、もう一度ご質問ください。最新の情報でご案内します。」。元の保存メッセージは変更されていない。"
+        }
+      ],
+      "sourcingModels": [
+        "6204ZZ"
+      ],
+      "stages": [
+        "registered_data",
+        "preferred_sites",
+        "public_web"
+      ],
+      "sourceOrigins": [
+        "preferred_sites",
+        "public_web"
+      ],
+      "procurementCandidates": 1,
+      "openaiReplies": 4,
+      "localResponseReasons": [
+        "handoff"
+      ]
+    },
+    {
+      "id": "customer-03",
+      "label": "古い交換履歴を見ながら相談する生産技術担当",
+      "conversationId": "b639ef8b-e759-4a5e-8b15-b1b6c65167d3",
+      "turns": 5,
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "actualOpenaiReply": true,
+        "traceStoredPerAnswer": true,
+        "externalOnlyAfterPreferred": true,
+        "allPreferredSitesInSearch": true,
+        "privateTraceExcludedFromPublic": true,
+        "noAutomaticProcurementApproval": true,
+        "noChatExecutionErrors": true
+      },
+      "review": {
+        "verdict": "needs_review",
+        "summary": "100Zから75Zへの訂正は反映された。スイッチや金具の流用は型番だけで確定できないと説明された点も納得できる。ただ、スイッチ品番不明でも来週希望の相談を始められるかという最後の問いは、送信方法だけの案内で終わり、未確認のまま依頼してよいかは明言されなかった。",
+        "findings": [
+          {
+            "turn": 2,
+            "severity": "low",
+            "detail": "第2回答は『お取り寄せ先を調べています』『必要数量とお届け先』と調達の話になり、こちらの『これでサイズは分かりますか』には直接答えていなかった。型番で何が確認でき、何が足りないかが分からなかった。"
+          },
+          {
+            "turn": 5,
+            "severity": "medium",
+            "detail": "第5回答は『この内容で見積を依頼する』から送る方法だけを説明し、『スイッチの品番がまだ分からなくても相談を始められますか』への回答がなかった。直前に伝えた来週中の希望と、流用は要確認という条件を受け止めた説明もない。実際に担当者へ何が引き継がれるかは、この文面だけでは確認できない。"
+          }
+        ]
+      },
+      "sourcingModels": [
+        "CDM2B25-100Z",
+        "CDM2B25-75Z",
+        "CDM2B25-75Z"
+      ],
+      "stages": [
+        "registered_data",
+        "preferred_sites",
+        "public_web"
+      ],
+      "sourceOrigins": [
+        "preferred_sites",
+        "public_web"
+      ],
+      "procurementCandidates": 0,
+      "openaiReplies": 4,
+      "localResponseReasons": [
+        "handoff"
+      ]
+    },
+    {
+      "id": "customer-04",
+      "label": "漏油で明朝の復旧を急ぐ現場班長",
+      "conversationId": "e38131c9-7bed-4b91-9d5d-fd4d659229be",
+      "turns": 5,
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "actualOpenaiReply": true,
+        "traceStoredPerAnswer": true,
+        "externalOnlyAfterPreferred": true,
+        "allPreferredSitesInSearch": true,
+        "privateTraceExcludedFromPublic": true,
+        "noAutomaticProcurementApproval": true,
+        "noChatExecutionErrors": true
+      },
+      "review": {
+        "verdict": "needs_review",
+        "summary": "最後に電話で伝える刻印・数量・所在地・期限をまとめてもらえたので、問い合わせの準備はできた。在庫や明朝までの入手を約束されなかった点も適切。ただ、今夜電話がつながるかと引取先は最後まで不明で、急ぎの復旧判断に必要な情報はそろわなかった。実際の営業時間や受取場所は公開会話だけでは判断できない。",
+        "findings": [
+          {
+            "turn": 4,
+            "severity": "medium",
+            "detail": "第4回答は引取先の場所を尋ねた質問に『在庫と準備状況を確認してからご案内』と返し、地域や所在地は示さなかった。近い場合だけ受取可能と伝えているので、川口から行けるか判断できず、次の発言でも場所を確認する必要があった。"
+          },
+          {
+            "turn": 4,
+            "severity": "high",
+            "detail": "第4回答は『今夜の確認は電話が確実です』と言ったが、第5回答では『営業時間や引き取り場所は当チャットでわからず』と説明している。今夜の受付可否が不明なまま『確実』と言われると、今夜連絡できると期待してしまう。公開会話から電話がつながるとは確認できない。"
+          }
+        ]
+      },
+      "sourcingModels": [],
+      "stages": [
+        "registered_data",
+        "preferred_sites",
+        "public_web"
+      ],
+      "sourceOrigins": [
+        "public_web"
+      ],
+      "procurementCandidates": 0,
+      "openaiReplies": 5,
+      "localResponseReasons": []
+    },
+    {
+      "id": "customer-05",
+      "label": "ステンレスの取付金具を少量作りたい購買担当",
+      "conversationId": "78f862b7-3742-4ff8-bfd2-aef75ba79a0f",
+      "turns": 5,
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "actualOpenaiReply": true,
+        "traceStoredPerAnswer": true,
+        "externalOnlyAfterPreferred": true,
+        "allPreferredSitesInSearch": true,
+        "privateTraceExcludedFromPublic": true,
+        "noAutomaticProcurementApproval": true,
+        "noChatExecutionErrors": true
+      },
+      "review": {
+        "verdict": "fail",
+        "summary": "図面なしで概算相談できるとは分かったが、設計担当に何を決めてもらうべきかという問いは解決しなかった。伝えた用途と2週間以内の希望を続けて聞き直され、最後には製作相談が在庫確認のような返答になった。既出条件を保持して担当者へ相談を進められるという安心が持てない。",
+        "findings": [
+          {
+            "turn": 4,
+            "severity": "medium",
+            "detail": "第4回答の『まだ伺っていない「用途・使用環境」』は、第2顧客発言の『装置の小さなカバーを留める』、第3顧客発言の『屋内の装置用』という既出情報を聞き直している。実際に次の顧客発言で『その内容は残っていますか』と確認することになった。"
+          },
+          {
+            "turn": 4,
+            "severity": "medium",
+            "detail": "第4回答は一般的な確認項目を列挙するだけで、『穴径と穴位置のほかに何を決めてもらえばいいですか』という設計担当への確認事項の質問に答えなかった。端を鋭くしない希望への言及もなかった。"
+          },
+          {
+            "turn": 5,
+            "severity": "medium",
+            "detail": "第5回答の『「希望の時期」も分かれば教えてください』は、第4・第5顧客発言で伝えた『2週間以内』の再質問。前の聞き直しを指摘した直後にも既出条件を尋ねられ、会話を覚えているか不安が残った。"
+          },
+          {
+            "turn": 5,
+            "severity": "medium",
+            "detail": "第5回答は『製作品の在庫は、仕様と数量をもとに担当者が確認』という説明で終わった。新しく作る金具の設計準備を相談しているため、何の在庫を確認する話か分からず、穴以外に決める事項も、希望条件が残っているかという確認も回答されなかった。"
+          }
+        ]
+      },
+      "technicalFindings": [
+        {
+          "turn": 4,
+          "severity": "medium",
+          "answerId": "cd7b0168-0682-4f44-b7b9-285b01a9598b",
+          "detail": "設計で決める事項を聞かれた際、既に分かっている用途・使用環境を再度質問した。",
+          "evidence": "第2発言に「小さなカバーを留める」、第3発言に「屋内の装置用」とある。第4回答のprocessing.responseReasonはfailed_or_ungroundedで、定型応答に「まだ伺っていない用途・使用環境」と表示。"
+        },
+        {
+          "turn": 5,
+          "severity": "high",
+          "answerId": "20838236-583b-447b-94bc-a06d2269d709",
+          "detail": "「伝えた内容は残っていますか」という会話の記憶についての質問を、商品の在庫の質問として扱った。希望時期を2度伝えた後も再度質問した。",
+          "evidence": "第5回答のintentはstock、factualIntentsは[\"stock\"]。回答は「製作品の在庫は…」「希望の時期も分かれば」。顧客は第4・第5発言で「2週間以内」と既に伝えている。"
+        }
+      ],
+      "sourcingModels": [],
+      "stages": [
+        "registered_data",
+        "preferred_sites",
+        "public_web"
+      ],
+      "sourceOrigins": [
+        "preferred_sites",
+        "public_web"
+      ],
+      "procurementCandidates": 0,
+      "openaiReplies": 3,
+      "localResponseReasons": [
+        "failed_or_ungrounded",
+        "failed_or_ungrounded"
+      ]
+    },
+    {
+      "id": "customer-06",
+      "label": "品番の消えたコンベヤベルトを交換したい工場担当",
+      "conversationId": "c49ad0e5-58ec-44ac-95f3-00d851920718",
+      "turns": 5,
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "actualOpenaiReply": true,
+        "traceStoredPerAnswer": true,
+        "externalOnlyAfterPreferred": true,
+        "allPreferredSitesInSearch": true,
+        "privateTraceExcludedFromPublic": true,
+        "noAutomaticProcurementApproval": true,
+        "noChatExecutionErrors": true
+      },
+      "review": {
+        "verdict": "pass",
+        "summary": "途中の測り方は分かりにくかったが、最終的にはベルト一周分を測ると理解できた。型番不明でも寸法と切削油が付く環境を添えて相談でき、月末希望を見積依頼で確認すればよいと分かった。材質や実際の適合・納期は未確定のままで、無理な入手保証はなかった。",
+        "findings": [
+          {
+            "turn": 1,
+            "severity": "low",
+            "detail": "第1回答で説明なく例示された『B形やB60』が何を指すか分からず、次に『B形というのは分からない』と返す必要があった。ここでは実際にどの規格が適切かという技術的な判定はしていない。"
+          },
+          {
+            "turn": 3,
+            "severity": "low",
+            "detail": "第3回答の『ベルトの端の縫い目または接続部からもう一方の同じ位置』『ベルト端部から端部までの周囲長』という説明が、輪になったベルトのどこを指すのか分かりにくかった。第4回答の『一周分の長さ』で理解できたが、一度確認し直す必要があった。"
+          }
+        ]
+      },
+      "sourcingModels": [],
+      "stages": [
+        "registered_data",
+        "preferred_sites",
+        "public_web"
+      ],
+      "sourceOrigins": [
+        "preferred_sites",
+        "public_web"
+      ],
+      "procurementCandidates": 0,
+      "openaiReplies": 5,
+      "localResponseReasons": []
+    },
+    {
+      "id": "customer-07",
+      "label": "電磁弁のコイルだけ交換したい保全担当",
+      "conversationId": "87b4c3d1-9b8f-4cc4-afe1-1789d96f190b",
+      "turns": 5,
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "actualOpenaiReply": true,
+        "traceStoredPerAnswer": true,
+        "externalOnlyAfterPreferred": true,
+        "allPreferredSitesInSearch": true,
+        "privateTraceExcludedFromPublic": true,
+        "noAutomaticProcurementApproval": true,
+        "noChatExecutionErrors": true
+      },
+      "review": {
+        "verdict": "fail",
+        "summary": "担当者への連絡方法は分かったが、コイル単体の候補が確認済みなのか、単体で手配できるかから未確認なのかが一貫しなかった。その食い違いを最後に尋ねても一般的な取り寄せ案内で終わり、コイルと本体一式を比較する前提が確定しない。公開会話だけでは単体手配の可否も判断できない。",
+        "findings": [
+          {
+            "turn": 3,
+            "severity": "high",
+            "detail": "第2回答の『コイル調達候補を確認できました』について、本体と混同していないか確認すると、第3回答は『確認できているのはコイル単体の調達候補です』と明言した。一方、第4回答は『コイル単体の調達候補の品番はまだ特定できておりません』となった。何を確認できたのか説明がなく、単体手配ができそうという期待だけが先に生じた。実際の調達可否については、この文面から真偽を判定できない。"
+          },
+          {
+            "turn": 3,
+            "severity": "medium",
+            "detail": "第3回答で、直前に『1台分です』と答えた数量を『数量1台分とお届け先の都道府県を教えて』と再質問された。届け先は未回答だが、数量まで聞き直す必要はなく、次に『数量は先ほどの1台分です』と伝え直すことになった。"
+          },
+          {
+            "turn": 5,
+            "severity": "medium",
+            "detail": "第5回答は『お取り寄せの可否は、メーカー名・品名・型番をもとに担当者が確認』という一般案内で、『単体で取り寄せられるかも未確認という理解でいいですか』には明確に答えていない。コイル単体と本体一式の両方を確認するという依頼への個別の応答もなく、先の説明の食い違いが解消されなかった。"
+          }
+        ]
+      },
+      "technicalFindings": [
+        {
+          "turn": 3,
+          "severity": "high",
+          "answerId": "291697f8-a227-4ba7-8423-285ba83f06d9",
+          "detail": "電圧の「DC24V」を商品の型番として扱い、先に伝えられた電磁弁の型番から検索対象がずれた。",
+          "evidence": "顧客は「本体ラベルはDC24V」と伝えたが、登録情報・37参照先・外部Webの検索語がいずれもDC24Vになっている。"
+        },
+        {
+          "turn": 3,
+          "severity": "high",
+          "answerId": "291697f8-a227-4ba7-8423-285ba83f06d9",
+          "detail": "調達候補を特定できていない検索結果に対し、回答は「確認できているのはコイル単体の調達候補」と断定した。",
+          "evidence": "回答用の確定案内は「「DC24V」は当社でお取り寄せ先をお調べします。今回の検索だけでは調達候補を特定できていません。」。検索結論は「今回の検索では型番が一致する商品・調達候補を確認できませんでした。取扱不可の判定ではありません。」。生成回答と不一致。"
+        },
+        {
+          "turn": 1,
+          "severity": "medium",
+          "answerId": "4367dfd3-3edd-49cd-87ae-95d575fdb527",
+          "detail": "公開履歴を再取得すると、実際に返した過去の回答が「登録情報が更新されているため、もう一度ご質問ください」に差し替わった。",
+          "evidence": "実際の返答は「お取り寄せの可否は、メーカー名・品名・型番をもとに担当者が確認します。登録されていない品目もご相談いただけます。\nまだ伺っていない「流体」が分かると、候補を絞り込みやすくなります。分かる範囲で教えてい」。同じ会話の公開履歴では「現在の登録情報が更新されているため、もう一度ご質問ください。最新の情報でご案内します。」。元の保存メッセージは変更されていない。"
+        }
+      ],
+      "sourcingModels": [
+        "SY5120-5LZD-01",
+        "DC24V",
+        "DC24V"
+      ],
+      "stages": [
+        "registered_data",
+        "preferred_sites",
+        "public_web"
+      ],
+      "sourceOrigins": [
+        "preferred_sites",
+        "public_web"
+      ],
+      "procurementCandidates": 1,
+      "openaiReplies": 3,
+      "localResponseReasons": [
+        "policy",
+        "handoff"
+      ]
+    },
+    {
+      "id": "customer-08",
+      "label": "摩耗する樹脂ガイドの材質を相談したい製造担当",
+      "conversationId": "f2e042e6-f4a7-4b67-87d9-fbb1c33e8928",
+      "turns": 5,
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "actualOpenaiReply": true,
+        "traceStoredPerAnswer": true,
+        "externalOnlyAfterPreferred": true,
+        "allPreferredSitesInSearch": true,
+        "privateTraceExcludedFromPublic": true,
+        "noAutomaticProcurementApproval": true,
+        "noChatExecutionErrors": true
+      },
+      "review": {
+        "verdict": "fail",
+        "summary": "材質も図面も不明でも現物を見てもらえることと、連絡の入口は分かった。ただ、摩耗した箇所の寸法をどう扱うかという不安には2回続けて回答がなく、現物を渡す前に担当者と何を確認すればよいかが解決しなかった。送信案内だけでは、この具体的な相談を進められたとは言いにくい。",
+        "findings": [
+          {
+            "turn": 4,
+            "severity": "medium",
+            "detail": "第4回答は『この内容で見積を依頼する』から送る方法だけで、『削れたままの寸法で作られてしまわないか』という懸念には言及しなかった。製作前に寸法を確認して相談できるのかが分からず、同じ心配を次でも尋ねることになった。"
+          },
+          {
+            "turn": 5,
+            "severity": "medium",
+            "detail": "第5回答も『品名・用途・数量・ご希望の時期とお届け先』『この内容で見積を依頼する』という一般案内にとどまり、『削れた部分の寸法をどう決めるかは、現物を見ながら担当の方と相談するということでいいですか』に答えていない。寸法の復元方法自体を技術的に決められなくても、その確認を相談できるかへの返答は必要だった。"
+          }
+        ]
+      },
+      "sourcingModels": [],
+      "stages": [
+        "registered_data",
+        "preferred_sites",
+        "public_web"
+      ],
+      "sourceOrigins": [
+        "preferred_sites",
+        "public_web"
+      ],
+      "procurementCandidates": 0,
+      "openaiReplies": 3,
+      "localResponseReasons": [
+        "handoff",
+        "transaction"
+      ]
+    },
+    {
+      "id": "customer-09",
+      "label": "エア配管の補修品をまとめたい設備係",
+      "conversationId": "d4e09b26-ce6a-4bea-9253-853b43656a63",
+      "turns": 5,
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "actualOpenaiReply": true,
+        "traceStoredPerAnswer": true,
+        "externalOnlyAfterPreferred": true,
+        "allPreferredSitesInSearch": true,
+        "privateTraceExcludedFromPublic": true,
+        "noAutomaticProcurementApproval": true,
+        "noChatExecutionErrors": true
+      },
+      "review": {
+        "verdict": "needs_review",
+        "summary": "最後にはチューブ1巻と圧力計1個を別品と明示し、来週の保全に向けて相談できると回答された。ねじは写真や図面を添えて担当者に確認できると分かった。ただ、追加した圧力計が途中で受け止められず、どちらの品物への質問かを客側から何度も整理する必要があった。",
+        "findings": [
+          {
+            "turn": 3,
+            "severity": "medium",
+            "detail": "第3顧客発言で圧力計の交換も追加したのに、第3回答は『伺った条件（1巻・20m）』として使用環境を質問し、追加した圧力計についての応答がなかった。1巻・20mはチューブの条件なので、2品目を受け止めてもらえたか分からず、次に区別を説明し直した。"
+          },
+          {
+            "turn": 4,
+            "severity": "medium",
+            "detail": "第4回答は『1MPa・40mm・0.5MPaも承知しました。「材質」も分かれば教えて』だけで、圧力計の目盛、直径、通常圧力という数値の意味や品目を示さなかった。材質もチューブと圧力計のどちらについてか不明で、最後に『材質はどちらの話でしょうか』と確認が必要になった。第5回答では2品目の区別を明示している。"
+          }
+        ]
+      },
+      "technicalFindings": [
+        {
+          "turn": 3,
+          "severity": "medium",
+          "answerId": "3b0d8035-5777-4f04-b064-7e507a1f5b3e",
+          "detail": "圧力計の追加相談に対して、前のチューブの条件「1巻・20m」を再掲し、どちらの品目の確認なのか示さなかった。",
+          "evidence": "追加された圧力計について回答で触れず、顧客は第4発言で「1巻20mはチューブのほうです」と説明し直した。"
+        },
+        {
+          "turn": 1,
+          "severity": "medium",
+          "answerId": "75fb955b-3296-49f8-996c-86d8dd495059",
+          "detail": "公開履歴を再取得すると、実際に返した過去の回答が「登録情報が更新されているため、もう一度ご質問ください」に差し替わった。",
+          "evidence": "実際の返答は「お見積りは、品名・用途・数量・ご希望の時期とお届け先をもとに担当者が確認して作成します。\n下の「この内容で見積を依頼する」から、この会話の内容を添えてお見積りを依頼できます。お急ぎの場合はお電話（09」。同じ会話の公開履歴では「現在の登録情報が更新されているため、もう一度ご質問ください。最新の情報でご案内します。」。元の保存メッセージは変更されていない。"
+        }
+      ],
+      "sourcingModels": [
+        "TU0604BU-20"
+      ],
+      "stages": [
+        "registered_data",
+        "preferred_sites",
+        "public_web"
+      ],
+      "sourceOrigins": [
+        "preferred_sites",
+        "public_web"
+      ],
+      "procurementCandidates": 2,
+      "openaiReplies": 2,
+      "localResponseReasons": [
+        "transaction",
+        "failed_or_ungrounded",
+        "failed_or_ungrounded"
+      ]
+    },
+    {
+      "id": "customer-10",
+      "label": "短い返事が多いセンサー交換の現場作業者",
+      "conversationId": "96fac562-3eb3-4b7d-86ac-684c69d31b03",
+      "turns": 5,
+      "checks": {
+        "everyCustomerTurnAnswered": true,
+        "actualOpenaiReply": true,
+        "traceStoredPerAnswer": true,
+        "externalOnlyAfterPreferred": true,
+        "allPreferredSitesInSearch": true,
+        "privateTraceExcludedFromPublic": true,
+        "noAutomaticProcurementApproval": true,
+        "noChatExecutionErrors": true
+      },
+      "review": {
+        "verdict": "pass",
+        "summary": "短い返事でも型番と数量1個を保ち、『はい』を注文確定と扱わなかった。調達候補と在庫・発送日は未確定と説明され、最後には交換前の確認事項も担当者に聞けると直接回答された。届け先の都道府県を補足し、見積相談へ進む手順が分かった。実際に同じ部品を入手できるかや故障原因は、この会話だけでは判断できない。",
+        "findings": [
+          {
+            "turn": 4,
+            "severity": "low",
+            "detail": "第4回答では、冒頭で『在庫や発送日は未確定』と説明した後、末尾でも『現時点では必要数量分の在庫・発送日は未確定』と繰り返した。同様の重複が第3回答にもあり、短く相談している客には長く感じる。届け先はまだ答えていないので、その再確認自体は問題ではない。"
+          }
+        ]
+      },
+      "sourcingModels": [
+        "E3Z-D61",
+        "E3Z-D61",
+        "E3Z-D61",
+        "E3Z-D61"
+      ],
+      "stages": [
+        "registered_data",
+        "preferred_sites",
+        "public_web"
+      ],
+      "sourceOrigins": [
+        "preferred_sites",
+        "public_web"
+      ],
+      "procurementCandidates": 0,
+      "openaiReplies": 4,
+      "localResponseReasons": [
+        "failed_or_ungrounded"
+      ]
+    }
+  ],
+  "implementationValidation": {
+    "checkedAt": "2026-10-18T06:59:01.566Z",
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "relatedUnitTests": {
+      "files": 3,
+      "passed": 11
+    },
+    "adminHistoryE2e": {
+      "desktop": "passed",
+      "mobile": "passed",
+      "cases": 2,
+      "archiveConversations": 20,
+      "customerConversationTurns": 50
+    },
+    "publicBundlePrivateDataLeak": false,
+    "credentialScan": "passed",
+    "historyPath": "/admin?tab=conversations",
+    "normalConversations": 12,
+    "totalHistoryEntries": 32,
+    "actualServer": {
+      "checkedAt": "2026-10-18T06:58:47.809Z",
+      "actualServer": "http://localhost:3000",
+      "checks": [
+        {
+          "width": 1440,
+          "historyCount": 32,
+          "customerSimulations": 10,
+          "allFiveTurnsVisible": true,
+          "reviewAndTechnicalIssuesVisible": true,
+          "perAnswerSourceLinks": true,
+          "noOverflow": true
+        },
+        {
+          "width": 390,
+          "historyCount": 32,
+          "customerSimulations": 10,
+          "allFiveTurnsVisible": true,
+          "reviewAndTechnicalIssuesVisible": true,
+          "perAnswerSourceLinks": true,
+          "noOverflow": true
+        }
+      ],
+      "pageErrors": []
+    }
+  }
+}

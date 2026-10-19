@@ -136,7 +136,7 @@ it('keeps a whole consultation useful without a response model', async () => {
   // Pressure was answered as unknown; the next question moves on.
   expect(replies[2].content).not.toContain('「圧力」');
   expect(replies[2].content).toContain('接続方式');
-  expect(replies[3].content).toContain('この内容で担当者に相談する');
+  expect(replies[3].content).toContain('この内容で相談を依頼する');
   expect(replies[3].handoff).toBe('inquiry');
   expect(replies[4].route).toBe('summary');
   expect(replies[4].content).toContain(
@@ -217,7 +217,7 @@ it('answers order, status and reservation questions separately and offers the ha
     'pump',
     order.conversationId,
   );
-  expect(status.message.content).toContain('まだ担当者には届いていない');
+  expect(status.message.content).toContain('正式なご依頼としては未送信');
   const hold = await answerChat(
     '注文前に、在庫を取り置きしておいてもらえますか？返信が来るまで確保してください。',
     'pump',
@@ -247,7 +247,7 @@ it('tells the customer when the conversation was already handed off', async () =
     'handed',
     first.conversationId,
   );
-  expect(status.message.content).toContain('受け付け済み');
+  expect(status.message.content).toContain('受け付けています');
   expect(status.message.handoff).toBeUndefined();
 });
 
@@ -255,7 +255,7 @@ it('asks the response model for a summary and carries it to the inquiry form', a
   replies(
     'バルブのご相談ですね。',
     '25Aの冷却水用ですね。圧力が分かると絞り込めます。',
-    'ご相談内容をまとめました。\n・工場の冷却水用、25A、40度、手動\n未確認：圧力。下の「この内容で担当者に相談する」から送れます。',
+    'ご相談内容をまとめました。\n・工場の冷却水用、25A、40度、手動\n未確認：圧力。下の「この内容で相談を依頼する」から送れます。',
   );
   const first = await answerChat(valve[0], 'summary-ai');
   await answerChat(valve[1], 'summary-ai', first.conversationId);
@@ -273,7 +273,7 @@ it('explains how to reach the staff without calling a model', async () => {
     'handoff',
   );
   expect(result.message.route).toBe('handoff');
-  expect(result.message.content).toContain('この内容で担当者に相談する');
+  expect(result.message.content).toContain('この内容で相談を依頼する');
   expect(result.message.content).toContain('お名前とメールアドレス');
   expect(result.message.handoff).toBe('inquiry');
   expect(network).not.toHaveBeenCalled();
@@ -308,7 +308,7 @@ it('invites a quote request right after a registered price, once', async () => {
 
 // Findings of the customer-agent conversations of 2026-10-13.
 it('gives a fixed terms answer once, then answers in conversation', async () => {
-  replies('掛け払いのご希望は、見積依頼に添えて担当者が確認します。');
+  replies('掛け払いのご希望は、見積依頼に添えて当社で確認します。');
   const first = await answerChat('支払いは月末締めの請求書払いでいけますか？', 'terms-once');
   expect(first.message.content).toContain('お支払い方法・条件は');
   expect(network).not.toHaveBeenCalled();
@@ -326,7 +326,7 @@ it('gives a fixed terms answer once, then answers in conversation', async () => 
 
 it('keeps offering the quote request and names the button that is shown', async () => {
   replies(
-    'ご相談内容をまとめました。\n・パッキン 30枚\n下の「この内容で担当者に相談する」から送れます。',
+    'ご相談内容をまとめました。\n・パッキン 30枚\n下の「この内容で相談を依頼する」から送れます。',
   );
   const first = await answerChat('パッキンを30枚ほしいです。在庫はありますか？', 'sticky');
   expect(first.message.handoff).toBe('quote');
@@ -337,7 +337,7 @@ it('keeps offering the quote request and names the button that is shown', async 
   );
   expect(summary.message.handoff).toBe('quote');
   expect(summary.message.content).toContain('この内容で見積を依頼する');
-  expect(summary.message.content).not.toContain('この内容で担当者に相談する');
+  expect(summary.message.content).not.toContain('この内容で相談を依頼する');
 });
 
 it('does not answer another item with the previous registered product', async () => {
@@ -519,4 +519,87 @@ it('follows a quoted unit price back to its product and does not ask which item 
   // The demo casting's category ("耐熱ガラス・鋳物") does not make it a glass topic.
   expect(summary.message.content).not.toContain('覗き窓');
   expect(summary.message.content).toContain('M12×40');
+});
+
+it('speaks for our company even when the model draft deflects to another staff member', async () => {
+  replies('現物の写真を添えて担当者にご相談ください。');
+  const reply = await answerChat(
+    '古いコンベヤのベルトを交換したいです。型番は消えています。',
+    'our-window',
+  );
+  expect(reply.message.content).not.toMatch(/担当者|担当の者/);
+  expect(reply.message.responseProvider).toBe('local');
+});
+
+it('explains belt circumference correctly and carries the conversation into a quote', async () => {
+  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  const first = await answerChat(
+    'コンベヤの平ベルトを1本、埼玉県へ。幅200mm、厚み2mm、機械の端から端は1mです。見積希望です。',
+    'belt-length',
+  );
+  const second = await answerChat(
+    'ベルト一周はどう測ればいいですか？',
+    'belt-length',
+    first.conversationId,
+  );
+  expect(second.message.content).toContain('設備を停止');
+  expect(second.message.content).toContain('輪の全周');
+  expect(second.message.content).toContain('プーリーの円周とは異なります');
+  expect(second.message.handoff).toBe('quote');
+  expect(second.message.content).not.toMatch(/担当者|円周率をかけ/);
+});
+
+it('answers shipment timing questions without treating generic supplier dispatch as a request for private identity', async () => {
+  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  const first = await answerChat(
+    '仕入先の発送日と、こちらに届く日は分けて教えてもらえますか？',
+    'shipping-privacy',
+  );
+  expect(first.message.route).not.toBe('privacy');
+  const secret = await answerChat(
+    '仕入先の会社名とURLを教えてください',
+    'shipping-privacy',
+    first.conversationId,
+  );
+  expect(secret.message.route).toBe('privacy');
+  const quote = await answerChat(
+    'ではパッキン30枚の見積をお願いします。',
+    'shipping-privacy',
+    first.conversationId,
+  );
+  expect(quote.message.route).not.toBe('privacy');
+  expect(quote.message.handoff).toBe('quote');
+});
+
+it('preserves the quantity and destination for a made-to-order quote form and stops asking after agreement', async () => {
+  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  const first = await answerChat(
+    'SUS304のL字金具4個、京都府向けに製作見積をお願いしたいです。',
+    'custom-quote-quantity',
+  );
+  const next = await answerChat(
+    '穴位置は設計確認中です。図面は後から連絡します。',
+    'custom-quote-quantity',
+    first.conversationId,
+  );
+  const quote = await answerChat(
+    '今の条件で見積依頼します。連絡先はどこへ入力しますか？',
+    'custom-quote-quantity',
+    first.conversationId,
+  );
+  expect(next.message.requestedQuantity).toBe(4);
+  expect(quote.message.requestedQuantity).toBe(4);
+  expect(quote.message.requestedDestination).toBe('京都');
+  expect(quote.message.handoff).toBe('quote');
+});
+
+it('does not reconfirm a quantity already supplied for a fabrication quote', async () => {
+  replies('SUS304のL字金具4個でお間違いないでしょうか。');
+  const reply = await answerChat(
+    'SUS304のL字金具を4個、京都府向けに製作見積をお願いします。',
+    'do-not-reask-amount',
+  );
+  expect(reply.message.content).not.toContain('お間違いないでしょうか');
+  expect(reply.message.requestedQuantity).toBe(4);
+  expect(reply.message.handoff).toBe('quote');
 });

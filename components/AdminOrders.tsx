@@ -1,8 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
-import type { Order } from '@/lib/contracts';
+import type { Order, Quote } from '@/lib/contracts';
 import { api, datetime, errorMessage, yen } from './api';
 import { Empty, Notice, useNotice } from './AdminCommon';
+import AdminProcurementHistory from './AdminProcurementHistory';
 const labels: Record<Order['status'], string> = {
   pending_approval: '承認待ち',
   approved: '承認済み',
@@ -13,11 +14,17 @@ const labels: Record<Order['status'], string> = {
 };
 export default function AdminOrders() {
   const [items, setItems] = useState<Order[]>([]),
+    [quotes, setQuotes] = useState<Quote[]>([]),
     [busy, setBusy] = useState('');
   const n = useNotice();
   async function load() {
     try {
-      setItems(await api<Order[]>('/api/admin/orders'));
+      const [orders, quoteList] = await Promise.all([
+        api<Order[]>('/api/admin/orders'),
+        api<Quote[]>('/api/admin/quotes'),
+      ]);
+      setItems(orders);
+      setQuotes(quoteList);
     } catch (e) {
       n.fail(errorMessage(e));
     }
@@ -98,8 +105,20 @@ export default function AdminOrders() {
                     ) : o.status === 'needs_reconciliation' ? (
                       <span className="muted">仕入先に受付状況をご確認ください</span>
                     ) : (
-                      <span className="muted">完了</span>
+                      <span className="muted">送信記録済み・入荷は別途確認</span>
                     )}
+                    {['dispatched', 'simulated'].includes(o.status) &&
+                      o.supplierId &&
+                      quotes
+                        .find((q) => q.id === o.quoteId)
+                        ?.lines.map((line, index) =>
+                          line.productId ? (
+                            <AdminProcurementHistory
+                              key={index}
+                              endpoint={`/api/admin/orders/${o.id}/history/${index}`}
+                            />
+                          ) : null,
+                        )}
                   </td>
                 </tr>
               ))}

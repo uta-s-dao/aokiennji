@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import type { AppSettings, ProcurementOffer, ProductSourcing } from '../contracts';
 import { calculateSourcingEstimate, type EstimateResult } from '../sourcing-estimate';
-import { audit, now, save } from './db';
+import { audit, db, now, save } from './db';
+import { rememberProcurementConfirmation } from './procurement-memory';
 import { ApiError } from './auth';
 import { researchNotes } from './research';
 import { procurementOfferSchema } from './validation';
@@ -71,10 +72,13 @@ export function updateProcurementOffer(
   // This is an explicit staff confirmation of the source and all edited facts.
   const updated = { ...offer, ...fields, confirmedAt: fields.approved ? now() : null };
   note.offers = note.offers!.map((o) => (o.id === offerId ? updated : o));
-  save('research_notes', note, {
-    conversation_id: note.conversationId,
-    created_at: note.createdAt,
-  });
+  db().transaction(() => {
+    save('research_notes', note, {
+      conversation_id: note.conversationId,
+      created_at: note.createdAt,
+    });
+    rememberProcurementConfirmation({ kind: 'offer', conversationId, noteId, offerId });
+  })();
   audit(
     'procurement.confirmed',
     noteId,

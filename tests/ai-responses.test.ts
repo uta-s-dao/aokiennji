@@ -20,8 +20,8 @@ const testDirectory = mkdtempSync(join(tmpdir(), 'aoki-response-usage-'));
 const context: ReplyContext = {
   question: '配管の液体を止める部品を相談したい',
   history: [],
-  canonical: 'バルブの分野についてご相談いただけます。個別の対応可否は担当者が確認します。',
-  facts: [{ id: 'scope', text: '取扱分野：バルブ。個別製品は担当者が確認します。' }],
+  canonical: 'バルブの分野についてご相談いただけます。個別の対応可否は当社で確認します。',
+  facts: [{ id: 'scope', text: '取扱分野：バルブ。個別製品は当社で確認します。' }],
   confirmedProduct: false,
   settings: { ...DEFAULT_SETTINGS, responseProvider: 'openai' },
   privateText: (text) => /秘密商事/.test(text),
@@ -61,6 +61,29 @@ afterEach(() => {
 afterAll(() => rmSync(testDirectory, { recursive: true, force: true }));
 
 describe('grounded AI response and streaming', () => {
+  it('uses the selected flagship with room for reasoning and records the actual request settings', async () => {
+    mockReply(paragraph);
+    const result = await generateGroundedReply(
+      { ...context, settings: { ...context.settings, responseModel: 'gpt-6-astra' } },
+      { usageContext: { scope: 'standalone', turnId: 'flagship-test' } },
+    );
+    expect(result.provider).toBe('openai');
+    const options = network.mock.calls[0][1]!;
+    expect(options.timeoutMs).toBe(45000);
+    expect(JSON.parse(options.body!)).toMatchObject({
+      model: 'gpt-6-astra',
+      reasoning: { effort: 'high' },
+      max_output_tokens: 6000,
+      store: false,
+      stream: true,
+      text: { format: { type: 'json_schema', strict: true } },
+    });
+    expect(aiUsageReport({ turnId: 'flagship-test' }).items[0]).toMatchObject({
+      model: 'gpt-6-astra',
+      outcome: 'accepted',
+      requestShape: { maxOutputTokens: 6000, reasoning: { effort: 'high' } },
+    });
+  });
   it('distinguishes incomplete HTTP 200 generation from validation rejection and retains reported usage', async () => {
     network.mockImplementation(async (_url, options) => {
       options?.onResponse?.(200, new Headers());
@@ -102,7 +125,7 @@ describe('grounded AI response and streaming', () => {
     });
     const [url, options] = network.mock.calls[0];
     expect(url).toBe('https://api.openai.com/v1/responses');
-    expect(options?.timeoutMs).toBe(8000);
+    expect(options?.timeoutMs).toBe(20000);
     const body = JSON.parse(options!.body!);
     expect(body).toMatchObject({
       store: false,
@@ -147,7 +170,7 @@ describe('grounded AI response and streaming', () => {
                 evidenceIds: [],
               },
               {
-                text: 'お届け先の都道府県を教えていただければ、担当者が確認します。',
+                text: 'お届け先の都道府県を教えていただければ、当社で確認します。',
                 evidenceIds: [],
               },
             ],
@@ -158,7 +181,7 @@ describe('grounded AI response and streaming', () => {
       return response;
     });
     const result = await generateGroundedReply({ ...context, canonical, mode: 'supplement' });
-    expect(result.content).toBe('お届け先の都道府県を教えていただければ、担当者が確認します。');
+    expect(result.content).toBe('お届け先の都道府県を教えていただければ、当社で確認します。');
   });
   it('drops sentences that paraphrase the fixed text and keeps what is new', async () => {
     const canonical =
@@ -291,10 +314,10 @@ describe('grounded AI response and streaming', () => {
     network.mockReset();
     mockReply({ text: '耐熱温度は500度です。', evidenceIds: ['scope'] });
     const late = await generateGroundedReply(
-      { ...context, fallback: '条件をもとに担当者が確認します。' },
+      { ...context, fallback: '条件をもとに当社で確認します。' },
       { retryUntil: Date.now() - 1 },
     );
-    expect(late).toMatchObject({ provider: 'local', content: '条件をもとに担当者が確認します。' });
+    expect(late).toMatchObject({ provider: 'local', content: '条件をもとに当社で確認します。' });
     expect(network).toHaveBeenCalledTimes(1);
   });
 });
@@ -308,12 +331,12 @@ describe('reply validation', () => {
   };
   it.each([
     '25Aで40度の冷却水でしたら、ボール弁が一般的な候補です。',
-    '送料が無料かどうかは、お届け先と数量をもとに担当者が確認します。',
-    '2割引のご希望は承りました。割引の可否は担当者がお見積りの際に確認します。',
+    '送料が無料かどうかは、お届け先と数量をもとに当社で確認します。',
+    '2割引のご希望は承りました。割引の可否は当社でお見積りの際に確認します。',
     'ご予算1万円とのこと、承知しました。',
     '確認したい点は2つです。材質はSUS304かどうかも教えてください。',
-    '取り扱っているかどうかは担当者が確認します。',
-    '納期の確約はできかねますが、担当者が確認します。',
+    '取り扱っているかどうかは当社で確認します。',
+    '納期の確約はできかねますが、当社で確認します。',
     'ご注文はまだ完了していません。',
   ])('accepts a hedged or customer-sourced statement: %s', (text) => {
     expect(() => validateReplyBlock({ text, evidenceIds: [] }, said)).not.toThrow();

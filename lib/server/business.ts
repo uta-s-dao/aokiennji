@@ -16,6 +16,7 @@ import { db, list, byId, save, uid, now, normalize, getSettings, demoMode, audit
 import { ApiError } from './auth';
 import { dispatchSupplierOrder } from './providers';
 import { openaiQuotaAlert } from './ai-usage';
+import { rememberDispatchedOrder } from './procurement-memory';
 
 export function requireFlag(name: keyof AppSettings['flags']) {
   if (!getSettings().flags[name])
@@ -155,22 +156,36 @@ export function createQuote(
   const conversation = input.conversationId
     ? verifyConversation(input.conversationId, owner)
     : undefined;
+  const salesState = conversation
+    ? conversationMessages(conversation.id)
+        .toReversed()
+        .find((m) => m.role === 'assistant' && m.salesState)?.salesState
+    : undefined;
+  if (salesState && salesState.stage !== 'contact')
+    throw new ApiError(
+      409,
+      'sales_stage_required',
+      '型番の選択と見積希望の確認を終えてから依頼してください。',
+    );
   let lines: QuoteLine[] = [];
-  let status: Quote['status'] = 'requested';
+  const status: Quote['status'] = 'requested';
   if (input.productId) {
     const raw = byId<Product>('products', input.productId);
     if (!raw || raw.visibility !== 'public' || (!demoMode() && raw.isDemo))
       throw new ApiError(404, 'not_found', '商品が見つかりません。');
     const p = publicProduct(raw)!;
-    const unitPrice =
-      getSettings().flags.autoQuote && validProduct(raw) && p.price !== null ? p.price : 0;
+    // Registered prices seed a draft; every formal quote needs Aoki's review.
+    const unitPrice = validProduct(raw) && p.price !== null ? p.price : 0;
     lines = [{ productId: raw.id, name: raw.name, quantity: input.quantity, unitPrice }];
-    if (unitPrice > 0 && ['available', 'orderable'].includes(p.availability)) status = 'issued';
   } else
     lines = [
       {
         productId: null,
-        name: '相談内容を確認後に明細を作成',
+        name: conversation
+          ? salesState?.selectedModel ||
+            conversationMessages(conversation.id).at(-1)?.sourcing?.model ||
+            '商品選定・製作のご相談（仕様は相談内容参照）'
+          : '相談内容を確認後に明細を作成',
         quantity: input.quantity,
         unitPrice: 0,
       },
@@ -207,7 +222,7 @@ export function getQuoteByToken(token: string) {
   if (!row) throw new ApiError(404, 'not_found', '見積が見つかりません。');
   return JSON.parse(row.json) as Quote;
 }
-export function updateQuote(id: string, input: Partial<Quote>) {
+export function updateQuote(id: string, input: Partial<Quote> & { aokiReviewed?: boolean }) {
   const q = byId<Quote>('quotes', id);
   if (!q) throw new ApiError(404, 'not_found', '見積が見つかりません。');
   if (
@@ -218,6 +233,8 @@ export function updateQuote(id: string, input: Partial<Quote>) {
     throw new ApiError(409, 'invalid_state', '確定済みの見積は変更できません。');
   if (input.status && !['requested', 'draft', 'issued', 'cancelled'].includes(input.status))
     throw new ApiError(400, 'invalid_state', '見積状態が不正です。');
+  if (input.status === 'issued' && input.aokiReviewed !== true)
+    throw new ApiError(400, 'review_required', '正式見積は青木さんの確認後に発行してください。');
   if (
     input.status === 'issued' &&
     q.status !== 'draft' &&
@@ -243,6 +260,7 @@ export function updateQuote(id: string, input: Partial<Quote>) {
     expiresAt,
     notes: input.notes ?? q.notes,
     status: input.status ?? q.status,
+    ...(input.status === 'issued' ? { reviewedAt: now(), reviewedBy: '青木' as const } : {}),
     updatedAt: now(),
   };
   save('quotes', next, { token: next.token });
@@ -356,7 +374,10 @@ export async function dispatchOrder(id: string) {
       lastError: null,
       updatedAt: now(),
     };
-    save('orders', next, { quote_id: o.quoteId, idempotency_key: key });
+    db().transaction(() => {
+      save('orders', next, { quote_id: o.quoteId, idempotency_key: key });
+      rememberDispatchedOrder(next);
+    })();
     audit('order.simulated', id, 'デモ送信を記録しました');
     return next;
   }
@@ -395,7 +416,10 @@ export async function dispatchOrder(id: string) {
       lastError: result.message || null,
       updatedAt: now(),
     };
-    save('orders', next, { quote_id: o.quoteId, idempotency_key: key });
+    db().transaction(() => {
+      save('orders', next, { quote_id: o.quoteId, idempotency_key: key });
+      rememberDispatchedOrder(next);
+    })();
     audit('order.dispatched', id, `送信結果: ${next.status}`);
     return next;
   } catch (e) {

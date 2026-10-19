@@ -7,10 +7,9 @@ import type {
   Product,
   QueryIntent,
   Source,
-  Supplier,
   StoredChatMessage,
 } from '../contracts';
-import { audit, byId, db, getSettings, list, normalize, now, save, uid } from './db';
+import { audit, byId, db, getSettings, normalize, now, save, uid } from './db';
 import {
   conversationMessages,
   publicProduct,
@@ -18,7 +17,7 @@ import {
   requireFlag,
   verifyConversation,
 } from './business';
-import { classifyQuery, localIntent, searchWeb } from './providers';
+import { classifyQuery, localIntent } from './providers';
 import {
   factDetail,
   factualReply,
@@ -40,6 +39,15 @@ import { documentCandidates } from './retrieval';
 import { generateGroundedReply, groundingHash, responseModel } from './ai-responses';
 import { responseBudgets } from './response-transport';
 import { sourceProduct, sourcingReply } from './sourcing';
+import { publicSourcing } from './sourcing-reply';
+import { salesConversation, shouldUseSalesConversation } from './sales-conversation';
+import { selectionReply } from './product-selection';
+import {
+  createSourceTrace,
+  finishSourceStage,
+  searchRegisteredFirst,
+  startSourceStage,
+} from './preferred-sources';
 import { sourcingEstimate, sourcingContextRevision } from './sourcing-estimate';
 import { estimateReply } from '../sourcing-estimate';
 import { company } from '../company';
@@ -87,9 +95,10 @@ export async function answerChat(
   requireFlag('chat');
   const userCreatedAt = now();
   const settings = getSettings();
+  const budgets = responseBudgets(settings.flags.webSearch, responseModel(settings));
   output = {
     ...output,
-    signal: output.signal || AbortSignal.timeout(responseBudgets(settings.flags.webSearch).chat),
+    signal: output.signal || AbortSignal.timeout(budgets.chat),
   };
   const conversation: Conversation = conversationId
     ? verifyConversation(conversationId, owner)
@@ -120,6 +129,7 @@ export async function answerChat(
     if (!conversationId) audit('conversation.created', conversation.id, '商品相談を受け付けました');
   })();
   const assistantId = uid();
+  const sourceTrace = createSourceTrace();
   const onText = output.onText;
   if (onText) {
     output.onText = (content) => {
@@ -135,6 +145,7 @@ export async function answerChat(
             replyToId: usageContext.turnId,
             content,
             incomplete: true,
+            sourceTrace,
             createdAt: now(),
           },
           { conversation_id: conversation.id },
@@ -143,6 +154,63 @@ export async function answerChat(
     };
   }
   const privateQuestion = privateSupplierQuestion(message);
+  if (!privateQuestion && shouldUseSalesConversation(message, previous, settings)) {
+    const result = await salesConversation({
+      message,
+      history: previous,
+      settings,
+      trace: sourceTrace,
+      context: usageContext,
+      signal: output.signal,
+      handedOff: conversation.status === 'handed_off',
+    });
+    const assistant: ChatMessage = {
+      ...result,
+      id: assistantId,
+      role: 'assistant',
+      createdAt: now(),
+      route: 'sourcing',
+      groundingHash: groundingHash(
+        [],
+        undefined,
+        [],
+        settings.flags,
+        sourceTrace.registeredRevision,
+      ),
+    };
+    sourceTrace.answerCanonical = assistant.content;
+    sourceTrace.answerFacts = [{ id: 'sales_stage', text: JSON.stringify(result.salesState) }];
+    sourceTrace.conclusion ||= `段階：${result.salesState.stage}`;
+    db().transaction(() => {
+      save(
+        'messages',
+        {
+          ...assistant,
+          conversationId: conversation.id,
+          replyToId: usageContext.turnId,
+          sourceTrace,
+          processing: {
+            responseProvider: assistant.responseProvider,
+            responseModel: assistant.responseProvider === 'openai' ? responseModel(settings) : null,
+            responseMode: 'local',
+            responseReason: `sales_${result.salesState.stage}`,
+            classificationProvider: 'openai',
+            webSearch: sourceTrace.stages.some((s) => s.scope !== 'registered_data'),
+            durationMs: Date.now() - Date.parse(userCreatedAt),
+          },
+        },
+        { conversation_id: conversation.id },
+      );
+      save(
+        'conversations',
+        { ...verifyConversation(conversation.id, owner), updatedAt: now() },
+        { owner_id: owner },
+      );
+      audit('chat.sales_stage', conversation.id, `会話段階：${result.salesState.stage}`);
+    })();
+    onText?.(assistant.content);
+    return { conversationId: conversation.id, message: assistant };
+  }
   const safeHistory = previous.filter((m) => !privateSupplierQuestion(m.content));
   // The customer's own words, oldest first: conditions to keep and summarize.
   const customerTexts = [
@@ -170,6 +238,23 @@ export async function answerChat(
     privateQuestion || (!planned.classify && planned.response === 'local')
       ? []
       : documentCandidates(message, local);
+  const registeredStage = !local.model
+    ? startSourceStage(
+        sourceTrace,
+        'registered_data',
+        message,
+        [],
+        '情報源・取込の登録商品・取込資料を照合',
+      )
+    : undefined;
+  if (registeredStage)
+    finishSourceStage(
+      registeredStage,
+      'done',
+      localMatches.length || candidates.some((c) => c.matched)
+        ? '登録情報を優先参照'
+        : '関連する登録情報なし',
+    );
   // Independent I/O starts together, only when the server policy requests it.
   const sourcingFollowup =
     !!lastReply?.sourcing &&
@@ -189,17 +274,16 @@ export async function answerChat(
     settings.searchProvider !== 'none' &&
     !local.model &&
     !sourcingFollowup;
-  const webWork = shouldSearchWeb
-    ? searchWeb(
-        message,
-        settings,
-        list<Supplier>('suppliers')
-          .filter((s) => s.enabled && s.approved)
-          .flatMap((s) => s.domains),
-      )
-        .then((data) => ({ data, failed: false }))
-        .catch(() => ({ data: [] as Evidence[], failed: true }))
-    : Promise.resolve({ data: [] as Evidence[], failed: false });
+  // Start only after classification/sourcing: an eager public search would bypass priority.
+  const webWork = () =>
+    shouldSearchWeb && !intent.model && !sourcing && !candidates.some((c) => c.matched)
+      ? searchRegisteredFirst(message, settings, sourceTrace, {
+          context: usageContext,
+          signal: output.signal,
+        })
+          .then((data) => ({ data, failed: false }))
+          .catch(() => ({ data: [] as Evidence[], failed: true }))
+      : Promise.resolve({ data: [] as Evidence[], failed: false });
   const intent = !planned.classify
     ? local
     : await classifyQuery(message, settings, safeHistory, {
@@ -222,6 +306,13 @@ export async function answerChat(
   const quantityMatch = [
     ...request.matchAll(/(?:^|[^\d])(\d{1,6})\s*(個|台|枚|本|セット|pcs|pieces|units)/gi),
   ]
+    .filter(
+      (m) =>
+        !/(?:小箱|大箱|入数|梱包|販売単位)[：:はが\s]*$/.test(
+          request.slice(Math.max(0, m.index - 12), m.index + 1),
+        ) &&
+        !/^(?:入り|入数|単位|と(?:書|表示|載))/.test(request.slice(m.index + m[0].length).trim()),
+    )
     .filter(
       (m) =>
         !/^\s*(?:あたり|当たり|につき|いくら|おいくら|の(?:価格|単価|値段))/.test(
@@ -312,8 +403,12 @@ export async function answerChat(
           ? last.intent
           : 'stock';
   }
+  const sameConsultation =
+    !intent.model &&
+    (!namedTopic || namedTopic === consultationTopic(customerTexts.slice(0, -1).toReversed()));
   let requestedQuantity =
-    statedQuantity || (continued ? continuedFrom?.requestedQuantity : undefined);
+    statedQuantity ||
+    (continued || sameConsultation ? continuedFrom?.requestedQuantity : undefined);
   // "1個あたり8,400円で合っていますか？" asks the unit price; the amount of
   // the conversation is kept for the next question.
   const unitPriceAsked =
@@ -353,12 +448,12 @@ export async function answerChat(
   }
   const sourceModel =
     intent.model ||
-    (!namedTopic &&
-    (sourcingFollowup || intent.referencesPrevious || quantityFollowup || isBareReply(message))
+    (!namedTopic && !/別件|別の(?:商品|製品)|他の(?:商品|製品)/.test(request)
       ? lastReply?.sourcing?.model
       : undefined);
   const sourcing =
     !privateQuestion &&
+    conversation.status !== 'handed_off' &&
     !matches.length &&
     sourceModel &&
     !['privacy', 'social', 'summary', 'handoff'].includes(route.reason) &&
@@ -373,53 +468,62 @@ export async function answerChat(
           settings,
           context: usageContext,
           signal: output.signal,
-        })
+          sourceTrace,
+          checkAvailability:
+            /在庫|出荷|発送|納期|届/.test(request) && /調べ|探し|最新|再確認|実際/.test(request),
+        }).then((result) => publicSourcing(result, settings.flags))
+      : undefined;
+  const rememberedSourcing =
+    !sourcing &&
+    !matches.length &&
+    !topic &&
+    !intent.model &&
+    !namedTopic &&
+    (sourcingFollowup || ['summary', 'handoff', 'transaction'].includes(route.reason))
+      ? lastReply?.sourcing
       : undefined;
   // Keep conditions only from the current sourced item, including later quantity/destination turns.
+  const sourceCorrection =
+    !!sourcing &&
+    !!lastReply?.sourcing &&
+    /訂正|現物(?:を見たら|は|の)|(?:品番|型番).*(?:違|誤)|別の設備/.test(request);
   const sameSource =
-    sourceModel &&
+    (sourceModel || rememberedSourcing?.model) &&
     lastReply?.sourcing &&
-    normalize(lastReply.sourcing.model) === normalize(sourceModel);
-  if (sourcing)
-    requestedQuantity = statedQuantity || (sameSource ? lastReply?.requestedQuantity : undefined);
-  const sourceDestination = sourcing
-    ? destinationIn([message]) || (sameSource ? lastReply?.requestedDestination : undefined)
-    : undefined;
+    normalize(lastReply.sourcing.model) === normalize(sourceModel || rememberedSourcing!.model);
+  if (sourcing || rememberedSourcing)
+    requestedQuantity =
+      statedQuantity || (sameSource || sourceCorrection ? lastReply?.requestedQuantity : undefined);
+  const sourceDestination =
+    sourcing || rememberedSourcing
+      ? destinationIn([message]) ||
+        (sameSource || sourceCorrection ? lastReply?.requestedDestination : undefined)
+      : undefined;
   const estimateResult = sourcing
     ? sourcingEstimate(conversation.id, sourcing, requestedQuantity, sourceDestination, settings)
     : undefined;
   const sourcedReply = () => {
     if (estimateResult?.estimate) return estimateReply(estimateResult.estimate);
-    const text = sourcingReply(sourcing!, !!requestedQuantity);
-    if (!requestedQuantity) return text;
-    if (!sourceDestination) return `${text}\nお届け先の都道府県を教えていただけますか？`;
-    if (
-      settings.sourcingEstimate.enabled &&
-      settings.flags.showPrice &&
-      settings.flags.showLeadTime
-    ) {
-      const missing = estimateResult?.missing || [];
-      const packs = missing.find((m) => m.startsWith('入数に合う数量'));
-      if (packs)
-        return `${text}\nこちらは${packs.match(/（(.+)）/)?.[1] || '梱包単位'}での販売です。ご希望の数量をご指定ください。`;
-      const pending = [
-        ...new Set(
-          missing.map((m) =>
-            /送料/.test(m)
-              ? '送料'
-              : /営業日/.test(m)
-                ? '納期'
-                : /配送条件/.test(m)
-                  ? `${sourceDestination}への配送条件`
-                  : /調達可否/.test(m)
-                    ? 'ご希望数量の在庫'
-                    : '販売価格・販売単位',
-          ),
-        ),
-      ];
-      return `${text}\n${sourceDestination}への${requestedQuantity}個のお届けについて、${pending.join('・')}を確認中です。未確認の金額や日数は、確認でき次第ご案内します。`;
+    const reused = sameSource && lastReply?.sourcing?.checkedAt === sourcing!.checkedAt;
+    const text =
+      reused && !/在庫|出荷|発送|納期|届|掲載/.test(request)
+        ? ''
+        : sourcingReply(sourcing!, !!requestedQuantity);
+
+    if (!requestedQuantity) return text || '必要な数量を教えていただけますか？';
+    if (!sourceDestination)
+      return `${text}\nお見積りのため、お届け先の都道府県を教えていただけますか？`;
+    const packs = estimateResult?.missing.find((m) => m.startsWith('入数に合う数量'));
+    if (packs)
+      return `${text}\nこちらは${packs.match(/（(.+)）/)?.[1] || '梱包単位'}での販売です。ご希望の数量をご指定ください。`;
+    if (estimateResult?.missing.includes('お届け先に対応する配送条件'))
+      return `${text}\n${sourceDestination}への配送条件を確認してお見積りします。下の「${QUOTE_LABEL}」から連絡先をお送りください。`;
+    if (reused && !text) {
+      if (/見積.*(?:依頼|送|入力)|連絡先/.test(request))
+        return `伺った条件は依頼に入ります。下の「${QUOTE_LABEL}」から、お名前とメールアドレスを入力して送信してください。`;
+      return '承知しました。伺った条件でお見積りへ進めます。';
     }
-    return text;
+    return `${text}\nこの条件でお見積りを承ります。下の「${QUOTE_LABEL}」から連絡先を入力してお送りください。`;
   };
   if (sourcing) {
     topic = undefined;
@@ -428,7 +532,7 @@ export async function answerChat(
   }
   const evidence: Evidence[] = matches.flatMap((p) => p.evidence || []);
   let externalWarning = '';
-  const external = await webWork;
+  const external = await webWork();
   if (external.failed) externalWarning = ' Web検索は現在利用できません。';
   if (!sourcing && !topic && !matches.length && intent.intent !== 'general') {
     if (intent.evidenceIndex !== undefined && candidates[intent.evidenceIndex])
@@ -443,6 +547,7 @@ export async function answerChat(
     evidence.push(
       ...external.data.filter(
         (e) =>
+          e.visibility === 'public' &&
           !privateSupplierQuestion([e.title, e.excerpt].join(' ')) &&
           !containsPrivateSupplierIdentity(e.url || ''),
       ),
@@ -450,6 +555,11 @@ export async function answerChat(
   }
 
   const handedOff = conversation.status === 'handed_off';
+  const quoteReceived =
+    handedOff &&
+    !!db()
+      .prepare("SELECT 1 FROM quotes WHERE json_extract(json, '$.conversationId')=? LIMIT 1")
+      .get(conversation.id);
   const thanks = thanksPattern.test(message);
   // The phone number is given once per conversation unless asked for again.
   const phoneShown = safeHistory.some(
@@ -544,13 +654,13 @@ export async function answerChat(
       : matches.length === 1
         ? productReply(matches, 'product', settings).split('\n')[0]
         : intent.model && !matches.length
-          ? `「${intent.model}」は登録商品にはありませんが、お取り寄せを含めて担当者が確認します。`
+          ? `「${intent.model}」は登録商品にはありませんが、お取り寄せを含めて当社で確認します。`
           : undefined,
     previousReplies: safeHistory.filter((m) => m.role === 'assistant').map((m) => m.content),
     handoff: (settings.flags.humanHandoff || handoff === 'quote') && !handedOff,
     guideLabel: guide.label,
     phone,
-    destination: destinationIn(customerTexts),
+    destination: sourcing || rememberedSourcing ? sourceDestination : destinationIn(customerTexts),
   };
   // Terms, urgency and company questions have fixed answers. A registered
   // price reply already explains shipping.
@@ -623,7 +733,7 @@ export async function answerChat(
       .map((f) => ({ price: '価格', stock: '在庫', lead_time: 'お届け時期' })[f as 'price'])
       .filter(Boolean)
       .join('・');
-    const lead = `「${intent.model}」は登録商品にはありませんが、${asked ? `${asked}も含めて、` : ''}お取り寄せできるか担当者が確認します。`;
+    const lead = `「${intent.model}」は登録商品にはありませんが、${asked ? `${asked}も含めて、` : ''}お取り寄せできるか当社で確認します。`;
     // Only the amount is asked for; a maker named in another way ("バンドーの
     // レッドS-II") was asked for again.
     const counted = customerTexts.some((t) => /\d+\s*(?:個|台|枚|本|セット|巻|pcs)/i.test(t));
@@ -644,7 +754,7 @@ export async function answerChat(
             detail,
           )
         : evidence.length
-          ? '関連する資料・候補が見つかりました。資料の記載だけでは販売・取り寄せ可否を確定できないため、担当者の確認が必要です。'
+          ? '関連する資料・候補が見つかりました。資料の記載だけでは販売・取り寄せ可否を確定できないため、条件を確認してお見積りにつなげます。'
           : intent.model
             ? unknownModel()
             : // An item already described is not asked for again.
@@ -672,7 +782,7 @@ export async function answerChat(
         ? thanks
           ? `どういたしまして。${
               customerTexts.length >= 3 && compose.handoff
-                ? `ここまでの内容で担当者に相談される場合は、下の「${guide.label}」から送れます。`
+                ? `ここまでの内容でお見積りをご希望でしたら、下の「${guide.label}」から送れます。`
                 : 'ほかに確認したいことがあれば、そのまま続けてお聞きください。'
             }`
           : introduction
@@ -745,6 +855,40 @@ export async function answerChat(
   const aiReady =
     settings.responseProvider !== 'local' &&
     !!process.env[settings.responseProvider === 'gemini' ? 'GEMINI_API_KEY' : 'OPENAI_API_KEY'];
+  if (
+    sourcing &&
+    !estimateResult?.estimate &&
+    aiReady &&
+    /(?:同じ|違い|分け|区別|確約|保証|測り|測れ|単位|だけで|のみ|という表示)/.test(request) &&
+    /[?？]|でしょうか|ですか|ますか|教え|どう|なぜ|違い/.test(request)
+  )
+    route.response = 'mixed';
+  if (
+    sourcing &&
+    /出荷|発送/.test(request) &&
+    /到着|届/.test(request) &&
+    /同じ|分け|区別|確約|決ま|保証|わけ/.test(request)
+  ) {
+    route.response = 'local';
+    fixed = /翌日|明日/.test(request)
+      ? '「最短当日出荷」だけでは翌日の到着は確定しません。配送経路と必要数量を確認し、お届け予定日をお見積りでご案内します。'
+      : '出荷日は送り出す日、到着日はお客様へ届く日です。配送経路と日数を含め、お届け予定日をお見積りでご案内します。';
+  } else if (
+    sourcing &&
+    /小箱|入数|入り|梱包単位/.test(request) &&
+    /だけ|のみ|小分け|単位/.test(request)
+  ) {
+    route.response = 'local';
+    fixed =
+      '小箱の入数と小分けでの販売可否は別に確認が必要です。伺った数量での手配可否と金額をお見積りします。';
+  } else if (sourcing && /到着|届/.test(request) && /見積/.test(request)) {
+    route.response = 'local';
+    fixed = 'はい。ご希望の時期も添えて、送料・お届け予定日をお見積りでご案内します。';
+  }
+  if (sourcing && /連絡先|入力先|入力.*画面|どこ.*入力/.test(request)) {
+    route.response = 'local';
+    fixed = sourcedReply();
+  }
   if (sourcing && !fixed.trim()) fixed = sourcedReply();
   const repeated = !fixed.trim() && route.response !== 'ai';
   // Taken before the route changes: the fixed answer given again is what the
@@ -756,28 +900,67 @@ export async function answerChat(
     composed = true;
   }
   fixed += externalWarning;
+  // A supplied specification is an answer, not a reason to ask the same details again.
+  if (
+    !sourcing &&
+    !rememberedSourcing &&
+    !matches.length &&
+    !privateQuestion &&
+    handoff === 'quote' &&
+    lastReply &&
+    requestedQuantity &&
+    compose.destination &&
+    !route.facts.length &&
+    route.response !== 'local' &&
+    !/[?？]|ですか|ますか|でしょうか|教え|どう|なぜ|どこ|方法|違い/.test(request)
+  ) {
+    route.response = 'local';
+    fixed = /未定|未確定|まだ|確認中|分から|わから/.test(request)
+      ? '未確定の項目は後から追記いただけます。分かっている条件でお見積りを相談いただけます。'
+      : '承知しました。伺った条件でお見積りへ進めます。';
+  }
+  if (handedOff && !privateQuestion) {
+    route.response = 'local';
+    fixed = /追記|追加|寸法を測/.test(request)
+      ? 'ご依頼を受け付けています。追加の寸法や条件は、このチャットにお書きください。ご依頼に添えて確認します。'
+      : quoteReceived
+        ? '見積依頼を受け付けています。内容を確認してお見積りをご案内します。金額・納期をご確認いただいてから、ご注文へ進めます。'
+        : 'ご相談を受け付けています。当社で内容を確認してご連絡します。追加の条件があれば、このチャットでお知らせください。';
+  }
+  if (
+    !handedOff &&
+    customerTopic === 'ベルト' &&
+    /一周|全周|長さ/.test(request) &&
+    /どう.*(?:測|はか)|測り方|計測方法|測定方法|(?:測|はか).*(?:よい|良い|いい|教え|方法)/.test(
+      request,
+    )
+  ) {
+    route.response = 'local';
+    fixed =
+      '設備を停止し、誤って動かない状態にしてから、ベルトに印を付けて一周分の長さを測ってください。取り外せる場合も輪の全周を測ります。コンベヤの端から端の長さや、プーリーの円周とは異なります。全周長が分かれば、伺った幅・厚み・本数でお見積りを進めます。';
+  }
   const rules =
     topic?.mode === 'fields'
-      ? `「${topic.fields.join('」「')}」は相談を受け付けている取扱分野です。個別製品の仕様・対応可否、価格・在庫・納期は担当者が確認します。`
+      ? `「${topic.fields.join('」「')}」は相談を受け付けている取扱分野です。個別製品の仕様・対応可否、価格・在庫・納期は当社で確認します。`
       : matches.length === 1
         ? `「${matches[0].name}」（型番${matches[0].model}）は登録商品です。${
             matches[0].isDemo ? '確認用のデモデータで、実際の販売条件ではありません。' : ''
           }${
             matches[0].availability === 'needs_review'
-              ? '現在の取扱条件は担当者が確認中です。'
+              ? '現在の取扱条件は当社で確認中です。'
               : matches[0].availability === 'unavailable'
                 ? '現在は取扱対象外として登録されています。'
                 : ''
-          }用途への適合や個別の対応可否は担当者が確認します。`
+          }用途への適合や個別の対応可否は当社で確認します。`
         : matches.length > 1
           ? `候補の登録商品: ${matches.map((p) => `「${p.name}」`).join('')}。どの商品かはお客様に確認が必要です。`
           : evidence.length
-            ? '関連する資料・候補があります。資料の記載だけでは販売・取り寄せ可否を確定できないため、担当者の確認が必要です。'
+            ? '関連する資料・候補があります。資料の記載だけでは販売・取り寄せ可否を確定できないため、条件を確認してお見積りにつなげます。'
             : intent.model
-              ? `「${intent.model}」は登録商品ではありません。取り寄せの可否・価格・在庫・納期は担当者が確認します。取扱いがないとは言わない。`
+              ? `「${intent.model}」は登録商品ではありません。取り寄せの可否・価格・在庫・納期は当社で確認します。取扱いがないとは言わない。`
               : intent.intent === 'custom'
-                ? '図面や仕様をもとに、設計・製作のご相談を承ります。製作可否・価格・納期は担当者が確認します。'
-                : '個別製品の対応可否・価格・在庫・納期は担当者が確認します。';
+                ? '図面や仕様をもとに、設計・製作のご相談を承ります。製作可否・価格・納期は当社で確認します。'
+                : '個別製品の対応可否・価格・在庫・納期は当社で確認します。';
   const conditions = statedConditions(topicTexts);
   const policyNext = unsaid(
     consultationTopic([message])
@@ -789,26 +972,28 @@ export async function answerChat(
   );
   if (route.reason === 'policy' && route.response === 'local' && policyNext)
     fixed += `\n${policyNext}`;
-  const fallback = repeated
-    ? givenBefore
-    : route.reason === 'handoff'
-      ? conditions.length
-        ? `伺った条件（${conditions.join('・')}）も、この会話と一緒に担当者へ引き継がれます。`
-        : ''
-      : route.reason === 'policy'
-        ? policyNext
-        : route.response === 'mixed'
-          ? composeConsultation({ ...compose, guided: fixed.includes(guide.label) }, 'next')
-          : route.reason === 'summary'
-            ? summarizeConsultation(compose)
-            : intent.intent === 'general' || (topic?.mode === 'fields' && topic.fields.length > 2)
-              ? topic
-                ? knowledgeReply(topic, settings)
-                : introduction
-              : composeConsultation({
-                  ...compose,
-                  lead: [demoNotice, compose.lead].filter(Boolean).join('\n') || undefined,
-                });
+  const fallback = sourcing
+    ? sourcedReply()
+    : repeated
+      ? givenBefore
+      : route.reason === 'handoff'
+        ? conditions.length
+          ? `伺った条件（${conditions.join('・')}）も、この会話と一緒に依頼に引き継がれます。`
+          : ''
+        : route.reason === 'policy'
+          ? policyNext
+          : route.response === 'mixed'
+            ? composeConsultation({ ...compose, guided: fixed.includes(guide.label) }, 'next')
+            : route.reason === 'summary'
+              ? summarizeConsultation(compose)
+              : intent.intent === 'general' || (topic?.mode === 'fields' && topic.fields.length > 2)
+                ? topic
+                  ? knowledgeReply(topic, settings)
+                  : introduction
+                : composeConsultation({
+                    ...compose,
+                    lead: [demoNotice, compose.lead].filter(Boolean).join('\n') || undefined,
+                  });
   const fields = availableFields();
   if (route.response === 'mixed') output.onText?.(fixed);
   const generated =
@@ -818,18 +1003,20 @@ export async function answerChat(
             question: message,
             history: safeHistory,
             customerNotes: customerTexts,
-            mode:
-              route.reason === 'summary'
+            mode: sourcing
+              ? 'sourcing'
+              : route.reason === 'summary'
                 ? 'summary'
                 : route.response === 'mixed'
                   ? 'supplement'
                   : 'consult',
-            canonical: route.response === 'mixed' ? fixed : rules,
+            canonical: sourcing ? sourcedReply() : route.response === 'mixed' ? fixed : rules,
             ...(repeated && givenBefore ? { answer: givenBefore } : {}),
             // Without the model, sentences given earlier are not repeated either.
             fallback: route.reason === 'summary' ? fallback : unsaid(fallback, said) || fallback,
             settings,
             facts: [
+              ...(sourcing ? [{ id: 'sourcing_outcome', text: sourcedReply() }] : []),
               { id: 'business_rules', text: rules },
               ...matches.map((p, i) => ({
                 id: `product_${i}`,
@@ -863,7 +1050,7 @@ export async function answerChat(
               {
                 id: 'contact',
                 text: handedOff
-                  ? 'この会話は担当者へのご相談として受付済みです。担当者が内容を確認して連絡します。'
+                  ? 'この会話はご相談として受付済みです。当社で内容を確認してご連絡します。'
                   : handoff
                     ? `${handoffGuide(settings.flags.humanHandoff || handoff === 'quote', guide.label, phone)}${
                         phone ? '' : '電話番号は案内済みのため書かない。'
@@ -886,15 +1073,22 @@ export async function answerChat(
           },
           {
             usageContext,
+            onGrounding: (blocks) => {
+              sourceTrace.answerBlocks = blocks;
+            },
+            onInput: (facts, canonical) => {
+              sourceTrace.answerFacts = facts;
+              sourceTrace.answerCanonical = canonical;
+            },
             // A rejected draft is rewritten only while the reply can still
             // finish within the response time budget.
-            retryUntil: Date.parse(userCreatedAt) + responseBudgets().retry,
+            retryUntil: Date.parse(userCreatedAt) + budgets.retry,
             signal: AbortSignal.any([
               output.signal!,
               AbortSignal.timeout(
                 Math.max(
                   100,
-                  responseBudgets().generation - (Date.now() - Date.parse(userCreatedAt)),
+                  budgets.generation - (sourcing ? 0 : Date.now() - Date.parse(userCreatedAt)),
                 ),
               ),
             ]),
@@ -936,7 +1130,9 @@ export async function answerChat(
   let content = finish(
     [
       route.response === 'mixed'
-        ? [fixed, generated.content].filter(Boolean).join('\n\n')
+        ? [fixed, sourcing && generated.provider === 'local' ? '' : generated.content]
+            .filter(Boolean)
+            .join('\n\n')
         : route.response === 'ai'
           ? generated.content + externalWarning
           : generated.content,
@@ -951,14 +1147,91 @@ export async function answerChat(
     content =
       finish(givenBefore || fixedPart(true)) ||
       finish(composeConsultation(compose, 'next')) ||
-      'ご相談の内容は、担当者がこの会話を確認してご案内します。';
+      'ご相談の内容は、この会話をもとにご案内します。';
   if (output.signal?.aborted) throw new Error('処理が中断されました');
   if (estimateResult?.estimate) content = estimateReply(estimateResult.estimate);
+
+  if (!sourcing) {
+    const stage =
+      registeredStage ||
+      startSourceStage(
+        sourceTrace,
+        'registered_data',
+        message,
+        [],
+        '情報源・取込の登録商品・取込資料を照合',
+      );
+    for (const p of matches) {
+      const raw = byId<Product>('products', p.id);
+      const source = raw?.sourceId ? byId<Source>('sources', raw.sourceId) : undefined;
+      sourceTrace.observations.push({
+        title: source ? `${source.name}：${p.name}` : p.name,
+        url: source?.url || '',
+        sourceId: source?.id,
+        origin: 'registered_data',
+        outcome: 'identified',
+        reason: '登録商品を参照。承認・確認期限と表示設定を適用',
+        excerpt: JSON.stringify(raw || p),
+        retrievedAt: raw?.updatedAt || p.updatedAt,
+      });
+    }
+    for (const candidate of candidates.filter((c) => c.matched)) {
+      const e = candidate.evidence;
+      const doc = e.id
+        ? byId<{ title: string; content: string; url: string; createdAt: string }>(
+            'documents',
+            e.id,
+          )
+        : undefined;
+      const source = e.sourceId ? byId<Source>('sources', e.sourceId) : undefined;
+      sourceTrace.observations.push({
+        title: source ? `${source.name}：${doc?.title || e.title}` : e.title,
+        url: doc?.url || e.url || '',
+        sourceId: e.sourceId,
+        origin: 'registered_data',
+        outcome: 'identified',
+        reason: '取込資料に関連記載あり。資料だけで販売条件を確定しない',
+        excerpt: doc?.content.slice(0, 2000) || e.excerpt,
+        retrievedAt: doc?.createdAt || e.retrievedAt,
+      });
+    }
+    finishSourceStage(
+      stage,
+      'done',
+      matches.length || candidates.some((c) => c.matched)
+        ? '登録情報を優先参照'
+        : '関連する登録情報なし',
+    );
+  }
+  sourceTrace.answerFacts ||= [
+    ...(sourcing
+      ? [{ id: 'sourcing_outcome', text: sourcedReply() }]
+      : [{ id: 'business_rules', text: rules }]),
+    ...matches.map((p, i) => ({
+      id: `product_${i}`,
+      text: JSON.stringify({
+        name: p.name,
+        model: p.model,
+        description: p.approved ? p.description : '',
+        specifications: p.approved ? p.specifications : '',
+      }),
+    })),
+    ...evidence
+      .slice(0, 6)
+      .map((e, i) => ({ id: `evidence_${i}`, text: `${e.title}: ${e.excerpt}` })),
+  ];
+  sourceTrace.conclusion ||= sourcing
+    ? sourcedReply()
+    : matches.length
+      ? '登録商品をもとに回答'
+      : evidence.length
+        ? '関連資料・検索候補をもとに相談を案内。発注可否は担当者確認'
+        : '該当商品の確認情報なし。一般相談・会社案内または担当者確認';
   const assistant: ChatMessage = {
     id: assistantId,
     role: 'assistant',
     content,
-    ...(sourcing ? { sourcing } : {}),
+    ...(sourcing || rememberedSourcing ? { sourcing: sourcing || rememberedSourcing } : {}),
     ...(estimateResult?.estimate
       ? { estimate: estimateResult.estimate, estimateRevision: estimateResult.revision }
       : {}),
@@ -976,7 +1249,14 @@ export async function answerChat(
     intent: intent.intent,
     factualIntents: route.facts,
     requestedQuantity,
-    ...(sourceDestination ? { requestedDestination: sourceDestination } : {}),
+    ...(sourceDestination ||
+    destinationIn([message]) ||
+    (sameConsultation ? lastReply?.requestedDestination : undefined)
+      ? {
+          requestedDestination:
+            sourceDestination || destinationIn([message]) || lastReply?.requestedDestination,
+        }
+      : {}),
     ...(Object.keys(detail).length ? { factDetail: detail } : {}),
     route: route.reason,
     ...(composed || quoteInvite ? { composed: true } : {}),
@@ -1044,6 +1324,7 @@ export async function answerChat(
         ...assistant,
         conversationId: conversation.id,
         replyToId: usageContext.turnId,
+        sourceTrace,
         processing: {
           classificationProvider: intent.provider,
           responseProvider: estimateResult?.estimate ? 'local' : generated.provider,
@@ -1107,7 +1388,8 @@ export async function answerChat(
           fields: [
             ...new Set([...(topic?.fields || []), ...topicTexts.flatMap(itemFieldsFromText)]),
           ].filter((f) => available.includes(f)),
-          destination: destinationIn(customerTexts),
+          destination:
+            sourcing || rememberedSourcing ? sourceDestination : destinationIn(customerTexts),
           quantity: statedQuantities(topicTexts),
           local: {
             research:
@@ -1188,14 +1470,63 @@ function buttonLabels(content: string, label?: string) {
 }
 export function currentMessages(id: string): ChatMessage[] {
   const settings = getSettings();
+  const registeredRevision = createSourceTrace().registeredRevision;
   const fields = availableFields();
   const sourceContext = sourcingContextRevision(id, settings);
   // Partial replies remain in the staff transcript; only completed replies
   // can be restored publicly or used as context for the next answer.
   return (conversationMessages(id) as StoredChatMessage[])
     .filter((m) => !m.incomplete)
-    .map(({ replyToId: _replyToId, processing: _processing, ...message }) => message)
-    .map((m) => {
+    .map(
+      ({ replyToId: _replyToId, processing: _processing, sourceTrace: _sourceTrace, ...message }) =>
+        message,
+    )
+    .map((original) => {
+      if (original.salesState) {
+        const selection = original.selection
+          ? {
+              ...original.selection,
+              candidates: original.selection.candidates.map((c) => ({
+                ...c,
+                sourcing: publicSourcing(c.sourcing, settings.flags),
+              })),
+            }
+          : undefined;
+        if (original.salesState.registeredRevision !== registeredRevision)
+          return {
+            ...original,
+            selection: undefined,
+            sourcing: undefined,
+            handoff: undefined,
+            content:
+              '登録情報が更新されています。条件・型番・在庫を再確認してから見積依頼へ進みます。',
+          };
+        const sourcing = original.sourcing
+          ? publicSourcing(original.sourcing, settings.flags)
+          : undefined;
+        return {
+          ...original,
+          selection,
+          sourcing,
+          ...(!settings.flags.quoteRequests ? { handoff: undefined } : {}),
+          content:
+            original.salesState.stage === 'candidates' && selection
+              ? selectionReply(selection, settings.flags)
+              : original.salesState.stage === 'quote_offer' && sourcing
+                ? `${sourcingReply(sourcing, true)}\nこの型番でお見積りしますか？`
+                : original.content,
+        };
+      }
+      const m = original.sourcing
+        ? { ...original, sourcing: publicSourcing(original.sourcing, settings.flags) }
+        : original;
+      if (
+        m.sourcing &&
+        !m.estimate &&
+        original.groundingHash !==
+          groundingHash(m.products, m.knowledge, m.evidence, settings.flags, sourceContext)
+      )
+        return { ...m, content: sourcingReply(m.sourcing, !!m.requestedQuantity) };
       if (m.estimate && m.sourcing) {
         const latest = sourcingEstimate(
           id,

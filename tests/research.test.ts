@@ -255,9 +255,11 @@ it('lets Jev decide, searches the web and supplier sites, and checks each value'
     ([url]) => url === 'https://api.openai.com/v1/responses',
   );
   expect(searches).toHaveLength(2);
-  expect(JSON.parse(searches[1][1]!.body!).tools[0].filters.allowed_domains).toEqual([
+  // Registered sites now complete before the public search starts.
+  expect(JSON.parse(searches[0][1]!.body!).tools[0].filters.allowed_domains).toEqual([
     'valve-supplier.example',
   ]);
+  expect(JSON.parse(searches[1][1]!.body!).tools[0].filters).toBeUndefined();
   const report = aiUsageReport({ conversationId: 'c1' });
   expect(report.items.filter((c) => c.purpose === 'research')).toHaveLength(2);
   expect(report.items.filter((c) => c.purpose === 'research_decision')).toHaveLength(2);

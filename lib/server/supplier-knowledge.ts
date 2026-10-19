@@ -266,6 +266,7 @@ export function privateSupplierQuestion(message: string): boolean {
   // asks how the work is done, which has a fixed public answer.
   const text = message
     .normalize('NFKC')
+    .replace(/(?:仕入先|調達先)(?:から|の)(?:出荷|発送)(?:予定)?日/g, '出荷日')
     .replace(
       /[^。、]*(?:知りたい|聞きたい|教えてほしい)(?:わけ|訳)では(?:ない|ありません)[^。、]*/g,
       '',
@@ -322,6 +323,7 @@ export function knowledgeTopic(
   if (itemFieldsFromText(message).length) return;
   if (
     previous?.knowledge &&
+    (previous.knowledge.mode === 'fields' || /誰|どこ|社名|取引|一覧/.test(message)) &&
     (intent.referencesPrevious ||
       intent.intent === 'general' ||
       // "まだ型番が分からないのですが、いくらぐらい？" still asks about the field.
@@ -336,21 +338,21 @@ export function knowledgeTopic(
 
 // How an unregistered price, stock or delivery is answered. Said once per
 // conversation; later turns answer in conversation.
-export const CONFIRM_PHRASE = '仕様と数量をもとに担当者が確認してご案内します。';
+export const CONFIRM_PHRASE = '仕様と数量をもとに確認してご案内します。';
 export function knowledgeReply(
   topic: KnowledgeTopic,
   settings: AppSettings,
   facts: BusinessIntent[] = [],
 ): string {
   if (topic.mode === 'scope')
-    return 'ご案内している情報は取扱分野の一部です。掲載の有無から取引の有無や対応可否は判断できません。お探しの製品や用途をお知らせいただければ、担当者が確認します。';
+    return 'ご案内している情報は取扱分野の一部です。掲載の有無から取引の有無や対応可否は判断できません。お探しの製品や用途をお知らせいただければ、当社で確認します。';
   if (topic.mode === 'privacy')
-    return '仕入・外注先の社名、ホームページ、取引の有無や取引条件は公開していません。お探しの製品や用途をお知らせください。取扱分野をご案内し、具体的な対応は担当者が確認します。';
+    return '仕入・外注先の社名、ホームページ、取引の有無や取引条件は公開していません。お探しの製品や用途をお知らせください。取扱分野をご案内し、具体的な対応は当社で確認します。';
   const fields = topic.fields.filter((f) => availableFields().includes(f));
   if (!fields.length)
-    return '以前ご案内した分野は、現在の登録情報では確認できません。ご希望の製品や用途をお知らせください。担当者が確認します。';
+    return '以前ご案内した分野は、現在の登録情報では確認できません。ご希望の製品や用途をお知らせください。当社で確認します。';
   if (facts.includes('order') && !settings.flags.orders)
-    return '現在、オンラインの注文受付は休止しています。担当者へのご相談をご利用ください。';
+    return '現在、オンラインの注文受付は休止しています。当社へご相談ください。';
   if (facts.includes('quote') && !settings.flags.quoteRequests)
     return '現在、オンラインの見積受付は休止しています。お電話でのご相談をご利用ください。';
   if (facts.length) {
@@ -365,9 +367,9 @@ export function knowledgeReply(
     return `「${fields.join('」「')}」の${asked}は、${CONFIRM_PHRASE}`;
   }
   const points = fields.length === 1 ? consultationTopic(fields) : undefined;
-  return `「${fields.join('」「')}」の分野についてご相談いただけます。\n個別製品の仕様・対応可否、価格・在庫・納期は担当者が確認します。${
+  return `「${fields.join('」「')}」の分野についてご相談いただけます。\n個別製品の仕様・対応可否、価格・在庫・納期は当社で確認します。${
     points
       ? `選ぶときは、${checklist(points).join('、')}が分かると候補を絞り込めます。どのような用途でお使いになるか教えていただけますか？`
       : '用途や必要な仕様、数量、ご希望の納期をお聞かせください。'
-  }${settings.flags.humanHandoff ? '画面下の「担当者に相談」からもご相談いただけます。' : ''}`;
+  }${settings.flags.humanHandoff ? '画面下の「相談を依頼する」からもご相談いただけます。' : ''}`;
 }

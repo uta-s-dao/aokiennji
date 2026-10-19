@@ -6,15 +6,22 @@ import {
   type ResearchAspect,
   type ResearchFinding,
   type ResearchNote,
-  type Source,
-  type SupplierKnowledge,
+  type SearchTelemetry,
 } from '../contracts';
 import { company } from '../company';
-import { byId, db, list, now, save, uid } from './db';
+import { db, now, save, uid } from './db';
 import { safeFetch } from './safe-fetch';
+import { decodeHtml } from './html';
 import { beginAiCall, openaiQuotaPaused, pauseOpenaiForQuota, quotaError } from './ai-usage';
 import { jevEndpoint } from './jev-config';
 import { jsonRequest } from './providers';
+import {
+  createSourceTrace,
+  finishSourceStage,
+  preferredDomains,
+  preferredSiteFor,
+  startSourceStage,
+} from './preferred-sources';
 
 // Staff-only research of prices, stock, lead times and shipping on the web,
 // replacing the first look-up a salesperson does in a browser. Customers never
@@ -282,6 +289,7 @@ async function search(
   aspects: ResearchAspect[],
   context: AiUsageContext,
   domains: string[] = [],
+  onSearch?: (search: SearchTelemetry) => void,
 ) {
   const key = process.env.OPENAI_API_KEY!;
   const model = process.env.OPENAI_RESEARCH_MODEL || 'gpt-5-mini';
@@ -364,18 +372,52 @@ async function search(
     const data = JSON.parse(response.body.toString('utf8'));
     usage.usage(data.usage);
     const consulted = new Set<string>();
+    const consultedUrls = new Set<string>();
+    const queries: string[] = [];
     let text = '';
     for (const item of data.output || []) {
-      if (item.type === 'web_search_call')
-        for (const source of item.action?.sources || []) consulted.add(pageKey(source.url));
+      if (item.type === 'web_search_call') {
+        queries.push(
+          ...(Array.isArray(item.action?.queries)
+            ? item.action.queries.filter((q: unknown) => typeof q === 'string')
+            : item.action?.query
+              ? [item.action.query]
+              : []),
+        );
+        for (const source of item.action?.sources || []) {
+          consulted.add(pageKey(source.url));
+          consultedUrls.add(cleanUrl(source.url));
+        }
+        if (item.action?.url) {
+          consulted.add(pageKey(item.action.url));
+          consultedUrls.add(cleanUrl(item.action.url));
+        }
+      }
       if (item.type === 'message')
         for (const part of item.content || []) {
           if (part.type === 'output_text') {
             text += part.text;
-            for (const note of part.annotations || []) consulted.add(pageKey(note.url));
+            for (const note of part.annotations || []) {
+              consulted.add(pageKey(note.url));
+              consultedUrls.add(cleanUrl(note.url));
+            }
           }
         }
     }
+    onSearch?.({
+      provider: 'openai',
+      model,
+      queries,
+      consultedUrls: [...consultedUrls].filter(Boolean),
+      discardedUrls: [...consultedUrls].filter((url) => {
+        const host = pageKey(url).split('/')[0];
+        return (
+          !!host &&
+          domains.length > 0 &&
+          !domains.some((domain) => host === domain || host.endsWith(`.${domain}`))
+        );
+      }),
+    });
     const parsed = resultSchema.parse(JSON.parse(text));
     usage.finish(true);
     // A site the search never visited is an invented source, and a supplier
@@ -401,24 +443,6 @@ async function search(
 
 // --- verification -----------------------------------------------------------
 
-function decode(body: Buffer, contentType: string | null) {
-  const head = body.subarray(0, 4096).toString('latin1');
-  const charset = (
-    /charset=["']?([\w-]+)/i.exec(contentType || '')?.[1] ||
-    /<meta[^>]+charset=["']?([\w-]+)/i.exec(head)?.[1] ||
-    'utf-8'
-  ).toLowerCase();
-  const label = /shift[_-]?jis|sjis|windows-31j|cp932/.test(charset)
-    ? 'shift_jis'
-    : /euc-?jp/.test(charset)
-      ? 'euc-jp'
-      : 'utf-8';
-  try {
-    return new TextDecoder(label).decode(body);
-  } catch {
-    return body.toString('utf8');
-  }
-}
 async function pageText(url: string) {
   const response = await safeFetch(url, {
     timeoutMs: 8000,
@@ -429,7 +453,7 @@ async function pageText(url: string) {
     },
   });
   if (response.status !== 200) throw Error(`http_${response.status}`);
-  const $ = cheerio.load(decode(response.body, response.headers.get('content-type')));
+  const $ = cheerio.load(decodeHtml(response.body, response.headers.get('content-type')));
   $('script,style,noscript,svg,iframe').remove();
   return $('body').text().normalize('NFKC').replace(/\s+/g, ' ');
 }
@@ -572,23 +596,6 @@ async function relevance(
   }
 }
 
-// Approved supplier sites that handle the item's field. Their names are shown
-// to staff only.
-function supplierSites(fields: string[]) {
-  const sites = new Map<string, string>();
-  for (const row of list<SupplierKnowledge>('supplier_knowledge')) {
-    const source = byId<Source>('sources', row.sourceId);
-    if (!row.approved || !source?.enabled || !row.website) continue;
-    if (!row.fields.some((f) => fields.includes(f))) continue;
-    try {
-      sites.set(new URL(row.website).hostname.replace(/^www\./, ''), row.supplierName);
-    } catch {
-      // A malformed URL is skipped.
-    }
-  }
-  return sites;
-}
-
 export async function researchForStaff(request: ResearchRequest, context: AiUsageContext) {
   // Without credits the search cannot run; the admin overview says so.
   if (!process.env.OPENAI_API_KEY || openaiQuotaPaused()) return;
@@ -622,68 +629,110 @@ export async function researchForStaff(request: ResearchRequest, context: AiUsag
     findings: [],
     summary: '',
     decidedBy: decision.decidedBy,
+    sourceTrace: createSourceTrace(),
   };
   store(note);
   try {
-    const suppliers = supplierSites(request.fields);
-    const domains = [...suppliers.keys()].slice(0, 20);
-    // Supplier sites have no carrier tables, so shipping is looked up publicly.
-    const supplierAspects = decision.aspects.filter((a) => a !== 'shipping');
-    const results = await Promise.allSettled([
-      search(request, decision.aspects, context),
-      ...(domains.length && supplierAspects.length
-        ? [search(request, supplierAspects, context, domains)]
-        : []),
-    ]);
+    const trace = note.sourceTrace!;
+    const suppliers = new Map(
+      trace.preferredSites.filter((s) => s.eligible).map((s) => [s.domain, s.name]),
+    );
+    const domains = preferredDomains(trace);
     // A finding must state a value: an amount, a period, stock or shipping.
     const stated = (f: { aspect: ResearchAspect; value: string }) =>
       f.aspect === 'price'
         ? /\d/.test(f.value)
         : /\d|在庫|当日|翌日|即日|出荷|発送|お届け|送料|無料|込/.test(f.value);
-    const found = results
-      .flatMap((r, i) =>
-        r.status === 'fulfilled'
-          ? r.value.findings.map((f) => ({
-              ...f,
-              source: i === 1 ? ('supplier' as const) : f.source,
-            }))
-          : [],
-      )
-      .filter(stated)
-      .slice(0, 10);
-    if (results.every((r) => r.status === 'rejected'))
-      throw Error(
-        results.some((r) => r.status === 'rejected' && r.reason?.message === 'insufficient_quota')
-          ? 'insufficient_quota'
-          : 'research_failed',
+    const inspect = async (f: Awaited<ReturnType<typeof search>>['findings'][number]) => {
+      const host = pageKey(f.url).split('/')[0];
+      const supplierName = [...suppliers].find(([d]) => host === d || host.endsWith(`.${d}`))?.[1];
+      let page = '';
+      try {
+        page = await pageText(f.url);
+      } catch {
+        // Sites that refuse automated access are left for a person to check.
+      }
+      // A page drawn by scripts shows this server almost no text and no
+      // numbers: it was not read, so it is not a mismatch either.
+      if (!/\d/.test(page)) page = '';
+      const item = page && f.aspect !== 'shipping' ? itemOnPage(request.subject, page) : undefined;
+      const result = {
+        ...f,
+        check: !page ? ('unreachable' as const) : checkOnPage(f.value, page),
+        relevance: null,
+        ...(item === undefined ? {} : { itemOnPage: item }),
+        excerpt: page ? excerpt(f.value, page) : f.note,
+        ...(supplierName ? { supplierName, source: 'supplier' as const } : {}),
+      };
+      const site = preferredSiteFor(f.url, trace);
+      trace.observations.push({
+        title: f.title,
+        url: f.url,
+        sourceId: site?.sourceId,
+        origin: site ? 'preferred_sites' : 'public_web',
+        outcome:
+          result.check === 'unreachable'
+            ? 'unreachable'
+            : result.check === 'mismatch' || item === false
+              ? 'mismatch'
+              : 'identified',
+        reason: `${f.value}：${result.check}。掲載情報であり発注・在庫確保は未確認`,
+        excerpt: result.excerpt,
+        retrievedAt: now(),
+      });
+      return result;
+    };
+    const checked: Awaited<ReturnType<typeof inspect>>[] = [];
+    const summaries: string[] = [];
+    let succeeded = false,
+      lastError: unknown;
+    for (const scope of (domains.length ? ['preferred_sites', 'public_web'] : ['public_web']) as (
+      'preferred_sites' | 'public_web'
+    )[]) {
+      const remaining = decision.aspects.filter(
+        (a) =>
+          !checked.some((f) => f.aspect === a && f.check === 'matched' && f.itemOnPage !== false),
       );
-    const checked = await Promise.all(
-      found.map(async (f) => {
-        const host = pageKey(f.url).split('/')[0];
-        const supplierName = [...suppliers].find(
-          ([d]) => host === d || host.endsWith(`.${d}`),
-        )?.[1];
-        let page = '';
-        try {
-          page = await pageText(f.url);
-        } catch {
-          // Sites that refuse automated access are left for a person to check.
+      if (!remaining.length) break;
+      const target = scope === 'preferred_sites' ? domains : [];
+      const stage = startSourceStage(
+        trace,
+        scope,
+        request.subject,
+        target,
+        scope === 'preferred_sites'
+          ? '登録参照先を優先して調査'
+          : '登録参照先で未確認の項目があるため外部Webへ拡張',
+      );
+      store(note);
+      try {
+        // Do not truncate the registered list at 20 domains; cover every batch.
+        for (let offset = 0; offset < Math.max(1, target.length); offset += 100) {
+          const result = await search(
+            request,
+            remaining,
+            context,
+            target.slice(offset, offset + 100),
+            (search) => {
+              (stage.searches ||= []).push(search);
+              store(note);
+            },
+          );
+          summaries.push(result.summary);
+          stage.returnedUrls.push(...result.findings.map((f) => f.url));
+          checked.push(
+            ...(await Promise.all(result.findings.filter(stated).slice(0, 10).map(inspect))),
+          );
         }
-        // A page drawn by scripts shows this server almost no text and no
-        // numbers: it was not read, so it is not a mismatch either.
-        if (!/\d/.test(page)) page = '';
-        const item =
-          page && f.aspect !== 'shipping' ? itemOnPage(request.subject, page) : undefined;
-        return {
-          ...f,
-          check: !page ? ('unreachable' as const) : checkOnPage(f.value, page),
-          relevance: null,
-          ...(item === undefined ? {} : { itemOnPage: item }),
-          excerpt: page ? excerpt(f.value, page) : f.note,
-          ...(supplierName ? { supplierName, source: 'supplier' as const } : {}),
-        };
-      }),
-    );
+        succeeded = true;
+        finishSourceStage(stage, 'done');
+      } catch (error) {
+        lastError = error;
+        finishSourceStage(stage, 'failed', error instanceof Error ? error.message : '検索失敗');
+      }
+      store(note);
+    }
+    if (!succeeded) throw lastError || Error('research_failed');
     const scores = await relevance(note.subject, request.destination, checked, context);
     note.findings = checked
       .map(({ excerpt: _excerpt, ...f }, i) => ({ ...f, relevance: scores[i] }))
@@ -698,10 +747,10 @@ export async function researchForStaff(request: ResearchRequest, context: AiUsag
     const rejected = note.findings
       .filter((f) => f.check === 'mismatch')
       .flatMap((f) => numberTokens(f.value).filter((n) => n.length >= 3));
-    note.summary = results
-      .map((r) =>
-        r.status === 'fulfilled' && r.value.findings.length
-          ? r.value.summary
+    note.summary = summaries
+      .map((summary) =>
+        checked.length
+          ? summary
               .split(/(?<=。)/)
               .filter(
                 (s) =>
@@ -716,6 +765,7 @@ export async function researchForStaff(request: ResearchRequest, context: AiUsag
       .join('\n')
       .slice(0, 800);
     note.status = 'done';
+    note.sourceTrace!.conclusion = note.summary;
   } catch (error) {
     note.status = 'failed';
     note.error = error instanceof Error ? error.message.slice(0, 200) : 'research_failed';

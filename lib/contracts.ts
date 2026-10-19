@@ -66,6 +66,7 @@ export interface ProcurementOffer {
   approved: boolean;
   checkedAt: string;
   confirmedAt: string | null;
+  discoveryBasis?: 'purchase_window' | 'registered_listing';
 }
 // Public selling terms only: excludes acquisition cost, supplier and margin.
 export interface SourcingEstimate {
@@ -186,6 +187,12 @@ export interface SupplierKnowledge extends SupplierKnowledgeRow {
   sourceId: string;
   approved: boolean;
   importedAt: string;
+  siteAudit?: SupplierSiteAudit;
+}
+export interface SupplierSiteAudit {
+  checkedOn: string;
+  fetchStatus: 'fetched' | 'held';
+  reason: string;
 }
 export interface KnowledgeTopic {
   fields: string[];
@@ -216,6 +223,14 @@ export interface ProductSourcing {
   model: string;
   status: 'candidate' | 'identified' | 'not_found' | 'failed';
   checkedAt: string;
+  availabilityChecked?: boolean;
+  // Listing observations only; no supplier identity, raw page text or selling price.
+  availability?: {
+    stock?: ListedStock;
+    listedQuantity?: number | null;
+    quantityUnit?: string | null;
+    supplierDispatch?: string;
+  };
 }
 export interface ChatMessage {
   id: string;
@@ -225,6 +240,8 @@ export interface ChatMessage {
   incomplete?: boolean;
   // Public outcome only. Supplier URLs and acquisition prices stay in research notes.
   sourcing?: ProductSourcing;
+  selection?: ProductSelection;
+  salesState?: SalesState;
   estimate?: SourcingEstimate;
   // Private fingerprint used to invalidate an old estimate after staff edits.
   estimateRevision?: string;
@@ -254,6 +271,39 @@ export interface ChatMessage {
   handoffProductId?: string;
   handoffDraft?: string;
 }
+// Public selection results contain specifications, never supplier identities or costs.
+export interface ProductSelection {
+  requirements: string[];
+  checkedAt: string;
+  status: 'done' | 'failed';
+  limited: boolean;
+  candidates: {
+    model: string;
+    fit: 'matches' | 'needs_confirmation';
+    matched: string[];
+    unconfirmed: string[];
+    sourcing: ProductSourcing;
+  }[];
+}
+export interface SalesState {
+  stage:
+    | 'requirements'
+    | 'requirements_confirmation'
+    | 'candidates'
+    | 'quote_offer'
+    | 'contact'
+    | 'review';
+  requirements: string[];
+  query: string;
+  selectedModel?: string;
+  quoteConsent?: boolean;
+  checkedCandidateModels?: string[];
+  quantity?: number;
+  quantityUnit?: string;
+  destination?: string;
+  // A selection can be reused only while the registered evidence is unchanged.
+  registeredRevision: string;
+}
 export type ResearchAspect = 'price' | 'lead_time' | 'stock' | 'shipping' | 'availability';
 export const RESEARCH_ASPECT_LABELS: Record<ResearchAspect, string> = {
   availability: '商品・調達候補',
@@ -263,6 +313,29 @@ export const RESEARCH_ASPECT_LABELS: Record<ResearchAspect, string> = {
   shipping: '配送日数・送料',
 };
 // What the research found on one web page. Shown to staff only.
+export type ListedStock =
+  | 'in_stock'
+  | 'limited'
+  | 'out_of_stock'
+  | 'backorder'
+  | 'preorder'
+  | 'made_to_order'
+  | 'discontinued'
+  | 'unknown'
+  | 'conflict';
+export interface PageAvailability {
+  version: 1;
+  model: string;
+  contentHash: string;
+  stock: ListedStock;
+  listedQuantity: number | null;
+  quantityUnit: string | null;
+  dispatchKind: 'supplier_dispatch' | 'customer_arrival' | 'general_policy' | 'unknown';
+  dispatchText: string | null;
+  verification: 'jev' | 'rules' | 'held';
+  reasons: string[];
+  evidence: { id: string; selector: string; text: string }[];
+}
 export interface ResearchFinding {
   aspect: ResearchAspect;
   // As written on the page, e.g. "¥18,700(税込)" or "2～3日出荷".
@@ -282,6 +355,8 @@ export interface ResearchFinding {
   // means the value may belong to another variant.
   itemOnPage?: boolean;
   supplierName?: string;
+  // Observations of the listing, never approved procurement or selling terms.
+  pageAvailability?: PageAvailability;
 }
 export interface ResearchNote {
   id: string;
@@ -302,6 +377,61 @@ export interface ResearchNote {
   // Who judged that research was needed.
   decidedBy: 'jev' | 'local';
   error?: string;
+  sourceTrace?: SourceTrace;
+}
+// Staff-only snapshots. Never attach these to the public ChatMessage contract.
+export interface PreferredSite {
+  url: string;
+  domain: string;
+  name: string;
+  sourceId?: string;
+  kind: 'supplier_catalog' | 'source' | 'supplier';
+  eligible: boolean;
+  reason: string;
+}
+export interface SourceObservation {
+  title: string;
+  url: string;
+  sourceId?: string;
+  origin: 'registered_data' | 'preferred_sites' | 'past_sources' | 'public_web';
+  outcome: 'candidate' | 'identified' | 'mismatch' | 'unreachable' | 'discovered';
+  reason: string;
+  excerpt: string;
+  retrievedAt: string;
+  contentHash?: string;
+  stock?: ListedStock;
+  listedQuantity?: number | null;
+}
+export interface SourceSearchStage {
+  scope: SourceObservation['origin'];
+  startedAt: string;
+  completedAt: string | null;
+  status: 'running' | 'done' | 'failed' | 'skipped';
+  query: string;
+  domains: string[];
+  reason: string;
+  returnedUrls: string[];
+  searches?: SearchTelemetry[];
+}
+export interface SearchTelemetry {
+  provider: string;
+  model?: string;
+  queries: string[];
+  consultedUrls: string[];
+  discardedUrls: string[];
+}
+export interface SourceTrace {
+  version: 1;
+  registeredRevision?: string;
+  preferredSites: PreferredSite[];
+  stages: SourceSearchStage[];
+  observations: SourceObservation[];
+  reusedFromNoteId?: string;
+  // The exact safe facts supplied to the response model, plus its accepted citations.
+  answerFacts?: { id: string; text: string }[];
+  answerCanonical?: string;
+  answerBlocks?: { text: string; evidenceIds: string[] }[];
+  conclusion?: string;
 }
 export interface Conversation {
   id: string;
@@ -360,6 +490,8 @@ export interface Quote {
   tax: number;
   total: number;
   status: 'requested' | 'draft' | 'issued' | 'accepted' | 'cancelled';
+  reviewedAt?: string;
+  reviewedBy?: '青木';
   expiresAt: string;
   notes: string;
   createdAt: string;
@@ -453,6 +585,7 @@ export interface AnswerProcessing {
 export interface StoredChatMessage extends ChatMessage {
   replyToId?: string;
   processing?: AnswerProcessing;
+  sourceTrace?: SourceTrace;
 }
 export interface AiAnswer {
   id: string;
@@ -465,6 +598,7 @@ export interface AiAnswer {
   processing: AnswerProcessing | null;
   linkage: 'recorded' | 'legacy' | 'unknown';
   calls: AiCall[];
+  sourceTrace?: SourceTrace;
 }
 export interface AiAnswerReport {
   total: number;

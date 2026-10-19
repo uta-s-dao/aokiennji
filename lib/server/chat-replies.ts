@@ -42,7 +42,7 @@ export function productReply(
   detail: FactDetail = {},
 ) {
   if (!products.length)
-    return '以前ご案内した商品情報は、現在確認できない状態です。担当者への確認をご案内できます。';
+    return '以前ご案内した商品情報は、現在確認できない状態です。当社で情報を確認します。';
   if (products.length > 1) {
     const topic = topics[intent];
     return topic
@@ -53,9 +53,9 @@ export function productReply(
   const label = `「${p.name}」`;
   const count = quantity ? `${quantity}${detail.unit || '個'}` : '';
   if (p.availability === 'needs_review')
-    return `${label}の登録はありますが、現在の取扱条件を確認する必要があります。\n価格・在庫・納期は、担当者の確認後にご案内します。${
+    return `${label}の登録はありますが、現在の取扱条件を確認する必要があります。\n価格・在庫・納期は、条件を確認したうえでご案内します。${
       quantity
-        ? `ご希望の${count}も含めて担当者が確認します。`
+        ? `ご希望の${count}も含めて当社で確認します。`
         : 'ご希望の数量や用途を教えていただけますか？'
     }`;
   if (p.availability === 'unavailable')
@@ -67,8 +67,8 @@ export function productReply(
             quantity
               ? `ご希望は${count}ですね。具体的なお届け日は、配送先と必要数量を確保できるかを確認してご案内します。`
               : '具体的なお届け日は、数量と配送先を確認してご案内します。'
-          }${detail.deadline ? 'ご希望の時期に間に合うかは、担当者が在庫と配送を確認してご連絡します。' : 'ご希望の時期はありますか？'}`
-        : `${label}の納期は、担当者への確認が必要です。\nご希望の数量とお届け先の都道府県、必要な時期を教えていただけますか？`;
+          }${detail.deadline ? 'ご希望の時期に間に合うかは、在庫と配送を確認してご連絡します。' : 'ご希望の時期はありますか？'}`
+        : `${label}の納期は、当社で確認します。\nご希望の数量とお届け先の都道府県、必要な時期を教えていただけますか？`;
     case 'price': {
       if (!settings.flags.showPrice || p.price === null)
         return `${label}の価格は個別にご案内します。ご希望の数量を教えていただけますか？`;
@@ -85,8 +85,8 @@ export function productReply(
     }
     case 'stock':
       return settings.flags.showStock && p.stock !== null
-        ? `${label}の登録在庫は${p.stock.toLocaleString('ja-JP')}個です。\n${quantity ? `ご希望の${count}を確保できるかは、ご注文前に担当者が確認します。` : '在庫は変動するため、確保できる数量はご注文前に確認します。何個ほど必要でしょうか？'}`
-        : `${label}の在庫は、担当者への確認が必要です。${quantity ? `ご希望の${count}を確保できるかも含めて担当者が確認します。` : 'ご希望の数量を教えていただけますか？'}`;
+        ? `${label}の登録在庫は${p.stock.toLocaleString('ja-JP')}個です。\n${quantity ? `ご希望の${count}を確保できるかは、ご注文前に当社で確認します。` : '在庫は変動するため、確保できる数量はご注文前に確認します。何個ほど必要でしょうか？'}`
+        : `${label}の在庫は、当社で確認します。${quantity ? `ご希望の${count}を確保できるかも含めて当社で確認します。` : 'ご希望の数量を教えていただけますか？'}`;
     case 'quote':
       return settings.flags.quoteRequests
         ? `${label}のお見積りですね。下の「${QUOTE_LABEL}」から、数量とご連絡先を入れて依頼できます。この会話の内容も依頼に添えられます。`
@@ -94,7 +94,7 @@ export function productReply(
     case 'order':
       return settings.flags.orders
         ? `${label}のご注文についてですね。発行済みの見積専用ページで、内容を確認して注文を依頼できます。お見積りはお持ちでしょうか？`
-        : '現在、オンラインの注文受付は休止しています。担当者へのご相談をご利用ください。';
+        : '現在、オンラインの注文受付は休止しています。当社へご相談ください。';
     default:
       return p.availability === 'orderable'
         ? `${label}は、取り寄せに対応しています。\n価格・在庫・お届け時期など、知りたいことをそのまま続けてお聞きください。`
@@ -140,22 +140,22 @@ export function transactionReply(
   switch (kind) {
     case 'status':
       return handedOff
-        ? 'この会話は、担当者へのご相談として受け付け済みです。担当者が内容を確認してご連絡します。追加の条件があれば、続けてお知らせください。'
-        : `このチャットでは、ご注文やお問い合わせの送信は行っていません。まだ担当者には届いていないため、確認メールも送られません。\n${path}`;
+        ? 'この会話は、ご相談として受け付け済みです。当社で内容を確認してご連絡します。追加の条件があれば、続けてお知らせください。'
+        : `このチャットでは、ご注文やお問い合わせの送信は行っていません。まだ正式なご依頼としては未送信のため、確認メールも送られません。\n${path}`;
     case 'hold':
-      return `在庫の取り置き・確保は、担当者が在庫と条件を確認したうえでのご案内になるため、このチャットではお約束できません。\n${path}`;
+      return `在庫の取り置き・確保は、在庫と条件を確認したうえでのご案内になるため、このチャットではお約束できません。\n${path}`;
     case 'order':
       if (settings.flags.orders)
         return products.length === 1
           ? productReply(products, 'order', settings)
-          : `ご注文は、担当者が発行したお見積りの専用ページから依頼できます。まずはお見積りのご依頼から承ります。\n${path}`;
+          : `ご注文は、当社が発行したお見積りの専用ページから依頼できます。まずはお見積りのご依頼から承ります。\n${path}`;
       return `このチャットからはご注文を受け付けていません（オンラインのご注文受付は現在休止しています）。\n${path}`;
     case 'quote':
       if (!settings.flags.quoteRequests)
         return `現在、オンラインの見積受付は休止しています。お電話（${company.phone}）でのご相談をご利用ください。`;
       return products.length === 1
         ? productReply(products, 'quote', settings)
-        : `お見積りは、品名・用途・数量・ご希望の時期とお届け先をもとに担当者が確認して作成します。\n${path}`;
+        : `伺った内容でお見積りを承ります。\n${path}`;
   }
 }
 
@@ -169,14 +169,14 @@ export function handoffReply(
 ) {
   const opening = thanks ? 'ありがとうございます。' : '';
   if (handedOff)
-    return `${opening}この会話は、担当者へのご相談として受け付け済みです。担当者が内容を確認してご連絡します。`;
+    return `${opening}この会話は、ご相談として受け付け済みです。当社で内容を確認してご連絡します。`;
   if (!settings.flags.humanHandoff || call)
     return `${opening}お電話でのご相談は、${company.phone}で承ります。${
       settings.flags.humanHandoff
-        ? `この会話の内容を担当者に送っておく場合は、下の「${guide.label}」から送れます。`
+        ? `この会話の内容を事前にお送りいただく場合は、下の「${guide.label}」から送れます。`
         : ''
     }`;
-  return `${opening}担当者へのご相談は、下の「${guide.label}」から送れます。お名前とメールアドレスを入れて送信すると、担当者がこの会話を確認してご連絡します。${
+  return `${opening}ご相談は、下の「${guide.label}」から送れます。お名前とメールアドレスを入れて送信すると、当社でこの会話を確認してご連絡します。${
     guide.phone ? `お急ぎの場合はお電話（${company.phone}）でもご相談いただけます。` : ''
   }`;
 }

@@ -586,7 +586,7 @@ export default function ChatWidget({
                           <MessageCircle size={15} />
                           {m.handoff === 'quote'
                             ? 'この内容で見積を依頼する'
-                            : 'この内容で担当者に相談する'}
+                            : 'この内容で相談を依頼する'}
                           <ArrowUpRight size={14} />
                         </Link>
                       ) : null}
@@ -693,9 +693,9 @@ export default function ChatWidget({
                   <Link
                     href={`/contact${conversationId ? '?conversationId=' + encodeURIComponent(conversationId) : ''}`}
                     onClick={() => setOpen(false)}
-                    aria-label="担当者へのお問い合わせ"
+                    aria-label="当社へのお問い合わせ"
                   >
-                    担当者に相談
+                    相談を依頼する
                     <ArrowUpRight size={12} />
                   </Link>
                 )}

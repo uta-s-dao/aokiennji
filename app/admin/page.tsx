@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Boxes,
-  ClipboardList,
   FileText,
   Gauge,
   History,
@@ -49,7 +48,13 @@ export default function Admin() {
     [ready, setReady] = useState(false),
     [authError, setAuthError] = useState('');
   useEffect(() => {
-    const value = new URLSearchParams(location.search).get('tab');
+    const params = new URLSearchParams(location.search);
+    const value = params.get('tab');
+    if (value === 'source-verification') {
+      params.set('tab', 'conversations');
+      history.replaceState(null, '', `/admin?${params}`);
+      setTab('conversations');
+    }
     if (value && tabs.some((t) => t.id === value)) setTab(value);
     api<Overview>('/api/admin/overview')
       .then(() => setReady(true))

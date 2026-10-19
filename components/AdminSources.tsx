@@ -13,6 +13,7 @@ import {
 } from '@/lib/contracts';
 import { api, datetime, errorMessage } from './api';
 import { Empty, Modal, Notice, useNotice } from './AdminCommon';
+import AdminSupplierSiteAudit from './AdminSupplierSiteAudit';
 const blank: SourceInput = {
   name: '',
   kind: 'xlsx',
@@ -150,6 +151,10 @@ export default function AdminSources() {
         </button>
       </div>
       <Notice message={notice.error || notice.message} type={notice.error ? 'error' : 'success'} />
+      <p className="muted">
+        商品調査では、有効な登録商品・取込資料を先に照合し、登録された仕入先・Webサイトを優先検索します。
+        登録先で商品・調達候補を確認できない場合に外部Webへ広げます。回答ごとの出典と検索経路は「相談・引継ぎ」の会話詳細で確認できます。
+      </p>
       <div className="template-links">
         取込テンプレート：
         <a href="/templates/products.xlsx" download>
@@ -622,7 +627,11 @@ export default function AdminSources() {
           <p>
             {knowledge.length}件 · 回答利用の承認済み {knowledge.filter((r) => r.approved).length}件
           </p>
-          <SupplierKnowledgeTable rows={knowledge} />
+          <AdminSupplierSiteAudit rows={knowledge} />
+          <details>
+            <summary>元の登録情報・回答に使う分野を確認</summary>
+            <SupplierKnowledgeTable rows={knowledge} />
+          </details>
         </Modal>
       )}
     </>

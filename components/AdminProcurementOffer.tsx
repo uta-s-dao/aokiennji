@@ -78,7 +78,10 @@ export default function AdminProcurementOffer({
         {form.confirmedAt ? `・担当者確認：${datetime(form.confirmedAt)}` : ''}
       </p>
       <p className="muted">
+        {offer.discoveryBasis === 'registered_listing' &&
+          '登録参照先の商品掲載から残した照会候補です。通販・発注窓口の確認は担当者が行ってください。'}
         同じ仕入先の条件を入力してください。価格は掲載価格を初期表示しています。仕入れ可能な価格・税区分・入数・数量・配送条件を出典で確認し、最後に確認済みにチェックします。
+        在庫表示がない場合や「在庫あり」のみで数量が不明な場合は、調達可能数量を未確認のままにしてください。標準品の印・小箱入数・材料在庫を、注文可能な完成品の数量として入力しないでください。
       </p>
       <div className="form-grid">
         {number('price', '1販売単位の仕入価格（円）', 1)}
@@ -138,7 +141,7 @@ export default function AdminProcurementOffer({
         {number('deliveryMaxDays', 'お届けまでの最長営業日数', 0, 365)}
       </div>
       <p className="muted">
-        配送日数は、ご注文確定からお客様への到着までの目安です。当社経由なら両区間を含めてください。営業日は仕入先・配送会社の営業日を確認してください。
+        配送日数は、ご注文確定からお客様への到着までの目安です。仕入先の出荷日数だけでは入力しないでください。当社経由なら入荷までの輸送・検品・出荷準備・お客様までの輸送を含め、販売ルールの追加営業日と二重計上しないよう確認してください。少量在庫や取り寄せの場合は、必要数量が揃う時期を仕入先に確認してください。
       </p>
       <div className="check-grid">
         <label>

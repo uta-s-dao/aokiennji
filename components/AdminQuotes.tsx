@@ -12,6 +12,7 @@ const labels: Record<Quote['status'], string> = {
   cancelled: '取消済み',
 };
 export default function AdminQuotes() {
+  const [aokiReviewed, setAokiReviewed] = useState(false);
   const [items, setItems] = useState<Quote[]>([]),
     [edit, setEdit] = useState<Quote | null>(null),
     [viewing, setViewing] = useState<string | null>(null),
@@ -47,9 +48,11 @@ export default function AdminQuotes() {
           expiresAt: edit.expiresAt,
           notes: edit.notes,
           status,
+          aokiReviewed: status === 'issued' && aokiReviewed,
         }),
       });
       setEdit(null);
+      setAokiReviewed(false);
       n.success(
         status === 'issued'
           ? '見積を発行しました。専用リンクから確認できます。'
@@ -153,7 +156,14 @@ export default function AdminQuotes() {
         />
       )}
       {edit && (
-        <Modal title="見積の明細を作成" wide onClose={() => setEdit(null)}>
+        <Modal
+          title="見積の明細を作成"
+          wide
+          onClose={() => {
+            setEdit(null);
+            setAokiReviewed(false);
+          }}
+        >
           <div className="admin-form">
             <p>
               <strong>
@@ -270,12 +280,26 @@ export default function AdminQuotes() {
               />
             </label>
             {n.error && <Notice message={n.error} type="error" />}
-            <p className="muted">発行後の明細は固定されます。内容を確認して発行してください。</p>
+            <p className="muted">
+              見積書のたたき台です。青木さんが明細・価格・在庫・納期を確認してから発行し、お客様のメール宛にご案内してください。
+            </p>
+            <label className="check-label">
+              <input
+                type="checkbox"
+                checked={aokiReviewed}
+                onChange={(e) => setAokiReviewed(e.target.checked)}
+              />
+              青木さんによる見積内容の確認済み
+            </label>
             <div className="form-actions">
               <button className="button secondary" disabled={busy} onClick={() => save('draft')}>
                 下書き保存
               </button>
-              <button className="button primary" disabled={busy} onClick={() => save('issued')}>
+              <button
+                className="button primary"
+                disabled={busy || !aokiReviewed}
+                onClick={() => save('issued')}
+              >
                 この金額で見積を発行
               </button>
             </div>

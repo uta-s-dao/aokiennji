@@ -117,7 +117,7 @@ export default function Contact() {
               お話を聞かせてください。
             </h2>
             <p>
-              用途や仕様がまだ決まっていない段階でも、お気軽にご相談ください。担当者が内容を確認します。
+              用途や仕様がまだ決まっていない段階でも、お気軽にご相談ください。当社で内容を確認します。
             </p>
             <div className="contact-call">
               <span>お電話でのお問い合わせ</span>
@@ -141,7 +141,7 @@ export default function Contact() {
                 <p>
                   受付番号：<strong>{receipt.id}</strong>
                 </p>
-                <p>担当者が内容を確認します。お問い合わせありがとうございました。</p>
+                <p>当社で内容を確認します。お問い合わせありがとうございました。</p>
                 {receipt.token && (
                   <a className="button secondary" href={`/quotes/${receipt.token}`}>
                     見積内容を確認する <ArrowUpRight size={17} />

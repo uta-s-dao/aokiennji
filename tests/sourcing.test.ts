@@ -9,8 +9,10 @@ import { answerChat, currentMessages } from '../lib/server/chat';
 import { createQuote, verifyConversation } from '../lib/server/business';
 import { researchNotes } from '../lib/server/research';
 import { exactModelOnPage, visibleProductPrice } from '../lib/server/sourcing';
+import { decodeHtml } from '../lib/server/html';
 import { searchWeb } from '../lib/server/providers';
 import { pauseOpenaiForQuota } from '../lib/server/ai-usage';
+import { recordProcurementOutcome } from '../lib/server/procurement-memory';
 vi.mock('../lib/server/safe-fetch', () => ({ safeFetch: vi.fn() }));
 import { safeFetch } from '../lib/server/safe-fetch';
 
@@ -80,7 +82,7 @@ it('sources an unregistered model and keeps procurement prices and suppliers sta
   mockSourcing();
   const reply = await answerChat('B-300-SCIの価格と納期を教えてください', 'customer');
   expect(reply.message.sourcing).toMatchObject({ model: 'B-300-SCI', status: 'candidate' });
-  expect(reply.message.content).toContain('当社でお取り寄せ・お見積りのご相談を承ります');
+  expect(reply.message.content).toContain('調達候補を確認しました');
   expect(reply.message.handoff).toBe('quote');
   expect(reply.message.content).not.toMatch(
     /取扱いを確認できません|720|supplier\.example|非公開仕入先/,
@@ -100,7 +102,7 @@ it('sources an unregistered model and keeps procurement prices and suppliers sta
     reply.conversationId,
   );
   expect(followup.message.sourcing?.model).toBe('B-300-SCI');
-  expect(followup.message.content).toContain('伺った数量で');
+  expect(followup.message.content).toContain('お届け先の都道府県');
   expect(followup.message.handoffDraft).toContain('10個');
   expect(network).toHaveBeenCalledTimes(calls);
   expect(researchNotes(reply.conversationId)).toHaveLength(1);
@@ -134,6 +136,147 @@ it('does not turn a suffix variant or an unrelated Jev result into a procurement
   expect(rejected.message.sourcing?.status).toBe('not_found');
 });
 
+it('classifies stock with source evidence for staff without approving quantity or promising dispatch', async () => {
+  mockSourcing();
+  const implementation = network.getMockImplementation()!;
+  network.mockImplementation(async (url, options) => {
+    if (url.includes('typesafe.ai')) {
+      const body = JSON.parse(options!.body!);
+      const answers = Object.fromEntries(
+        Object.entries(body.questions).map(([id, raw]) => {
+          const q = raw as { type: string; criteria?: Record<string, unknown> };
+          if (q.type === 'noul') return [id, { noul: 0.96 }];
+          const keys = Object.keys(q.criteria!);
+          const choice = keys.find((key) => key !== 'none')!;
+          const remainder = 0.02 / (keys.length - 1);
+          return [
+            id,
+            {
+              type: 'choice',
+              choice,
+              probabilities: Object.fromEntries(
+                keys.map((key) => [key, key === choice ? 0.98 : remainder]),
+              ),
+            },
+          ];
+        }),
+      );
+      return {
+        status: 200,
+        headers: new Headers(),
+        url,
+        body: Buffer.from(JSON.stringify({ answers })),
+      };
+    }
+    if (url === 'https://supplier.example/item')
+      return {
+        status: 200,
+        headers: new Headers(),
+        url,
+        body: Buffer.from(
+          '<main><h1>B-300-SCI</h1><p>在庫：12個。3営業日以内に出荷します。</p><p>カートに入れる</p></main>',
+        ),
+      };
+    return implementation(url, options);
+  });
+  const reply = await answerChat('B-300-SCIを10個、大阪へ発送できますか', 'customer');
+  const note = researchNotes(reply.conversationId)[0];
+  const stock = note.findings.find((f) => f.aspect === 'stock')!;
+  expect(stock.pageAvailability).toMatchObject({
+    stock: 'in_stock',
+    listedQuantity: 12,
+    dispatchKind: 'supplier_dispatch',
+    verification: 'jev',
+  });
+  expect(stock.pageAvailability!.evidence.length).toBeGreaterThan(0);
+  expect(reply.message.content).toContain('掲載上は在庫あり（12個）');
+  expect(reply.message.content).toContain('調達先の出荷目安は3営業日');
+  expect(reply.message.content).toContain('当社からのお届け日はお見積りで確認');
+  expect(note.offers![0]).toMatchObject({
+    availableQuantity: null,
+    deliveryMaxDays: null,
+    approved: false,
+  });
+  expect(reply.message.content).not.toContain('必要数量分の在庫・発送日は未確定');
+  expect(reply.message.content).toContain('この内容で見積を依頼する');
+  expect(JSON.stringify(currentMessages(reply.conversationId))).not.toMatch(
+    /supplier\.example|contentHash/,
+  );
+});
+
+it.each([
+  { label: 'no stock display', availability: undefined, text: '' },
+  { label: 'InStock without quantity', availability: 'InStock', text: '在庫あり' },
+  { label: 'two units for a request of ten', availability: 'LimitedAvailability', text: '在庫2個' },
+  { label: 'supplier dispatch only', availability: 'InStock', text: '最短当日出荷' },
+  { label: 'back order', availability: 'BackOrder', text: '取り寄せ・納期はお問い合わせ' },
+  { label: 'preorder', availability: 'PreOrder', text: '受注生産' },
+  { label: 'out of stock', availability: 'OutOfStock', text: '在庫なし' },
+])('does not promise stock or dispatch for $label', async ({ availability, text }) => {
+  mockSourcing();
+  const implementation = network.getMockImplementation()!;
+  network.mockImplementation(async (url, options) => {
+    if (url !== 'https://supplier.example/item') return implementation(url, options);
+    return {
+      status: 200,
+      headers: new Headers(),
+      url,
+      body: Buffer.from(`<main><h1>B-300-SCI</h1><p>${text}</p><p>カートに入れる</p></main>
+        <script type="application/ld+json">${JSON.stringify({
+          '@type': 'Product',
+          sku: 'B-300-SCI',
+          offers: {
+            price: 720,
+            priceCurrency: 'JPY',
+            ...(availability ? { availability: `https://schema.org/${availability}` } : {}),
+          },
+        })}</script>`),
+    };
+  });
+  // Even with selling rules configured, a scraped page cannot approve terms.
+  putSettings({
+    ...settings,
+    sourcingEstimate: {
+      ...settings.sourcingEstimate,
+      enabled: true,
+      markupPercent: 20,
+      minimumProfitYen: 0,
+      handlingFeeYen: 0,
+      extraBusinessDays: 1,
+    },
+  });
+  const reply = await answerChat('B-300-SCIを10個、大阪へ1週間以内に発送できますか', 'customer');
+  expect(reply.message.content).not.toContain('必要数量分の在庫・発送日は未確定');
+  expect(reply.message.content).toContain('この内容で見積を依頼する');
+  expect(reply.message.content).not.toMatch(/1週間以内に発送できます|\d+営業日でお届け|販売単価/);
+  expect(reply.message.handoff).toBe('quote');
+  for (const offer of researchNotes(reply.conversationId)[0].offers || []) {
+    expect(offer).toMatchObject({
+      availableQuantity: null,
+      deliveryMinDays: null,
+      deliveryMaxDays: null,
+      approved: false,
+      confirmedAt: null,
+    });
+  }
+});
+
+it('decodes supplier stock qualifiers in EUC-JP and Shift_JIS before reading the page', () => {
+  const euc = Buffer.concat([
+    Buffer.from('<meta charset="euc-jp"><p>'),
+    Buffer.from([0xba, 0xdf, 0xb8, 0xcb]),
+    Buffer.from('2</p>'),
+  ]);
+  expect(decodeHtml(euc, 'text/html')).toContain('在庫2');
+  const sjis = Buffer.concat([
+    Buffer.from('<p>'),
+    Buffer.from([0x8d, 0xdd, 0x8c, 0xc9]),
+    Buffer.from('</p>'),
+  ]);
+  expect(decodeHtml(sjis, 'text/html; charset = "windows-31j"')).toContain('在庫');
+  expect(decodeHtml(Buffer.from('在庫未確認'), null)).toBe('在庫未確認');
+});
+
 it('switches from a registered product to a new model without reusing the old price', async () => {
   mockSourcing();
   const first = await answerChat('DEMO-CAST-01の価格を教えてください', 'customer');
@@ -152,7 +295,7 @@ it('records failed research and keeps the quote path without pretending search s
   network.mockRejectedValue(Error('network unavailable'));
   const reply = await answerChat('B-300-SCIを10個買いたいです', 'customer');
   expect(reply.message.sourcing?.status).toBe('failed');
-  expect(reply.message.content).toContain('自動調査を完了できていません');
+  expect(reply.message.content).toContain('ページの取得が完了せず');
   expect(reply.message.content).not.toContain('候補を確認できました');
   expect(reply.message.handoff).toBe('quote');
   expect(researchNotes(reply.conversationId)[0].status).toBe('failed');
@@ -414,4 +557,122 @@ it('invalidates restored estimates and their handoff drafts when price permissio
   expect(() => updateProcurementOffer('another-conversation', note.id, offer.id, offer)).toThrow(
     '調達候補が見つかりません',
   );
+});
+
+it.each(['現在は在庫なし', '現在は在庫あり'])(
+  'rechecks a successfully purchased exact-model source (%s) without copying old stock or approval',
+  async (stockText) => {
+    vi.stubEnv('DEMO_MODE', 'false');
+    mockSourcing();
+    const first = await answerChat('B-300-SCIを10個欲しい', 'history-owner');
+    const note = researchNotes(first.conversationId)[0];
+    const context = {
+      kind: 'offer' as const,
+      conversationId: first.conversationId,
+      noteId: note.id,
+      offerId: note.offers![0].id,
+    };
+    const started = recordProcurementOutcome(context, {
+      eventId: crypto.randomUUID(),
+      action: 'ordered',
+      quantity: 10,
+    });
+    recordProcurementOutcome(context, {
+      eventId: crypto.randomUUID(),
+      action: 'received',
+      caseId: started.cases[0].id,
+      receivedQuantity: 10,
+    });
+    vi.stubEnv('TYPESAFE_API_KEY', '');
+    network.mockImplementation(async (url) => {
+      if (url.includes('exa.ai')) throw Error('search temporarily unavailable');
+      expect(url).toBe('https://supplier.example/item');
+      return {
+        status: 200,
+        headers: new Headers(),
+        url,
+        body: Buffer.from(
+          `<html><main><h1>HARIO B-300-SCI</h1><p>カートに入れる</p><p>${stockText}</p></main></html>`,
+        ),
+      };
+    });
+    const next = await answerChat('B-300-SCIは買えますか', 'new-history-owner');
+    expect(next.message.sourcing?.status).toBe(
+      stockText === '現在は在庫なし' ? 'identified' : 'candidate',
+    );
+    const current = researchNotes(next.conversationId)[0];
+    if (stockText === '現在は在庫なし') expect(current.offers).toEqual([]);
+    else
+      expect(current.offers![0]).toMatchObject({
+        url: 'https://supplier.example/item',
+        approved: false,
+        price: null,
+        availableQuantity: null,
+        confirmedAt: null,
+      });
+    expect(current.findings.find((f) => f.aspect === 'stock')?.pageAvailability?.stock).toBe(
+      stockText === '現在は在庫なし' ? 'out_of_stock' : 'in_stock',
+    );
+    expect(JSON.stringify(next)).not.toMatch(/supplier\.example|販売元|全数入荷|1100/);
+  },
+);
+
+it('keeps the model, amount and destination through short confirmations and ignores a quoted pack count', async () => {
+  mockSourcing();
+  const first = await answerChat('B-300-SCIを100個、大阪府へ見積希望です。', 'sticky-source');
+  const pack = await answerChat(
+    '100個でお願いします。小箱1000個と書かれていても100個だけで買えますか？',
+    'sticky-source',
+    first.conversationId,
+  );
+  expect(pack.message.requestedQuantity).toBe(100);
+  const next = await answerChat(
+    'メーカーと品番の変更はなしでお願いします。',
+    'sticky-source',
+    first.conversationId,
+  );
+  expect(next.message.sourcing?.model).toBe('B-300-SCI');
+  expect(next.message.requestedQuantity).toBe(100);
+  expect(next.message.requestedDestination).toBe('大阪');
+  expect(next.message.content).not.toContain('数量を教えて');
+  const quote = createQuote(
+    {
+      name: '試験',
+      company: '試験',
+      email: 'test@example.invalid',
+      consent: true,
+      quantity: 100,
+      message: next.message.handoffDraft!,
+      conversationId: first.conversationId,
+    },
+    'sticky-source',
+  );
+  expect(quote.status).toBe('requested');
+  expect(quote.lines[0].name).toBe('B-300-SCI');
+  const received = await answerChat(
+    '見積フォームから送信しました。まだ発注ではないですよね？',
+    'sticky-source',
+    first.conversationId,
+  );
+  expect(received.message.content).toContain('見積依頼を受け付けています');
+  expect(received.message.content).not.toContain('調達候補');
+  expect(received.message.handoff).toBeUndefined();
+});
+
+it('keeps quantity and destination when the customer corrects only the source model', async () => {
+  mockSourcing('CDM2B25-100Z');
+  const first = await answerChat(
+    'CDM2B25-100Zを1本、静岡県向けに見積希望です。',
+    'source-correction',
+  );
+  mockSourcing('CDM2B25-75Z');
+  const correction = await answerChat(
+    '現物を見たらCDM2B25-75Zでした。100Zは別の設備です。75Zの在庫を調べてください。',
+    'source-correction',
+    first.conversationId,
+  );
+  expect(correction.message.sourcing?.model).toBe('CDM2B25-75Z');
+  expect(correction.message.requestedQuantity).toBe(1);
+  expect(correction.message.requestedDestination).toBe('静岡');
+  expect(correction.message.content).not.toMatch(/数量を教えて|都道府県を教えて/);
 });

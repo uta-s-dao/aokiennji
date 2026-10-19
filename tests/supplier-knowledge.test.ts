@@ -157,7 +157,7 @@ describe('customer field guidance', () => {
       ]) {
         const next = await answerChat(followup, 'customer', first.conversationId);
         expect(next.message.knowledge?.fields).toEqual(first.message.knowledge?.fields);
-        expect(next.message.content).toContain('担当者が確認');
+        expect(next.message.content).toMatch(/確認してご案内|お見積りを承ります/);
         noPrivateData(next);
         expect(next.message.content).not.toMatch(/取扱あり|取り寄せに対応|円|営業日/);
       }

@@ -1,6 +1,7 @@
 import { readFileSync, realpathSync } from 'node:fs';
 import { resolve, sep } from 'node:path';
 import { safeFetch, type SafeFetchOptions, type SafeResponse } from './safe-fetch';
+import { reasoningResponseModel } from '../ai-models';
 
 const OPENAI_RESPONSES = 'https://api.openai.com/v1/responses';
 
@@ -43,10 +44,14 @@ export function localAgentEndpoint(): string | null {
   return url.href;
 }
 
-export function responseBudgets(webSearch = false) {
+export function responseBudgets(webSearch = false, model = '') {
   return localAgentEndpoint()
     ? { request: 120000, chat: 125000, retry: 60000, generation: 120000 }
-    : { request: 8000, chat: webSearch ? 55000 : 13000, retry: 7000, generation: 12000 };
+    : reasoningResponseModel(model)
+      ? { request: 45000, chat: webSearch ? 180000 : 70000, retry: 45000, generation: 65000 }
+      : model === 'gpt-4.1'
+        ? { request: 20000, chat: webSearch ? 180000 : 30000, retry: 15000, generation: 25000 }
+        : { request: 8000, chat: webSearch ? 110000 : 13000, retry: 7000, generation: 12000 };
 }
 
 export function responseEndpoint() {

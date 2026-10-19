@@ -4,6 +4,8 @@ test('chat keeps the topic, reserves space and keeps the composer clear at diffe
   page,
 }) => {
   await page.goto('/');
+  // Headless mobile contexts need an active page for animation-frame actionability checks.
+  await page.bringToFront();
   const originalScroll = await page.evaluate(() => window.scrollY);
   await page.getByRole('button', { name: '商品相談チャットを開く' }).click();
   const panel = page.getByRole('dialog', { name: '商品相談チャット' });
@@ -90,7 +92,7 @@ test('a consultation hands off to the inquiry form with what the customer said',
   await input.fill('この内容で担当者に相談したいです');
   await send.click();
   await expect(replies).toHaveCount(2);
-  const handoff = panel.getByRole('link', { name: 'この内容で担当者に相談する' });
+  const handoff = panel.getByRole('link', { name: 'この内容で相談を依頼する' });
   await expect(handoff).toBeVisible();
   await handoff.click();
   await expect(page).toHaveURL(/\/contact\?conversationId=/);

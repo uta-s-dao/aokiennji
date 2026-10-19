@@ -353,47 +353,44 @@ export function keyFacts(texts: string[], destination?: string): string[] {
 // Fixed answers to questions about terms and the company. Nothing here is
 // promised; the staff confirms each case. The company's own answers (FAQ in
 // the settings) are used as written when given.
-const passedOn = 'ご希望は、見積依頼の際にこの会話と一緒に担当者へ伝わります。';
+const passedOn = 'ご希望は、見積依頼の際にこの会話と一緒に当社へ届きます。';
 const policyTexts: Record<PolicyKey, string> = {
   promise:
-    '納期・在庫・価格のお約束は、このチャットではできません。担当者が確認したうえで、確かな内容をご案内します。',
+    '納期・在庫・価格のお約束は、このチャットではできません。確認したうえで、確かな内容をご案内します。',
   confirmed:
-    'ご依頼や図面をお送りいただいた時点では、製作やご注文は確定しません。担当者が内容を確認してお見積りし、ご了承いただいてから手配します。',
+    'ご依頼や図面をお送りいただいた時点では、製作やご注文は確定しません。内容を確認してお見積りし、ご了承いただいてから手配します。',
   sourcing:
-    'お取り寄せの可否は、メーカー名・品名・型番をもとに担当者が確認します。登録されていない品目もご相談いただけます。',
+    'お取り寄せの可否は、メーカー名・品名・型番をもとに当社で確認します。登録されていない品目もご相談いただけます。',
   urgent:
-    'お急ぎの場合は、お電話でのご相談が確実です。当日の対応や最短の手配は、担当者が在庫と配送を確認してご案内します。',
-  payment: `お支払い方法・条件は、お取引条件として担当者が確認してご案内します。${passedOn}`,
+    'お急ぎの場合は、お電話でのご相談が確実です。当日の対応や最短の手配は、在庫と配送を確認してご案内します。',
+  payment: `お支払い方法・条件は、お取引条件として確認してご案内します。${passedOn}`,
   discount:
-    '値引きをこの場でお約束することはできませんが、数量やご購入の頻度に応じた条件は、担当者がお見積りの際に確認します。',
+    '値引きをこの場でお約束することはできませんが、数量やご購入の頻度に応じた条件は、お見積りの際に確認します。',
   shipping: '送料はお届け先・数量・荷姿によって変わるため、お見積りでご案内します。',
-  estimate:
-    '登録価格のない品目は、目安の金額も、担当者が仕様と数量を確認してからのご案内になります。',
+  estimate: '登録価格のない品目は、目安の金額も、仕様と数量を確認してお見積りします。',
   quoteTime:
-    'お見積りの回答時期は、品目と確認する内容によって異なるため、このチャットではお約束できません。回答の期限がある場合は、その日付もこの会話に書いておくと、依頼と一緒に担当者へ伝わります。',
+    'お見積りの回答時期は、品目と確認する内容によって異なるため、このチャットではお約束できません。回答の期限がある場合は、その日付もこの会話に書いておくと、依頼と一緒に当社へ届きます。',
   cutoff:
-    '当日の出荷に間に合う受付の時刻は、品目と在庫によって異なるため、担当者が確認してご案内します。お急ぎの場合はお電話が確実です。',
+    '当日の出荷に間に合う受付の時刻は、品目と在庫によって異なるため、確認してご案内します。お急ぎの場合はお電話が確実です。',
   formEdit:
     'はい。フォームの「ご相談内容」には要点が入っていますが、送信前に自由に書き直せます。この会話の記録も依頼に添えられます。',
   quoteItems:
-    'お見積りには、品名・型番（または仕様）、数量、お届け先、ご希望の納期があると確実です。この会話で伺った内容は依頼に添えて担当者へ伝わるため、書き直す必要はありません。',
+    'お見積りには、品名・型番（または仕様）、数量、お届け先、ご希望の納期があると確実です。この会話で伺った内容は見積依頼に引き継がれるため、書き直す必要はありません。',
   quoteContent:
-    'はい。チャット下のボタンから送ると、この会話の記録が依頼に添えられ、担当者が内容を確認できます。入力欄にもここまでの要点が入ります。',
-  pickup: `ご来社での引き取りは、在庫と準備の状況を担当者が確認してご案内します。${passedOn}`,
+    'はい。チャット下のボタンから送ると、この会話の記録が依頼に添えられ、当社で内容を確認します。入力欄にもここまでの要点が入ります。',
+  pickup: `ご来社での引き取りは、在庫と準備の状況を確認してご案内します。${passedOn}`,
   outsourcing:
-    '加工を社内で行うか協力会社と行うかは、内容に応じて担当者が判断します。協力会社の社名や取引条件は公開していませんが、ご依頼の窓口は当社です。',
+    '加工を社内で行うか協力会社と行うかは、内容に応じて当社で判断します。協力会社の社名や取引条件は公開していませんが、ご依頼の窓口は当社です。',
   location: `${company.name}は、〒${company.postalCode} ${company.address}にあります。`,
   contact: `${company.name}の電話番号は${company.phone}、FAXは${company.fax}です。`,
   hours:
     '営業時間は、このチャットに登録された情報がないためお答えできません。お電話でご確認ください。',
-  visit:
-    '現地調査や打ち合わせのご相談も承ります。伺える日程や範囲は、担当者が確認してご連絡します。',
+  visit: '現地調査や打ち合わせのご相談も承ります。伺える日程や範囲は、確認してご連絡します。',
   installation:
-    '機械設備の据付や耐火材の施工も事業として承っています。現場の条件を確認したうえで、担当者がご案内します。',
-  sample: 'サンプルのご用意は品目によって異なるため、担当者が確認してご案内します。',
-  catalog:
-    'カタログや資料の送付は、担当者が確認してご案内します。お探しの品目を添えてご依頼ください。',
-  invoice: '請求書などの書類のご要望は、担当者が確認してご案内します。',
+    '機械設備の据付や耐火材の施工も事業として承っています。現場の条件を確認したうえで、ご案内します。',
+  sample: 'サンプルのご用意は品目によって異なるため、確認してご案内します。',
+  catalog: 'カタログや資料の送付は、確認してご案内します。お探しの品目を添えてご依頼ください。',
+  invoice: '請求書などの書類のご要望は、確認してご案内します。',
 };
 const NO_FAQ: CompanyFaq = { hours: '', quoteResponse: '', shipping: '', pickup: '' };
 function policyText(key: PolicyKey, text: string, phone: boolean, faq: CompanyFaq) {
@@ -414,10 +411,10 @@ function policyText(key: PolicyKey, text: string, phone: boolean, faq: CompanyFa
         : policyTexts.quoteTime.replace(/回答の期限がある場合は.*$/, '');
       return `${answer}${
         dated
-          ? '伺った期限も、依頼と一緒に担当者へ伝わります。'
+          ? '伺った期限も、依頼と一緒に当社へ届きます。'
           : faq.quoteResponse
             ? ''
-            : '回答の期限がある場合は、その日付もこの会話に書いておくと、依頼と一緒に担当者へ伝わります。'
+            : '回答の期限がある場合は、その日付もこの会話に書いておくと、依頼と一緒に当社へ届きます。'
       }`;
     }
     case 'cutoff':
@@ -425,7 +422,7 @@ function policyText(key: PolicyKey, text: string, phone: boolean, faq: CompanyFa
     case 'shipping':
       return `${faq.shipping ? `送料について：${faq.shipping}。正確な送料は、お届け先と数量をもとにお見積りでご案内します。` : policyTexts.shipping}${
         /無料/.test(text) && !faq.shipping
-          ? '送料無料になるかどうかも、お見積りの際に担当者が確認します。'
+          ? '送料無料になるかどうかも、お見積りの際に当社で確認します。'
           : ''
       }`;
     case 'pickup':
@@ -458,14 +455,14 @@ export function faqFact(faq: CompanyFaq) {
     .join(' / ');
 }
 
-export const HANDOFF_LABEL = 'この内容で担当者に相談する';
+export const HANDOFF_LABEL = 'この内容で相談を依頼する';
 export const QUOTE_LABEL = 'この内容で見積を依頼する';
 // How to reach the staff with the button shown under the reply. The phone
 // number is given once per conversation.
 export function handoffGuide(enabled: boolean, label = HANDOFF_LABEL, phone = true) {
-  if (!enabled) return `担当者へのご相談は、お電話（${company.phone}）で承ります。`;
+  if (!enabled) return `ご相談は、お電話（${company.phone}）で承ります。`;
   return `下の「${label}」から、この会話の内容を添えて${
-    label === QUOTE_LABEL ? 'お見積りを依頼できます' : '担当者へ送れます'
+    label === QUOTE_LABEL ? 'お見積りを依頼できます' : '相談を依頼できます'
   }。${phone ? `お急ぎの場合はお電話（${company.phone}）でもご相談いただけます。` : ''}`;
 }
 
@@ -502,7 +499,6 @@ export function composeConsultation(input: ComposeInput, part: 'full' | 'next' =
   const current = stripCourtesy(input.customerTexts.at(-1) || '');
   const unsure = bareUnknown.test(current) ? replies.at(-1)?.match(askedPoint)?.[1] : undefined;
   const conditions = statedConditions(input.customerTexts);
-  const points = checklist(input.topic);
   const missing = pointStatus(input.topic, input.customerTexts)
     .filter((p) => p.state === 'missing' && p.label !== unsure)
     .map((p) => p.label);
@@ -511,7 +507,7 @@ export function composeConsultation(input: ComposeInput, part: 'full' | 'next' =
   const lines: string[] = [];
   if (unsure)
     lines.push(
-      `「${unsure}」が分からなくても大丈夫です。今お使いの物の写真や現物、図面があれば、それをもとに担当者が確認します。`,
+      `「${unsure}」が分からなくても大丈夫です。今お使いの物の写真や現物、図面があれば、それをもとに当社で確認します。`,
     );
   if (part === 'full') {
     const subject = input.label || topicName(input.topic);
@@ -529,7 +525,7 @@ export function composeConsultation(input: ComposeInput, part: 'full' | 'next' =
     const opening = `${greeting}${
       !said.includes('伺った条件（')
         ? conditions.length
-          ? `伺った条件（${conditions.join('・')}）をもとに、担当者が候補を確認します。`
+          ? `伺った条件（${conditions.join('・')}）をもとに、候補を確認します。`
           : ''
         : added.length
           ? `${added.join('・')}も承知しました。`
@@ -537,8 +533,6 @@ export function composeConsultation(input: ComposeInput, part: 'full' | 'next' =
     }`;
     if (input.lead) lines.push(input.lead);
     if (opening) lines.push(opening);
-    const pointsText = `選ぶときは、${points.join('、')}が主な確認ポイントです。`;
-    if (!said.includes(pointsText)) lines.push(pointsText);
   }
   // The way of asking and the button guide are given once; later turns ask
   // the next point in a few words.
@@ -548,11 +542,11 @@ export function composeConsultation(input: ComposeInput, part: 'full' | 'next' =
     ask
       ? asked
         ? `「${ask}」も分かれば教えてください。`
-        : `まだ伺っていない「${ask}」が分かると、候補を絞り込みやすくなります。分かる範囲で教えていただけますか？${input.handoff ? '分からないままでも、このまま担当者に相談できます。' : ''}`
+        : `まだ伺っていない「${ask}」が分かると、候補を絞り込みやすくなります。分かる範囲で教えていただけますか？${input.handoff ? '分かっている条件でお見積りを相談いただけます。' : ''}`
       : `${
           input.guideLabel === QUOTE_LABEL
             ? 'この条件でお見積りを依頼できます。'
-            : '伺った条件で、担当者が候補を確認できます。'
+            : '伺った条件で、候補を確認してお見積りにつなげます。'
         }${guided ? '' : handoffGuide(input.handoff, input.guideLabel, input.phone)}`,
   );
   return lines.join('\n');
@@ -576,7 +570,7 @@ export function summarizeConsultation(input: ComposeInput) {
     ? topics.map(topicName).join('・')
     : input.label || topicName(input.topic);
   if (!statements.length)
-    return `まだまとめるご相談内容がありません。お探しの物や用途を教えていただければ、担当者に伝えやすい形に整理します。`;
+    return `まだまとめるご相談内容がありません。お探しの物や用途を教えていただければ、お見積りに必要な内容を整理します。`;
   return [
     `ここまでに伺ったご相談内容です。${subject ? `（${subject}）` : ''}`,
     ...(facts.length ? [`伺った条件：${facts.join('・')}`] : []),

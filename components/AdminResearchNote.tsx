@@ -9,6 +9,8 @@ import {
 } from '@/lib/contracts';
 import { datetime, yen } from './api';
 import AdminProcurementOffer from './AdminProcurementOffer';
+import AdminProcurementHistory from './AdminProcurementHistory';
+import AdminSourceTrace from './AdminSourceTrace';
 
 const sourceLabels: Record<ResearchFinding['source'], string> = {
   maker: 'メーカー',
@@ -52,10 +54,12 @@ export default function AdminResearchNote({
   note,
   conversationId,
   onOfferSaved,
+  readOnly = false,
 }: {
   note: ResearchNote;
   conversationId: string;
   onOfferSaved: (offer: ProcurementOffer) => void;
+  readOnly?: boolean;
 }) {
   const [copyStatus, setCopyStatus] = useState(''),
     [copyFallback, setCopyFallback] = useState(false);
@@ -98,6 +102,9 @@ export default function AdminResearchNote({
     `調査の判定：${note.decidedBy === 'jev' ? 'Jev' : 'ルール'}`,
     ...(stateMessage ? [stateMessage] : []),
     ...summary.map((line) => `・${line}`),
+    ...(note.sourceTrace
+      ? ['検索経路と出典の記録：', JSON.stringify(note.sourceTrace, null, 2)]
+      : []),
     ...Array.from(sources, ([url, source]) => [
       '',
       `${source.offer ? '調達候補' : '参考情報'}：${source.title}`,
@@ -117,7 +124,9 @@ export default function AdminResearchNote({
         `・${RESEARCH_ASPECT_LABELS[finding.aspect]}：${
           note.sourcing && finding.aspect === 'availability'
             ? source.offer
-              ? '型番一致・購入窓口あり'
+              ? source.offer.discoveryBasis === 'registered_listing'
+                ? '登録参照先で型番一致・発注窓口は要確認'
+                : '型番一致・購入窓口あり'
               : '型番一致・調達条件未確認'
             : findingValue(finding)
         }／${checkLabels[finding.check]}`,
@@ -190,6 +199,7 @@ export default function AdminResearchNote({
         </div>
       </dl>
       {stateMessage && <p role="status">{stateMessage}</p>}
+      {note.sourceTrace && <AdminSourceTrace trace={note.sourceTrace} />}
       {summary.length > 0 && (
         <ul className="research-bullets research-summary">
           {summary.map((line, index) => (
@@ -229,6 +239,11 @@ export default function AdminResearchNote({
                   : ''}
               </p>
             )}
+            {source.offer && !readOnly && (
+              <AdminProcurementHistory
+                endpoint={`/api/admin/conversations/${conversationId}/research/${note.id}/offers/${source.offer.id}/history`}
+              />
+            )}
             <ul className="research-bullets research-findings">
               {source.offer?.price != null &&
                 !source.findings.some((f) => f.aspect === 'price') && (
@@ -242,7 +257,9 @@ export default function AdminResearchNote({
                     {RESEARCH_ASPECT_LABELS[finding.aspect]}：
                     {note.sourcing && finding.aspect === 'availability'
                       ? source.offer
-                        ? '型番一致・購入窓口あり'
+                        ? source.offer.discoveryBasis === 'registered_listing'
+                          ? '登録参照先で型番一致・発注窓口は要確認'
+                          : '型番一致・購入窓口あり'
                         : '型番一致・調達条件未確認'
                       : findingValue(finding)}
                   </strong>
@@ -257,9 +274,14 @@ export default function AdminResearchNote({
                     <p className="research-warning">別の型式・サイズの可能性</p>
                   )}
                   {finding.note &&
-                    (note.sourcing && finding.aspect === 'availability' ? (
+                    ((note.sourcing && finding.aspect === 'availability') ||
+                    finding.pageAvailability ? (
                       <details className="research-excerpt">
-                        <summary>判定の根拠（ページ抜粋）を開く</summary>
+                        <summary>
+                          {finding.pageAvailability
+                            ? '在庫・配送表示の仕分けと根拠を開く'
+                            : '判定の根拠（ページ抜粋）を開く'}
+                        </summary>
                         <p className="preline">{finding.note}</p>
                       </details>
                     ) : (
@@ -268,7 +290,7 @@ export default function AdminResearchNote({
                 </li>
               ))}
             </ul>
-            {source.offer && (
+            {source.offer && !readOnly && (
               <AdminProcurementOffer
                 conversationId={conversationId}
                 noteId={note.id}

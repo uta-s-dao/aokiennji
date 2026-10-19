@@ -4,6 +4,17 @@ import type { AppSettings, Flags, ProviderStatus, ProviderCheck } from '@/lib/co
 import { api, errorMessage } from './api';
 import { Notice, useNotice } from './AdminCommon';
 import AdminEstimatePolicy from './AdminEstimatePolicy';
+import {
+  DEFAULT_RESPONSE_MODELS,
+  RECOMMENDED_RESPONSE_MODEL,
+  RESPONSE_MODELS,
+} from '@/lib/ai-models';
+
+function modelChoices(models: { id: string; label: string }[], current: string) {
+  return current && !models.some((m) => m.id === current)
+    ? [{ id: current, label: `${current}（保存済み）` }, ...models]
+    : models;
+}
 const options: [keyof Flags, string, string][] = [
   ['chat', '商品相談チャット', 'サイト上で商品・製作の相談を受け付けます'],
   ['humanHandoff', '担当者への引継ぎ', '連絡先と相談内容を受付一覧に保存します'],
@@ -21,7 +32,6 @@ const options: [keyof Flags, string, string][] = [
     '価格・在庫・納期・送料を聞かれた品目を、メーカー・通販・運送会社・仕入先のサイトで調べ、会話の「AI調査メモ」に残します。お客様には表示しません',
   ],
   ['quoteRequests', '見積依頼を受け付ける', '数量・連絡先を聞き、見積案件を作成します'],
-  ['autoQuote', '自動見積', '有効な登録価格がある商品から見積を発行します'],
   ['orders', '注文依頼を受け付ける', '発行した見積から顧客が注文を依頼できます'],
   [
     'autoOrder',
@@ -121,7 +131,7 @@ export default function AdminSettings() {
                     decisionProvider: 'local',
                     model: '',
                     responseProvider: 'openai',
-                    responseModel: 'gpt-4.1-mini',
+                    responseModel: RECOMMENDED_RESPONSE_MODEL,
                   })
                 }
               >
@@ -136,7 +146,7 @@ export default function AdminSettings() {
                     decisionProvider: 'jev',
                     model: 'jev-latest',
                     responseProvider: 'openai',
-                    responseModel: 'gpt-4.1-mini',
+                    responseModel: RECOMMENDED_RESPONSE_MODEL,
                   })
                 }
               >
@@ -191,7 +201,7 @@ export default function AdminSettings() {
                 </dd>
                 <dt>担当者への引継ぎ</dt>
                 <dd>
-                  相談が進むと「この内容で担当者に相談する」ボタンを表示し、相談内容を入力した問い合わせフォームを開きます。
+                  相談が進むと「この内容で相談を依頼する」ボタンを表示し、相談内容を入力した問い合わせフォームを開きます。
                 </dd>
               </dl>
               <p className="muted">
@@ -281,22 +291,46 @@ export default function AdminSettings() {
               </label>
               <label>
                 回答生成のモデル名
-                <input
+                <select
                   value={form.responseModel}
                   disabled={form.responseProvider === 'local'}
                   onChange={(e) => setForm({ ...form, responseModel: e.target.value })}
-                  placeholder={
-                    form.responseProvider === 'gemini' ? 'gemini-2.5-flash' : 'gpt-4.1-mini'
-                  }
-                />
+                >
+                  <option value="">
+                    {form.responseProvider === 'local'
+                      ? '利用しない'
+                      : `標準（${DEFAULT_RESPONSE_MODELS[form.responseProvider]} / サーバー設定優先）`}
+                  </option>
+                  {modelChoices(RESPONSE_MODELS[form.responseProvider], form.responseModel).map(
+                    (m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.label}
+                      </option>
+                    ),
+                  )}
+                </select>
               </label>
               <label>
                 モデル名（省略時は標準）
-                <input
+                <select
                   value={form.model}
+                  disabled={form.decisionProvider === 'local'}
                   onChange={(e) => setForm({ ...form, model: e.target.value })}
-                  placeholder={form.decisionProvider === 'jev' ? 'jev-latest' : 'gemini-2.5-flash'}
-                />
+                >
+                  <option value="">
+                    {form.decisionProvider === 'local' ? '利用しない' : '標準（サーバー設定優先）'}
+                  </option>
+                  {modelChoices(
+                    form.decisionProvider === 'jev'
+                      ? [{ id: 'jev-latest', label: 'Jev latest' }]
+                      : RESPONSE_MODELS[form.decisionProvider],
+                    form.model,
+                  ).map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label>
                 情報の有効期間（時間）
