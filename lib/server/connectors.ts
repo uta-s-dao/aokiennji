@@ -1,6 +1,5 @@
 import ExcelJS from 'exceljs';
 import { parse as parseCsv } from 'csv-parse/sync';
-import { PDFParse } from 'pdf-parse';
 import mammoth from 'mammoth';
 import * as cheerio from 'cheerio';
 import type { ImportRowError, ParsedSource, ProductInput, Source } from '@/lib/contracts';
@@ -75,7 +74,12 @@ async function parseXlsx(buffer: Buffer): Promise<ParsedSource> {
 }
 
 async function parsePdf(buffer: Buffer, title: string): Promise<ParsedSource> {
-  const parser = new PDFParse({ data: new Uint8Array(buffer) });
+  // The worker installs DOMMatrix and the other canvas globals before PDF.js loads.
+  // Load PDF dependencies only for PDF imports so a failure cannot disable every API.
+  const { CanvasFactory, getData } = await import('pdf-parse/worker');
+  const { PDFParse } = await import('pdf-parse');
+  PDFParse.setWorker(getData());
+  const parser = new PDFParse({ data: new Uint8Array(buffer), CanvasFactory });
   try {
     const result = await parser.getText();
     const content = normalized(result.pages.map((p) => p.text).join('\n')).slice(0, MAX_DOCUMENT);
