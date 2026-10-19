@@ -1,6 +1,12 @@
 # Vercel preview and production readiness
 
-## Interview preview
+## UI improvement preview
+
+Current UI review URL: <https://aokienji-ui-preview.vercel.app>
+
+This is a separate Vercel project (`aokienji-ui-preview`) for the `ui-improvements` branch. It does not replace the production site. The deployment uses the Next.js framework preset, `DEMO_MODE=true`, `ALLOW_LIVE_ORDERS=false`, and a deployment-specific random `SESSION_SECRET`.
+
+## Previous interview preview
 
 Current preview URL: <https://aokienji-preview-fwe99n9dr-uta-s-daos-projects.vercel.app>
 

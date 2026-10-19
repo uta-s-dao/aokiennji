@@ -1,62 +1,75 @@
 import Link from 'next/link';
-import { ArrowRight, ArrowUpRight, Check, Phone } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowDown, ArrowRight, ArrowUpRight, Phone } from 'lucide-react';
 import SiteShell from '@/components/SiteShell';
 import HeroConsult from '@/components/HeroConsult';
+import HeroSlider from '@/components/HeroSlider';
 import { company, projects, services } from '@/lib/company';
 export default function Home() {
+  const legacyHighlights = [
+    { src: '/images/legacy/hero-01.jpg', alt: '耐火物製品' },
+    { src: '/images/legacy/hero-02.jpg', alt: '大型タンクの積込み' },
+    { src: '/images/tank.jpg', alt: '鋼製タンク' },
+    { src: '/images/heat-exchanger.jpg', alt: '機械装置' },
+    { src: '/images/legacy/hero-03.jpg', alt: '太陽光発電設備' },
+  ];
   return (
     <SiteShell>
       <section className="hero">
-        <div className="hero-image" role="img" aria-label="アオキエンジの製作実績" />
+        <HeroSlider />
         <div className="container hero-inner">
           <div className="hero-copy">
-            <p className="eyebrow light">ENGINEERING FOR WHAT&apos;S NEXT</p>
+            <p className="eyebrow light">AOKI ENG CO., LTD.</p>
             <h1>
-              ものづくりの、
+              鋼構造物・機械装置の
               <br />
-              <em>その先まで。</em>
+              <em>設計・製作・据付</em>
             </h1>
             <p>
-              構想を、かたちに。現場の課題を、解決へ。
+              耐火物製品、工業炉部材、設備工事まで。
               <br />
-              設計から製作、据付まで一貫して支えます。
+              長年の経験と技術で、幅広いご要望に対応いたします。
             </p>
-            <Link className="text-link light" href="/profile">
-              私たちについて <ArrowUpRight size={18} />
-            </Link>
+            <div className="hero-actions">
+              <Link className="button primary" href="/products">
+                製品・サービスを見る <ArrowRight size={18} />
+              </Link>
+              <Link className="button hero-secondary" href="/projects">
+                製作実績を見る <ArrowUpRight size={18} />
+              </Link>
+            </div>
+            <div className="hero-capabilities" aria-label="対応範囲">
+              <span>設計</span>
+              <i aria-hidden="true" />
+              <span>製作</span>
+              <i aria-hidden="true" />
+              <span>輸送</span>
+              <i aria-hidden="true" />
+              <span>据付</span>
+            </div>
           </div>
           <HeroConsult />
         </div>
         <div className="hero-bottom">
-          <span>SCROLL TO EXPLORE</span>
-          <span>01 / 04</span>
+          <a href="#strength">
+            SCROLL TO EXPLORE <ArrowDown size={13} />
+          </a>
         </div>
       </section>
-      <section className="section intro-section">
-        <div className="container intro-grid">
-          <div>
-            <p className="eyebrow">OUR STRENGTH</p>
-            <h2 className="section-title">
-              現場を知る。
-              <br />
-              だから、つくれる。
-            </h2>
-          </div>
-          <div>
-            <p className="lead">
-              鋼構造物や機械装置、工業炉まわりの部材まで。必要な仕様を丁寧に読み解き、製作と施工をつなぐ技術でお応えします。
-            </p>
-            <div className="intro-points">
-              <span>
-                <Check size={19} /> 設計から据付まで
-              </span>
-              <span>
-                <Check size={19} /> 多様な設備に対応
-              </span>
-              <span>
-                <Check size={19} /> 北九州から全国へ
-              </span>
-            </div>
+      <section className="section legacy-intro" id="strength">
+        <div className="container">
+          <p className="eyebrow">OUR BUSINESS</p>
+          <h2 className="legacy-message">
+            耐火物製品製造の受注から出荷までの全行程を一括管理。
+            <br />
+            長年の経験で培ったノウハウを駆使し、様々な製品・構造物に対応いたします。
+          </h2>
+          <div className="legacy-highlight-grid" aria-label="主な製作・施工実績">
+            {legacyHighlights.map((item) => (
+              <div className="legacy-highlight" key={item.src}>
+                <Image src={item.src} alt={item.alt} fill sizes="180px" />
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -75,7 +88,7 @@ export default function Home() {
             {services.map((s, i) => (
               <Link href="/products" className="service-card" key={s.id}>
                 <div className="service-image">
-                  <img src={s.image} alt={s.name} />
+                  <Image src={s.image} alt={s.name} fill sizes="(max-width: 760px) 50vw, 45vw" />
                 </div>
                 <div className="service-body">
                   <span className="service-number">
@@ -83,7 +96,9 @@ export default function Home() {
                   </span>
                   <h3>{s.name}</h3>
                   <p>{s.description}</p>
-                  <ArrowUpRight size={20} />
+                  <span className="service-card-link">
+                    詳しく見る <ArrowUpRight size={18} />
+                  </span>
                 </div>
               </Link>
             ))}
@@ -105,13 +120,16 @@ export default function Home() {
             {projects.slice(0, 3).map((p) => (
               <Link href="/projects" className="project-feature" key={p.id}>
                 <div className="project-image">
-                  <img src={p.image} alt={p.name} />
+                  <Image src={p.image} alt={p.name} fill sizes="(max-width: 760px) 100vw, 50vw" />
                 </div>
-                <span>{p.category}</span>
-                <h3>
-                  {p.name}
-                  <ArrowUpRight size={19} />
-                </h3>
+                <div className="project-feature-copy">
+                  <span>{p.category}</span>
+                  <h3>
+                    {p.name}
+                    <ArrowUpRight size={19} />
+                  </h3>
+                  <p>{p.description}</p>
+                </div>
               </Link>
             ))}
           </div>
@@ -119,8 +137,8 @@ export default function Home() {
       </section>
       <section className="section process-section">
         <div className="container">
-          <p className="eyebrow light">HOW WE WORK</p>
-          <h2 className="section-title light">ご相談から、納品まで。</h2>
+          <p className="eyebrow light">CONTACT FLOW</p>
+          <h2 className="section-title light">お問い合わせフロー</h2>
           <div className="process-grid">
             {[
               {
@@ -137,7 +155,7 @@ export default function Home() {
               { n: '04', h: '納品・据付', p: '輸送から現地据付まで、案件に応じて対応します。' },
             ].map((s) => (
               <div key={s.n}>
-                <span>{s.n}</span>
+                <span className="process-index">{s.n}</span>
                 <h3>{s.h}</h3>
                 <p>{s.p}</p>
               </div>
@@ -147,12 +165,12 @@ export default function Home() {
       </section>
       <section className="section contact-band">
         <div className="container contact-band-inner">
-          <div>
+          <div className="contact-band-copy">
             <p className="eyebrow">CONTACT</p>
-            <h2>まずは、お聞かせください。</h2>
+            <h2>まずはご相談下さい</h2>
             <p>製品のお探しものから、製作・施工のご相談まで。</p>
           </div>
-          <div>
+          <div className="contact-band-actions">
             <Link className="button primary" href="/contact">
               お問い合わせ <ArrowUpRight size={19} />
             </Link>

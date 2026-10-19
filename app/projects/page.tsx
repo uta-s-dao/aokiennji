@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowUpRight } from 'lucide-react';
 import { projects } from '@/lib/company';
 import SiteShell from '@/components/SiteShell';
@@ -37,7 +38,7 @@ export default function Projects() {
               .map((p) => (
                 <article className="project-card" key={p.id}>
                   <div className="project-image">
-                    <img src={p.image} alt={p.name} />
+                    <Image src={p.image} alt={p.name} fill sizes="(max-width: 760px) 100vw, 50vw" />
                   </div>
                   <div className="project-content">
                     <span>{p.category}</span>

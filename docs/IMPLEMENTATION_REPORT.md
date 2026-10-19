@@ -95,7 +95,8 @@
 ## 素材
 
 - 実績写真: 現行企業サイトから取得。[取得元一覧](research/image-sources.json)。
-- 和文フォント: [Noto CJK公式リポジトリのNoto Sans JP](https://github.com/notofonts/noto-cjk/tree/main/Sans/Variable/TTF/Subset) の `NotoSansJP-VF.ttf` をWOFF2へ変換して同梱。SIL Open Font License 1.1。[ライセンス](../public/fonts/LICENSE.txt)。
+- 和文フォント: [Google FontsのZen Kaku Gothic New](https://fonts.google.com/specimen/Zen+Kaku+Gothic+New) のRegular/Boldを同梱。SIL Open Font License 1.1。[ライセンス](../public/fonts/ZEN_KAKU_GOTHIC_NEW_LICENSE.txt)。
+- ヘッダーロゴとトップのスライド写真3枚: アオキエンジ株式会社の旧公式サイトから取得。出典URLとファイルサイズは [image-sources.json](research/image-sources.json) に記録。
 - 確認時の画面: [PCトップ](screenshots/home-desktop.png)、[スマートフォン](screenshots/home-mobile.png)、[チャット](screenshots/chat.png)、[管理画面](screenshots/admin.png)。
 
 ## 実装の進め方
