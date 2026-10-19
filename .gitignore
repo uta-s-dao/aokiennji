@@ -3,6 +3,7 @@ node_modules/
 .next-e2e/
 .next-build/
 .next-live-ai/
+next-env.d.ts
 .data/
 .env*
 !.env.example
