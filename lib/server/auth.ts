@@ -1,6 +1,6 @@
-import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import type { NextRequest, NextResponse } from 'next/server';
-import { db, uid } from './db';
+import { db, demoMode, uid } from './db';
 
 export class ApiError extends Error {
   constructor(
@@ -38,8 +38,16 @@ function secret() {
     );
   return value;
 }
-function signed(id: string) {
-  const h = require('node:crypto').createHmac('sha256', secret()).update(id).digest('base64url');
+function statelessAdmin(kind: 'admin' | 'anon') {
+  // Demo functions cannot share a SQLite session table across Vercel instances.
+  return kind === 'admin' && !!process.env.VERCEL && demoMode();
+}
+function signed(id: string, bindAdminPassword = false) {
+  // Changing the admin password also invalidates the demo's signed sessions.
+  const key = bindAdminPassword
+    ? `${secret()}\0${process.env.ADMIN_PASSWORD_HASH || ''}`
+    : secret();
+  const h = createHmac('sha256', key).update(id).digest('base64url');
   return `${id}.${h}`;
 }
 function readSession(req: NextRequest, kind: 'admin' | 'anon') {
@@ -48,12 +56,17 @@ function readSession(req: NextRequest, kind: 'admin' | 'anon') {
   const dot = raw.lastIndexOf('.');
   if (dot < 0) return null;
   const id = raw.slice(0, dot);
-  const expected = signed(id);
+  const stateless = statelessAdmin(kind);
+  const expected = signed(id, stateless);
   if (
     Buffer.byteLength(raw) !== Buffer.byteLength(expected) ||
     !timingSafeEqual(Buffer.from(raw), Buffer.from(expected))
   )
     return null;
+  if (stateless) {
+    const match = /^admin-v1:([0-9a-f-]{36}):(\d{13})$/.exec(id);
+    return match && Number(match[2]) > Date.now() ? match[1] : null;
+  }
   const row = db().prepare('SELECT kind,expires_at FROM sessions WHERE id=?').get(id) as
     { kind: string; expires_at: number } | undefined;
   return row?.kind === kind && row.expires_at > Date.now() ? id : null;
@@ -69,10 +82,12 @@ export function anonOwner(req: NextRequest) {
 export function setSession(res: NextResponse, kind: 'admin' | 'anon') {
   const id = uid();
   const maxAge = kind === 'admin' ? 8 * 3600 : 30 * 86400;
-  db()
-    .prepare('INSERT INTO sessions(id,kind,expires_at) VALUES(?,?,?)')
-    .run(id, kind, Date.now() + maxAge * 1000);
-  res.cookies.set(kind === 'admin' ? ADMIN : ANON, signed(id), {
+  const expiresAt = Date.now() + maxAge * 1000;
+  const stateless = statelessAdmin(kind);
+  if (!stateless)
+    db().prepare('INSERT INTO sessions(id,kind,expires_at) VALUES(?,?,?)').run(id, kind, expiresAt);
+  const payload = stateless ? `admin-v1:${id}:${expiresAt}` : id;
+  res.cookies.set(kind === 'admin' ? ADMIN : ANON, signed(payload, stateless), {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
@@ -83,7 +98,8 @@ export function setSession(res: NextResponse, kind: 'admin' | 'anon') {
 }
 export function clearAdmin(req: NextRequest, res: NextResponse) {
   const id = readSession(req, 'admin');
-  if (id) db().prepare('DELETE FROM sessions WHERE id=?').run(id);
+  if (id && !statelessAdmin('admin')) db().prepare('DELETE FROM sessions WHERE id=?').run(id);
+  // Demo cookies expire after eight hours; rotate the password/secret to revoke all copies.
   res.cookies.delete(ADMIN);
 }
 export function checkOrigin(req: NextRequest) {
