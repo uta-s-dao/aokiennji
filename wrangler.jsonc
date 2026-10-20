@@ -1,9 +1,19 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "aoki-enji",
+  "preview_urls": false,
   "compatibility_date": "2026-10-19",
   "compatibility_flags": ["nodejs_compat"],
   "main": "./worker.ts",
+  "account_id": "d3121128ede9b31f2747b188487f0995",
+  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "a399be04d6ea42618af320f6ad7a2329" }],
+  "vars": {
+    "SITE_URL": "https://aoki-enji.official-b.workers.dev",
+    "APP_ORIGIN": "https://aoki-enji.official-b.workers.dev",
+    "DEMO_MODE": "false",
+    "ALLOW_LIVE_ORDERS": "false",
+    "SEARCH_INDEXING_ENABLED": "false",
+  },
   "assets": {
     "directory": "dist/client",
     "html_handling": "none",

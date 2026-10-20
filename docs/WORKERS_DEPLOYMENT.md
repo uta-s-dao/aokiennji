@@ -1,41 +1,37 @@
-# UTA-8：Workers配置の構成と未完了項目
+# UTA-8：Workersの配置と検証
 
-2026-10-20時点。本番DBの移行は適用済み。公開Workerは準備中表示で、業務アプリは未配置。
+2026-10-20、既存CloudflareアカウントのWorkers Freeに業務アプリを配置した。本番URLは https://aoki-enji.official-b.workers.dev 。有料契約・アカウント変更は行っていない。
 
-## 構成
+## 無料枠についての訂正
 
-`npm run build:vinext` はVite／vinextで `dist/client` と `dist/server` を生成する。`worker.ts` はリクエストごとにDBプールを作り、レスポンス本文・SSEと `waitUntil` の後処理が完了してから閉じる。Nodeの開発／Next.js実行は従来どおりプロセスのプールを使う。
+以前の「gzip約4.7MiBなので有料化が必要」という説明は、廃止された制限に基づく誤りだった。Cloudflareは2026-09-04に圧縮サイズの3MiB／10MiB制限を廃止し、Free／Paid共通で未圧縮64MiBへ変更した。今回の未圧縮21070.93KiB（約20.6MiB）は範囲内で、無料プランで配置・再配置に成功した。有料化依頼は取り下げた。
 
-PDFはunpdfのサーバー用PDF.jsで文字抽出し、500ページを超える資料とOCRが必要な空テキストを拒否する。画像はimage-sizeで形式・25百万画素・アニメーションを先に検査し、Photon WASMで最大1920pxへ縮小して再符号化する。JPEGはJPEG、PNG／WebPは透過を維持したWebP。EXIFを削除する。Viteだけに `/workerd` のWASMエントリーを指定し、動的なWASMコンパイルを避ける。
+無料枠にはCPU 10ms／リクエスト、日次リクエスト数等の制限が残る。今回の基本操作の実HTTP成功は、高負荷時や大きな画像・PDFの処理まで保証するものではない。実際の制限エラーを確認した場合は、処理を軽くする方法や配置先を比較する。有料化を自動実行しない。
 
-外部取得は各転送先でURL・ポート・全IP・許可ドメイン・HTTPSの後退・認証ヘッダー・サイズを検査する。Nodeは検査したIPへ接続を固定する。Workersはネイティブfetchを使うためIP固定を行わない。現在の構成は外部取得へプライベートネットワーク／VPCアクセスを与えない。この種のbindingを追加するときはSSRF対策を再評価する。DB専用Hyperdrive bindingはHTTP取得へ公開しない。
+## 配置済みの構成
 
-## 本番DBの接続
+- `npm run build:vinext` が `dist/client` と `dist/server` を生成し、Wranglerで配置する。Worker名は `aoki-enji`、preview URLsは無効。検索公開・デモ・実注文も無効。
+- `worker.ts` はリクエストごとにDBプールを作り、レスポンス本文・SSEと `waitUntil` の後処理が完了してから閉じる。Nodeの開発／Next.js実行はプロセスのプールを使う。
+- 本番DBの専用 `aoki_runtime` をHyperdrive経由で使う。originはSupabaseの直接接続、Supabase Root 2021 CAを指定した `verify-full`、クエリキャッシュ無効、origin接続上限5。管理用DB接続をWebへ配らない。Hyperdrive IDは `wrangler.jsonc` に記録し、秘密は含めない。
+- Workersからの直接TLS接続は失敗したため、この構成を使用する。Hyperdriveの作成時に資格情報・TLS検証が成功し、実Workerからの読取・書込も確認した。Orcaブラウザで同じ承認済みアカウントのCLI認可を更新し、CA登録と配置権限の不足を解消した。
+- `createDatabaseScope(env.HYPERDRIVE)` は信頼するプラットフォームbindingを使う。Hyperdrive利用時はprepared statementを有効化し、`.unsafe()`にも明示する。直接のtransaction poolerでは無効。
+- 管理パスワードとセッション鍵は新たに生成し、秘密管理へ登録した。開発用のパスワード・DBをコピーしていない。
 
-WorkersからSupabase poolerへの直接TLS接続はローカルworkerdで失敗した。NodeではSupabase CAを明示した検証付きTLSが成功した。本番WorkerではHyperdriveがSupabase側のCAとホスト名を検証する構成を使用する。TLS無効化や検証省略で直接接続を通さない。
+## メディアと外部取得
 
-1. 承認済みCloudflareアカウントを確認する。CLIは本案件用の `XDG_CONFIG_HOME=/home/uta/.config/aokiennji-cloudflare` を使う。現在のOAuthではCAアップロードが認証エラーとなるため、`ssl_certs:write` とデプロイ用 `workers_scripts:write` の認可を整える。
-2. Supabase Root 2021 CAの公開証明書をアップロードする。今回の認証エラーでは作成できていないためIDは未確定。
-3. 既存Supabaseの専用 `aoki_runtime` 資格情報を使ってHyperdriveを作る。管理ロールの接続文字列を渡さない。originはsession poolerの5432または直接接続とし、Hyperdriveの先にtransaction poolerを重ねない。CAを指定した `sslmode=verify-full`、`caching.disabled=true`、origin接続数の上限を設定する。セッション失効や設定読取をキャッシュしない。
-4. 取得したIDを `wrangler.jsonc` の `hyperdrive: [{binding: "HYPERDRIVE", id: "実際のID"}]` に設定して再ビルドする。秘密の接続文字列はGitへ置かない。仮IDは登録していない。
+PDFはunpdfで文字抽出し、500ページを超える資料とOCRが必要な空テキストを拒否する。画像はimage-sizeで形式・25百万画素・アニメーションを先に検査し、Photon WASMで最大1920pxへ縮小して再符号化する。JPEGはJPEG、PNG／WebPは透過を維持したWebP。EXIFを削除し、Viteだけに `/workerd` のWASMエントリーを指定する。
 
-`createDatabaseScope(env.HYPERDRIVE)` が信頼するプラットフォームbindingの接続を選ぶ。WorkerとHyperdriveの区間はプラットフォーム側が扱い、originへのTLSは上記構成で保証する。Hyperdrive利用時はprepared statementを有効にし、`.unsafe()`にも明示する。直接のtransaction poolerでは無効。実際のHyperdrive経由の接続確認は未実施で、ローカル接続を使ったbinding分岐・独立プール・トランザクション試験と区別する。
-
-## 配置前の判断と手順
-
-Wrangler dry-runは成功し、未圧縮21070.93KiB（約20.6MiB）、gzip 4808.46KiB。2026-09-04の変更でFree／Paid共通の上限は未圧縮64MiBとなり、圧縮サイズの旧3MiB／10MiB制限は廃止されている。サイズを理由に有料化が必要とした以前の説明を訂正し、有料化の依頼を取り下げた。現在のアカウントのFreeで配置検証を進め、契約・支払操作は行わない。無料枠にはCPU 10ms／リクエスト等の制限が残るため、実配置後にSSR・認証・取込の実行可否を確認する。
-
-Hyperdriveの実接続とキャッシュ無効設定を確認し、セッション鍵・管理パスワード・HTTPSのSITE_URL／APP_ORIGINを秘密管理に設定する。マイグレーション接続はWebへ配らない。デモ投入・メール送信・実注文・検索公開は、それぞれの承認と設定を確認してから有効化する。その後 `npm run build:vinext` と `npm run deploy:vinext` を実行し、実URLで受付、セッション失効、他人の会話拒否、画像、PDF、SSRF、SSE、再デプロイ後の永続化を検証する。検証データを除去し、結果が揃ってからUTA-8を完了とする。
-
-Next.jsとvinextは同じ `.next/types` を生成するため、ビルドを同時実行しない。vinextの後にNext.jsを検証する場合は通常の `npm run build` で型を再生成する。型チェックだけなら `npm run typecheck` を使う。
+外部取得は各転送先でURL・ポート・全IP・許可ドメイン・HTTPSの後退・認証ヘッダー・サイズを検査する。Nodeは検査したIPへ接続を固定し、Workersはネイティブfetchを使うためIP固定を行わない。外部取得へプライベートネットワーク／VPCアクセスを与えない。この種のbindingを追加するときはSSRF対策を再評価する。DB専用Hyperdrive bindingはHTTP取得へ公開しない。
 
 ## 確認した範囲
 
-- ローカルSupabase：全体27ファイル・367件成功。追加3ファイル・23件も成功し、リクエスト別プールの独立性・prepared query・入れ子トランザクションを確認した。
-- Next.js本番ビルド、vinextビルド、Wrangler dry-run成功。
-- ローカルworkerd：繰返しリクエスト、会話・所有者、受付の同一キー再送、管理ログイン、ログアウト後の失効、WASM画像、実PDF文字抽出、公開HTTP取得、内部IP拒否が成功。
-- Chromium：公開画面のハイドレーション、実SSE相談の応答表示が成功。
-- 本番Supabase：001／002適用、26テーブル全RLS、ブラウザー用権限拒否、専用ロールのDDL拒否、TLS／pooler、別接続からの永続データ取得が成功。試験受付を削除済み。
-- 未実施：Hyperdriveの作成と実接続、業務Workerのクラウド配置・再デプロイ検証。
+- ローカルSupabase：全体27ファイル・367件、その後の関連3ファイル・23件が成功。リクエスト別プール・prepared query・入れ子トランザクションを含む。
+- Next.js本番ビルド、vinextビルド、Wrangler dry-run成功。Next.jsとvinextは同じ `.next/types` を生成するため、ビルドを同時実行しない。vinextの後の型チェックには `npm run typecheck`、Next.jsの検証には通常の `npm run build` を使う。
+- ローカルworkerd：繰返しリクエスト、会話所有権、受付の同一キー再送、管理認証・失効、WASM画像、実PDF文字抽出、公開HTTP取得、内部IP拒否が成功。ChromiumのハイドレーションとSSE応答表示も成功。
+- 本番Supabase：001／002適用、26テーブル全RLS、ブラウザー用権限拒否、専用ロールのDDL拒否、検証付きTLS／pooler、別接続からの永続データ取得が成功。
+- 本番Worker：無料プランで配置、管理ログイン・管理API、会話所有権、他人の会話拒否、受付の同一キー再送が成功。再配置後も同じ受付・設定・所有者セッションを読め、SSE応答とログアウト後の失効が成功。ホームのrobotsメタで検索除外を確認した。
+- 本番の試験受付・会話・対応する監査／再送キー・セッションは削除済み。開発DB・会社データはコピーしていない。
 
-参考：[Postgres.jsとHyperdrive](https://developers.cloudflare.com/hyperdrive/examples/connect-to-postgres/postgres-drivers-and-libraries/postgres-js/)、[CAとverify-full](https://developers.cloudflare.com/hyperdrive/configuration/tls-ssl-certificates-for-hyperdrive/)、[Hyperdrive料金](https://developers.cloudflare.com/hyperdrive/platform/pricing/)、[Workers料金](https://developers.cloudflare.com/workers/platform/pricing/)、[64MiBへの上限変更](https://developers.cloudflare.com/changelog/post/2026-09-04-increased-worker-size-limit/)。
+クラウド上の大きな画像／PDF取込とブラウザー操作一式の検証、会社承認済みの商品・資料の選別登録は残る。会社の未回答条件は正式な販売条件へ変えない。
+
+参考：[Workerサイズ上限の変更](https://developers.cloudflare.com/changelog/post/2026-09-04-increased-worker-size-limit/)、[現在の制限](https://developers.cloudflare.com/workers/platform/limits/)、[Postgres.jsとHyperdrive](https://developers.cloudflare.com/hyperdrive/examples/connect-to-postgres/postgres-drivers-and-libraries/postgres-js/)、[CAとverify-full](https://developers.cloudflare.com/hyperdrive/configuration/tls-ssl-certificates-for-hyperdrive/)。
