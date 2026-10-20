@@ -23,9 +23,9 @@ WorkersからSupabase poolerへの直接TLS接続はローカルworkerdで失敗
 
 ## 配置前の判断と手順
 
-Wrangler dry-runは成功し、圧縮後4808.46KiB（約4.7MiB）。Freeの3MiBを超える。Workers Paidは月額$5〜＋利用枠超過分で、変更の承認はまだ得ていない。契約・支払操作・アプリのアップロードは行っていない。
+Wrangler dry-runは成功し、未圧縮21070.93KiB（約20.6MiB）、gzip 4808.46KiB。2026-09-04の変更でFree／Paid共通の上限は未圧縮64MiBとなり、圧縮サイズの旧3MiB／10MiB制限は廃止されている。サイズを理由に有料化が必要とした以前の説明を訂正し、有料化の依頼を取り下げた。現在のアカウントのFreeで配置検証を進め、契約・支払操作は行わない。無料枠にはCPU 10ms／リクエスト等の制限が残るため、実配置後にSSR・認証・取込の実行可否を確認する。
 
-承認後、Hyperdriveの実接続とキャッシュ無効設定を確認し、セッション鍵・管理パスワード・HTTPSのSITE_URL／APP_ORIGINを秘密管理に設定する。マイグレーション接続はWebへ配らない。デモ投入・メール送信・実注文・検索公開は、それぞれの承認と設定を確認してから有効化する。その後 `npm run build:vinext` と `npm run deploy:vinext` を実行し、実URLで受付、セッション失効、他人の会話拒否、画像、PDF、SSRF、SSE、再デプロイ後の永続化を検証する。検証データを除去し、結果が揃ってからUTA-8を完了とする。
+Hyperdriveの実接続とキャッシュ無効設定を確認し、セッション鍵・管理パスワード・HTTPSのSITE_URL／APP_ORIGINを秘密管理に設定する。マイグレーション接続はWebへ配らない。デモ投入・メール送信・実注文・検索公開は、それぞれの承認と設定を確認してから有効化する。その後 `npm run build:vinext` と `npm run deploy:vinext` を実行し、実URLで受付、セッション失効、他人の会話拒否、画像、PDF、SSRF、SSE、再デプロイ後の永続化を検証する。検証データを除去し、結果が揃ってからUTA-8を完了とする。
 
 Next.jsとvinextは同じ `.next/types` を生成するため、ビルドを同時実行しない。vinextの後にNext.jsを検証する場合は通常の `npm run build` で型を再生成する。型チェックだけなら `npm run typecheck` を使う。
 
@@ -38,4 +38,4 @@ Next.jsとvinextは同じ `.next/types` を生成するため、ビルドを同�
 - 本番Supabase：001／002適用、26テーブル全RLS、ブラウザー用権限拒否、専用ロールのDDL拒否、TLS／pooler、別接続からの永続データ取得が成功。試験受付を削除済み。
 - 未実施：Hyperdriveの作成と実接続、業務Workerのクラウド配置・再デプロイ検証。
 
-参考：[Postgres.jsとHyperdrive](https://developers.cloudflare.com/hyperdrive/examples/connect-to-postgres/postgres-drivers-and-libraries/postgres-js/)、[CAとverify-full](https://developers.cloudflare.com/hyperdrive/configuration/tls-ssl-certificates-for-hyperdrive/)、[Hyperdrive料金](https://developers.cloudflare.com/hyperdrive/platform/pricing/)、[Workers料金](https://developers.cloudflare.com/workers/platform/pricing/)。
+参考：[Postgres.jsとHyperdrive](https://developers.cloudflare.com/hyperdrive/examples/connect-to-postgres/postgres-drivers-and-libraries/postgres-js/)、[CAとverify-full](https://developers.cloudflare.com/hyperdrive/configuration/tls-ssl-certificates-for-hyperdrive/)、[Hyperdrive料金](https://developers.cloudflare.com/hyperdrive/platform/pricing/)、[Workers料金](https://developers.cloudflare.com/workers/platform/pricing/)、[64MiBへの上限変更](https://developers.cloudflare.com/changelog/post/2026-09-04-increased-worker-size-limit/)。
