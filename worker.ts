@@ -1,10 +1,11 @@
 import handler from 'vinext/server/fetch-handler';
+import { withStaticAssets, type StaticAssetBinding } from './lib/server/runtime-assets';
 import { createDatabaseScope, type HyperdriveBinding } from './lib/server/database';
 
 export default {
   async fetch(
     request: Request,
-    env: Record<string, unknown> & { HYPERDRIVE?: HyperdriveBinding },
+    env: Record<string, unknown> & { HYPERDRIVE?: HyperdriveBinding; ASSETS?: StaticAssetBinding },
     context: { waitUntil(p: Promise<unknown>): void },
   ) {
     const scope = createDatabaseScope(env.HYPERDRIVE);
@@ -25,7 +26,9 @@ export default {
       await scope.close();
     };
     try {
-      const response = await scope.run(() => handler.fetch(request, env, requestContext));
+      const response = await scope.run(() =>
+        withStaticAssets(env.ASSETS, () => handler.fetch(request, env, requestContext)),
+      );
       if (!response.body) {
         context.waitUntil(close());
         return response;

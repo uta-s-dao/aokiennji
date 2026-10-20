@@ -1,3 +1,5 @@
+import { demoMode } from './db';
+import { ApiError } from './auth';
 import report from '../../docs/research/source-priority-live-2026-10-18.json';
 import customerReport from '../../docs/research/customer-simulation-live-2026-10-18.json';
 import salesReport from '../../docs/research/sales-conversations-live-2026-10-18.json';
@@ -13,6 +15,8 @@ import type {
 
 // A dated, staff-only record of real API conversations. Serve through the authenticated API.
 export function sourceVerificationReport(): SourceVerificationReport {
+  if (!demoMode())
+    throw new ApiError(404, 'verification_disabled', '検証記録は開発環境で確認してください。');
   const original = report as unknown as SourceVerificationReport;
   return { ...original, scenarios: verificationReports().flatMap((r) => r.scenarios) };
 }
@@ -31,6 +35,7 @@ function verificationReports(): SourceVerificationReport[] {
 // Present archived API runs in the same staff history as customer chats. Keep the
 // original record intact and avoid copying test fixtures into the customer database.
 export function withVerificationConversations(conversations: Conversation[]): AdminConversation[] {
+  if (!demoMode()) return [...conversations].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const archived: AdminConversation[] = verificationReports().flatMap((verification) =>
     verification.scenarios.map((scenario) => ({
       id: scenario.conversationId,
@@ -60,6 +65,7 @@ export function withVerificationConversations(conversations: Conversation[]): Ad
 }
 
 export function verificationConversation(id: string): AdminConversationDetail | undefined {
+  if (!demoMode()) return undefined;
   const selected = sourceVerificationReport().scenarios.find((s) => s.conversationId === id);
   if (!selected) return;
   return {

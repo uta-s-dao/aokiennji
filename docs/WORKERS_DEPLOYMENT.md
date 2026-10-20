@@ -19,7 +19,7 @@
 
 ## メディアと外部取得
 
-PDFはunpdfで文字抽出し、500ページを超える資料とOCRが必要な空テキストを拒否する。画像はimage-sizeで形式・25百万画素・アニメーションを先に検査し、Photon WASMで最大1920pxへ縮小して再符号化する。JPEGはJPEG、PNG／WebPは透過を維持したWebP。EXIFを削除し、Viteだけに `/workerd` のWASMエントリーを指定する。
+PDFはunpdfで文字抽出し、500ページを超える資料とOCRが必要な空テキストを拒否する。写真はブラウザで形式・5MB・2,500万画素・静止画を検査し、向きを補正して最大1920pxへ縮小してから送る。サーバーは1920²画素を超える直接送信をWASM処理前に拒否し、Photonで再符号化してEXIFを除去する。JPEGはJPEG、PNG／WebPは透過を維持したWebP。Viteだけに `/workerd` のWASMエントリーを指定する。
 
 外部取得は各転送先でURL・ポート・全IP・許可ドメイン・HTTPSの後退・認証ヘッダー・サイズを検査する。Nodeは検査したIPへ接続を固定し、Workersはネイティブfetchを使うためIP固定を行わない。外部取得へプライベートネットワーク／VPCアクセスを与えない。この種のbindingを追加するときはSSRF対策を再評価する。DB専用Hyperdrive bindingはHTTP取得へ公開しない。
 
@@ -32,6 +32,14 @@ PDFはunpdfで文字抽出し、500ページを超える資料とOCRが必要な
 - 本番Worker：無料プランで配置、管理ログイン・管理API、会話所有権、他人の会話拒否、受付の同一キー再送が成功。再配置後も同じ受付・設定・所有者セッションを読め、SSE応答とログアウト後の失効が成功。ホームのrobotsメタで検索除外を確認した。
 - 本番の試験受付・会話・対応する監査／再送キー・セッションは削除済み。開発DB・会社データはコピーしていない。
 
-クラウド上の大きな画像／PDF取込とブラウザー操作一式の検証、会社承認済みの商品・資料の選別登録は残る。会社の未回答条件は正式な販売条件へ変えない。
+## 最終受入（2026-10-21）
+
+大きな画像／PDFと画面操作の本番検証を完了した。写真のリソース制限エラー、Workersでの既存画像の存在確認、開発用会話履歴の混在を修正し、Freeへ再配置した。配置版は `a1373f67-39c6-41e1-a1b6-224dca9fd8f5`。
+
+Orcaブラウザで1,200万／2,500万画素の写真、下書き保存・プレビュー・非公開項目を含む公開操作、120ページ・約3.2MBのPDFの取込確定、相談から問い合わせ受付、管理画面11項目、ログアウトを確認した。公開ページ11画面は390px幅で横はみ出しがなく、1440px幅のホームも確認済み。画像と資料は非公開を維持し、元原稿を復元して試験データを削除した。
+
+Workersの静的画像確認はファイルシステムに代えてASSETS bindingを使う。開発用会話52件のIDが配信バンドルに含まれないこと、本番の一覧がDBの会話だけを返すことも確認した。ローカルの全体371試験、その後の履歴分離に対応する7試験が成功した。詳細は `docs/UTA8_ACCEPTANCE_2026-10-21.md` を参照する。
+
+会社承認済みと確認できる新規商品・資料は0件だったため、本登録は行わない。会社の公開範囲・保存期間・販売条件は既存の会社質問票Q016／Q017等で承認待ちとして管理し、開発DBのコピーや未回答条件の正式化は行っていない。
 
 参考：[Workerサイズ上限の変更](https://developers.cloudflare.com/changelog/post/2026-09-04-increased-worker-size-limit/)、[現在の制限](https://developers.cloudflare.com/workers/platform/limits/)、[Postgres.jsとHyperdrive](https://developers.cloudflare.com/hyperdrive/examples/connect-to-postgres/postgres-drivers-and-libraries/postgres-js/)、[CAとverify-full](https://developers.cloudflare.com/hyperdrive/configuration/tls-ssl-certificates-for-hyperdrive/)。

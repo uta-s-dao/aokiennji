@@ -29,16 +29,16 @@ beforeEach(async () => {
   vi.stubEnv('SESSION_SECRET', 'cms-test-session-secret-of-at-least-32-characters');
   vi.stubEnv('APP_ORIGIN', 'http://localhost');
   vi.stubEnv('VERCEL', '');
-  (await resetDbForTests());
+  await resetDbForTests();
 });
 afterEach(async () => {
-  (await resetDbForTests());
+  await resetDbForTests();
   vi.unstubAllEnvs();
   rmSync(directory, { recursive: true, force: true });
 });
 
 it('persists drafts separately and publishes only visible entries across database reopen', async () => {
-  const initial = (await getSiteEditor());
+  const initial = await getSiteEditor();
   const originalTitle = initial.draft.home.title;
   initial.draft.home.title = '下書きの新しい見出し';
   initial.draft.news = [
@@ -58,15 +58,15 @@ it('persists drafts separately and publishes only visible entries across databas
     },
   ];
   initial.draft.projects[0].published = false;
-  const draft = (await saveSiteDraft(initial.draft, initial.revision));
+  const draft = await saveSiteDraft(initial.draft, initial.revision);
   expect((await getPublishedSiteContent()).home.title).toBe(originalTitle);
   expect((await getPublishedSiteContent()).news).toHaveLength(0);
-  (await resetDbForTests());
+  await resetDbForTests();
   expect((await getSiteEditor()).draft.home.title).toBe('下書きの新しい見出し');
-  const result = (await publishSiteDraft(draft.revision));
+  const result = await publishSiteDraft(draft.revision);
   expect(result.hasUnpublishedChanges).toBe(false);
   expect(result.publishedAt).toBeTruthy();
-  (await resetDbForTests());
+  await resetDbForTests();
   expect((await getPublishedSiteContent()).home.title).toBe('下書きの新しい見出し');
   expect((await getPublishedSiteContent()).news.map((n) => n.title)).toEqual(['公開するお知らせ']);
   expect(
@@ -75,15 +75,17 @@ it('persists drafts separately and publishes only visible entries across databas
 });
 
 it('rejects stale saves and stale publication without overwriting the newer draft', async () => {
-  const state = (await getSiteEditor());
-  const saved = (await saveSiteDraft({ ...state.draft, news: [] }, state.revision));
-  await expect(async () => (await saveSiteDraft(state.draft, state.revision))).rejects.toThrow('他の画面');
-  await expect(async () => (await publishSiteDraft(state.revision))).rejects.toThrow('下書きが更新');
+  const state = await getSiteEditor();
+  const saved = await saveSiteDraft({ ...state.draft, news: [] }, state.revision);
+  await expect(async () => await saveSiteDraft(state.draft, state.revision)).rejects.toThrow(
+    '他の画面',
+  );
+  await expect(async () => await publishSiteDraft(state.revision)).rejects.toThrow('下書きが更新');
   expect((await getSiteEditor()).revision).toBe(saved.revision);
 });
 
 it('rejects external or missing images, duplicate IDs, invalid dates and oversized text', async () => {
-  const state = (await getSiteEditor());
+  const state = await getSiteEditor();
   for (const image of [
     'https://example.com/a.jpg',
     '//example.com/a.jpg',
@@ -93,7 +95,7 @@ it('rejects external or missing images, duplicate IDs, invalid dates and oversiz
   ]) {
     const content = structuredClone(state.draft);
     content.home.slides[0].image = image;
-    await expect(async () => (await saveSiteDraft(content, state.revision))).rejects.toThrow();
+    await expect(async () => await saveSiteDraft(content, state.revision)).rejects.toThrow();
   }
   const content = structuredClone(state.draft);
   content.projects.push(content.projects[0]);
@@ -114,23 +116,23 @@ it('decodes photos and publishes only images used in visible published content',
     .toBuffer();
   const image = await uploadSiteImage(png);
   const id = image.url.split('/').at(-1)!;
-  expect((await readSiteImage(id))).toBeNull();
+  expect(await readSiteImage(id)).toBeNull();
   expect((await sharp((await readSiteImage(id, true))!).metadata()).format).toBe('webp');
-  const state = (await getSiteEditor());
+  const state = await getSiteEditor();
   state.draft.projects[0].image = image.url;
   state.draft.projects[0].published = false;
-  let draft = (await saveSiteDraft(state.draft, state.revision));
-  draft = (await publishSiteDraft(draft.revision));
-  expect((await readSiteImage(id))).toBeNull();
+  let draft = await saveSiteDraft(state.draft, state.revision);
+  draft = await publishSiteDraft(draft.revision);
+  expect(await readSiteImage(id)).toBeNull();
   draft.draft.projects[0].published = true;
-  draft = (await saveSiteDraft(draft.draft, draft.revision));
-  expect((await readSiteImage(id))).toBeNull();
-  draft = (await publishSiteDraft(draft.revision));
-  expect((await readSiteImage(id))).not.toBeNull();
+  draft = await saveSiteDraft(draft.draft, draft.revision);
+  expect(await readSiteImage(id)).toBeNull();
+  draft = await publishSiteDraft(draft.revision);
+  expect(await readSiteImage(id)).not.toBeNull();
   draft.draft.projects[0].published = false;
-  draft = (await saveSiteDraft(draft.draft, draft.revision));
-  (await publishSiteDraft(draft.revision));
-  expect((await readSiteImage(id))).toBeNull();
+  draft = await saveSiteDraft(draft.draft, draft.revision);
+  await publishSiteDraft(draft.revision);
+  expect(await readSiteImage(id)).toBeNull();
 });
 
 it('rejects disguised SVG, corrupt photos and excessive upload bytes', async () => {
@@ -138,15 +140,15 @@ it('rejects disguised SVG, corrupt photos and excessive upload bytes', async () 
     Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"></svg>'),
     Buffer.from('not a jpeg'),
   ])
-    await expect(((uploadSiteImage(input)))).rejects.toMatchObject({ status: 400 });
-  await expect(((uploadSiteImage(Buffer.alloc(5 * 1024 * 1024 + 1))))).rejects.toMatchObject({
+    await expect(uploadSiteImage(input)).rejects.toMatchObject({ status: 400 });
+  await expect(uploadSiteImage(Buffer.alloc(5 * 1024 * 1024 + 1))).rejects.toMatchObject({
     status: 413,
   });
 });
 
 async function adminCookie() {
   const response = NextResponse.json({});
-  (await setSession(response, 'admin'));
+  await setSession(response, 'admin');
   return response.cookies
     .getAll()
     .map((c) => `${c.name}=${c.value}`)
@@ -182,8 +184,8 @@ it('requires administrator auth for drafts, updates and private photos, includin
 });
 
 it('rejects CSRF and invalid JSON and validates all writes on the server', async () => {
-  const cookie = (await adminCookie());
-  const state = (await getSiteEditor());
+  const cookie = await adminCookie();
+  const state = await getSiteEditor();
   const request = (body: string, origin = 'http://localhost') =>
     new NextRequest('http://localhost/api/admin/site-content', {
       method: 'PUT',
@@ -210,4 +212,27 @@ it('rejects CSRF and invalid JSON and validates all writes on the server', async
     request(JSON.stringify({ revision: state.revision, content: state.draft })),
   );
   expect(accepted.status).toBe(200);
+});
+
+it('validates bundled photos through the Workers asset binding', async () => {
+  const { withStaticAssets } = await import('../lib/server/runtime-assets');
+  const state = await getSiteEditor();
+  const fetch = vi.fn(async (req: Request) => {
+    expect(req.method).toBe('HEAD');
+    expect(new URL(req.url).pathname).toMatch(/^\/images\//);
+    return new Response(null, { headers: { 'Content-Type': 'image/jpeg' } });
+  });
+  const saved = await withStaticAssets({ fetch }, () => saveSiteDraft(state.draft, state.revision));
+  expect(saved.revision).toBe(state.revision + 1);
+  expect(fetch).toHaveBeenCalled();
+});
+it('rejects a missing deployed asset even when a local copy exists', async () => {
+  const { withStaticAssets } = await import('../lib/server/runtime-assets');
+  const state = await getSiteEditor();
+  await expect(
+    withStaticAssets({ fetch: async () => new Response(null, { status: 404 }) }, () =>
+      saveSiteDraft(state.draft, state.revision),
+    ),
+  ).rejects.toMatchObject({ code: 'missing_image' });
+  expect((await getSiteEditor()).revision).toBe(state.revision);
 });

@@ -1,4 +1,5 @@
-import { expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
+afterEach(() => vi.unstubAllEnvs());
 import type { Conversation } from '../lib/contracts';
 import {
   sourceVerificationReport,
@@ -122,4 +123,23 @@ it('attributes the new ten conversations and accepted reply calls to Astra while
     );
   }
   expect(history.filter((c) => c.verification?.responseModel === 'gpt-4.1-mini')).toHaveLength(30);
+});
+
+it('keeps development conversations out of production history and detail endpoints', async () => {
+  const id = sourceVerificationReport().scenarios[0].conversationId;
+  vi.stubEnv('DEMO_MODE', 'false');
+  const actual: Conversation = {
+    id: 'actual',
+    title: '実際の受付',
+    status: 'open',
+    createdAt: '2026-10-21T00:00:00Z',
+    updatedAt: '2026-10-21T00:00:00Z',
+  };
+  expect(withVerificationConversations([actual])).toEqual([actual]);
+  expect(verificationConversation(id)).toBeUndefined();
+  expect(() => sourceVerificationReport()).toThrow(expect.objectContaining({ status: 404 }));
+  const worker = await import('../lib/server/source-verification-production');
+  expect(worker.withVerificationConversations([actual])).toEqual([actual]);
+  expect(worker.verificationConversation(id)).toBeUndefined();
+  expect(() => worker.sourceVerificationReport()).toThrow(expect.objectContaining({ status: 404 }));
 });

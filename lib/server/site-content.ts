@@ -1,7 +1,6 @@
 import { prepareSiteImage } from './site-image';
 import { z } from 'zod';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { staticImageExists } from './runtime-assets';
 import {
   DEFAULT_SITE_CONTENT,
   siteImageReferences,
@@ -99,7 +98,7 @@ async function validateReferences(content: SiteContent) {
       ? await connection()
           .prepare('SELECT id FROM site_images WHERE id=?')
           .get(image.slice(assetPrefix.length))
-      : existsSync(join(process.cwd(), 'public', image));
+      : await staticImageExists(image);
     if (!found)
       throw new ApiError(
         400,
@@ -159,7 +158,7 @@ export async function uploadSiteImage(bytes: Buffer) {
     throw new ApiError(
       400,
       'image_format',
-      'JPEG・PNG・WebPの写真を選んでください（最大2,500万画素）。',
+      '写真を圧縮できませんでした。JPEG・PNG・WebPの静止画を選び直してください。直接送信する場合は1920px以下に縮小してください。',
     );
   }
   if (output.length > SITE_IMAGE_MAX_BYTES)

@@ -2,6 +2,7 @@
 import { useEffect, useId, useState } from 'react';
 import type { SiteContent, SiteEditorState } from '@/lib/site-content';
 import { api, errorMessage } from './api';
+import { prepareSiteImageUpload } from '@/lib/site-image-upload';
 
 function Field({
   label,
@@ -85,11 +86,12 @@ function Photo({
             }
             onBusy(true);
             try {
+              const upload = await prepareSiteImageUpload(file);
               const response = await fetch('/api/admin/site-content/images', {
                 method: 'POST',
-                body: file,
+                body: upload,
                 credentials: 'same-origin',
-                headers: { 'Content-Type': file.type },
+                headers: { 'Content-Type': upload.type },
               });
               const result = await response.json();
               if (!response.ok)
@@ -104,7 +106,7 @@ function Photo({
           }}
         />
         <small id={hintId}>
-          JPEG・PNG・WebP／5MB以下。写真は自動で圧縮します。公開してよい写真を選んでください。
+          JPEG・PNG・WebP／5MB・2,500万画素以下。写真は自動で圧縮します。公開してよい写真を選んでください。
         </small>
       </label>
     </div>

@@ -46,3 +46,14 @@ it('rejects an excessive declared size before decoding and rejects animation hea
   const animated = Buffer.concat([input.subarray(0, 33), control, input.subarray(33)]);
   expect(() => siteImageHeader(animated)).toThrow('animated');
 });
+
+it('accepts camera photo headers for browser resize but rejects direct large server uploads', async () => {
+  const { imageInputMetadata } = await import('../lib/site-image-input');
+  const photo = await sharp({
+    create: { width: 4000, height: 3000, channels: 3, background: '#12536a' },
+  })
+    .jpeg()
+    .toBuffer();
+  expect(imageInputMetadata(new Uint8Array(photo))).toMatchObject({ width: 4000, height: 3000 });
+  await expect(prepareSiteImage(photo)).rejects.toThrow('dimensions');
+});
