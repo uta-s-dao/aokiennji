@@ -3,21 +3,48 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 
 // The server is the only database client. There is no SQLite fallback.
 const transactions = new AsyncLocalStorage<postgres.TransactionSql>();
-let pool: postgres.Sql | undefined;
+export type HyperdriveBinding = { connectionString: string };
+type ConnectionState = { pool?: postgres.Sql; hyperdrive?: HyperdriveBinding };
+const requestConnections = new AsyncLocalStorage<ConnectionState>();
+const processConnection: ConnectionState = {};
+function connectionState() {
+  return requestConnections.getStore() || processConnection;
+}
+// Workers sockets belong to the request that opened them, so each HTTP request
+// has its own lazily created pool. Node servers retain their process pool.
+export function createDatabaseScope(hyperdrive?: HyperdriveBinding) {
+  const state: ConnectionState = { hyperdrive };
+  return {
+    run<T>(body: () => T): T {
+      return requestConnections.run(state, body);
+    },
+    async close() {
+      const pool = state.pool;
+      state.pool = undefined;
+      await pool?.end({ timeout: 5 });
+    },
+  };
+}
 function connection() {
-  if (pool) return pool;
-  const url = process.env.DATABASE_URL;
+  const state = connectionState();
+  if (state.pool) return state.pool;
+  const url = state.hyperdrive?.connectionString || process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL is required; SQLite fallback is disabled');
   const target = new URL(url);
   const local = ['127.0.0.1', 'localhost', '[::1]'].includes(target.hostname);
-  if (!local && target.searchParams.get('sslmode') === 'disable')
+  if (!state.hyperdrive && !local && globalThis.navigator?.userAgent === 'Cloudflare-Workers')
+    throw new Error('HYPERDRIVE binding is required for remote databases on Workers');
+  if (!state.hyperdrive && !local && target.searchParams.get('sslmode') === 'disable')
     throw new Error('Remote database connections require verified TLS');
-  pool = postgres(url, {
-    prepare: false,
+  state.pool = postgres(url, {
+    prepare: !!state.hyperdrive,
+    fetch_types: false,
     max: 4,
     idle_timeout: 20,
     connect_timeout: 10,
-    ssl: local ? false : 'verify-full',
+    // Hyperdrive is a trusted platform binding; origin TLS is verify-full with
+    // the Supabase CA in its configuration. Direct remote URLs still require TLS.
+    ssl: state.hyperdrive || local ? false : 'verify-full',
     connection: { search_path: 'app_private,public', application_name: 'aokiennji' },
     onnotice: () => {},
     types: {
@@ -29,7 +56,7 @@ function connection() {
       },
     },
   });
-  return pool;
+  return state.pool;
 }
 // Static server SQL uses positional ? parameters; quoted literals are untouched.
 function parameters(query: string) {
@@ -39,7 +66,9 @@ function parameters(query: string) {
 export const database = {
   prepare(query: string) {
     const execute = (...values: any[]) =>
-      (transactions.getStore() || connection()).unsafe(parameters(query), values);
+      (transactions.getStore() || connection()).unsafe(parameters(query), values, {
+        prepare: !!connectionState().hyperdrive,
+      });
     return {
       async all(...values: any[]): Promise<any[]> {
         return [...(await execute(...values))];
@@ -67,8 +96,9 @@ export const database = {
     };
   },
   async close() {
-    const old = pool;
-    pool = undefined;
+    const state = connectionState();
+    const old = state.pool;
+    state.pool = undefined;
     await old?.end({ timeout: 5 });
   },
 };

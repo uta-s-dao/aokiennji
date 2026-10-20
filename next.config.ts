@@ -4,7 +4,7 @@ const config: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || '.next',
   devIndicators: false,
   allowedDevOrigins: ['localhost', '127.0.0.1'],
-  serverExternalPackages: ['postgres', 'pdf-parse', '@napi-rs/canvas', 'exceljs', 'mammoth'],
+  serverExternalPackages: ['postgres', 'exceljs', 'mammoth'],
   // Runtime databases and local credentials must never become deployment files.
   outputFileTracingExcludes: {
     '/*': ['./.data/**/*', './.env*', './.local-admin.txt'],

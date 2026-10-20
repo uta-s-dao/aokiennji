@@ -1,3 +1,4 @@
+import { siteImageMime } from './site-image';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { ApiError, checkOrigin, requireAdmin, rateLimit, clientKey } from './auth';
@@ -54,11 +55,11 @@ export async function limitedBytes(req: NextRequest, limit: number): Promise<Buf
 }
 export async function siteEditorRequest(req: NextRequest) {
   try {
-    (await requireAdmin(req));
+    await requireAdmin(req);
     if (req.method !== 'GET') checkOrigin(req);
     if (req.method === 'GET')
       return NextResponse.json(
-        { data: (await getSiteEditor()) },
+        { data: await getSiteEditor() },
         { headers: { 'Cache-Control': 'private, no-store' } },
       );
     let input: unknown;
@@ -73,7 +74,9 @@ export async function siteEditorRequest(req: NextRequest) {
       .strict()
       .parse(input);
     const result =
-      req.method === 'PUT' ? (await saveSiteDraft(content, revision)) : (await publishSiteDraft(revision));
+      req.method === 'PUT'
+        ? await saveSiteDraft(content, revision)
+        : await publishSiteDraft(revision);
     return NextResponse.json(
       { data: result },
       { headers: { 'Cache-Control': 'private, no-store' } },
@@ -84,9 +87,9 @@ export async function siteEditorRequest(req: NextRequest) {
 }
 export async function siteImageUpload(req: NextRequest) {
   try {
-    (await requireAdmin(req));
+    await requireAdmin(req);
     checkOrigin(req);
-    (await rateLimit(`site-image:${clientKey(req)}`, 30, 60000));
+    await rateLimit(`site-image:${clientKey(req)}`, 30, 60000);
     const result = await uploadSiteImage(await limitedBytes(req, SITE_IMAGE_MAX_BYTES));
     return NextResponse.json(
       { data: result },
@@ -98,12 +101,12 @@ export async function siteImageUpload(req: NextRequest) {
 }
 export async function siteImageResponse(req: NextRequest, id: string, admin: boolean) {
   try {
-    if (admin) (await requireAdmin(req));
-    const bytes = (await readSiteImage(id, admin));
+    if (admin) await requireAdmin(req);
+    const bytes = await readSiteImage(id, admin);
     if (!bytes) throw new ApiError(404, 'not_found', '写真が見つかりません。');
     return new NextResponse(new Uint8Array(bytes), {
       headers: {
-        'Content-Type': 'image/webp',
+        'Content-Type': siteImageMime(bytes),
         'Cache-Control': 'private, no-store',
         'X-Content-Type-Options': 'nosniff',
         'Content-Security-Policy': "default-src 'none'; sandbox",

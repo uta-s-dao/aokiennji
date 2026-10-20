@@ -200,3 +200,36 @@ it('RLS denies browser rows even if table grants are accidentally widened', asyn
     })(),
   ).rejects.toThrow('rollback-policy-test');
 });
+
+it('isolates concurrent request pools and keeps the other request usable after closing one', async () => {
+  const { createDatabaseScope, database } = await import('../lib/server/database');
+  const first = createDatabaseScope();
+  // Emulate the trusted Hyperdrive binding with the isolated local database.
+  // This checks prepared-query routing, not Cloudflare origin TLS.
+  const second = createDatabaseScope({ connectionString: process.env.DATABASE_URL! });
+  try {
+    const [a, b] = await Promise.all(
+      [first, second].map((scope) =>
+        scope.run(() => database.prepare('SELECT pg_backend_pid() AS pid').get()),
+      ),
+    );
+    expect(a.pid).not.toBe(b.pid);
+    await first.close();
+    expect(
+      await second.run(() => database.prepare('SELECT id FROM settings WHERE id=?').get(1)),
+    ).toMatchObject({ id: 1 });
+    await second.run(() =>
+      database.transaction(async () => {
+        await database.prepare('SELECT id FROM settings WHERE id=?').get(1);
+        await database.transaction(async () => {
+          expect(await database.prepare('SELECT id FROM settings WHERE id=?').get(1)).toMatchObject(
+            { id: 1 },
+          );
+        })();
+      })(),
+    );
+  } finally {
+    await first.close();
+    await second.close();
+  }
+});

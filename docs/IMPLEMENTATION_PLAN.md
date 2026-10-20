@@ -123,7 +123,7 @@ Jevは検索エンジンや回答文生成の代わりにはしない。設定�
 - Node 24、SQLite (better-sqlite3)。単一常駐Nodeサーバーと永続ディスクを前提にする。サーバーレスの一時ファイル領域を本番DBにしない。
 - DBは `DATA_DIR` (標準 `.data`) 配下。WAL、外部キー、起動時の冪等マイグレーション、パラメータ付きSQL。デモ初期化は一度だけ。
 - エンティティ: settings, products, sources, source_runs, documents, suppliers, conversations, messages, inquiries, quotes, orders, audit_events, sessions。JSON保存カラムを併用してよいがID/所有者/一意制約はDBで守る。
-- ファイル解析: ExcelJS (`.xlsx`/CSV)、csv-parse、pdf-parse、mammoth。画像PDFは空テキストを成功扱いせず「OCRが必要」と通知する。OCRサービスは将来アダプター拡張点として明記する。
+- ファイル解析: ExcelJS (`.xlsx`/CSV)、csv-parse、unpdf、mammoth。画像PDFは空テキストを成功扱いせず「OCRが必要」と通知する。OCRサービスは将来アダプター拡張点として明記する。
 - コネクターは取得/解析のみ担当。共通取り込み処理が検証・保存・監査を担当する。
 - 同期ジョブ: `npm run sync` を用意し、期限が来た有効ソースを更新。cron等から実行できる。手動同期も同じ処理を使う。失敗時に前回データを消さない。
 - 認証: 管理パスワードのscryptハッシュ、HttpOnly/SameSite Cookie、有効期限。開発初期設定スクリプトがランダムパスワードとSESSION_SECRETを `.env.local` に生成し、資格情報を `.local-admin.txt` に保存 (gitignore)。ソースに共通初期パスワードを書かない。

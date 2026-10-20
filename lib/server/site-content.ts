@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import { prepareSiteImage } from './site-image';
 import { z } from 'zod';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -154,15 +154,7 @@ export async function uploadSiteImage(bytes: Buffer) {
     throw new ApiError(413, 'image_size', '写真は5MB以下にしてください。');
   let output: Buffer;
   try {
-    const input = sharp(bytes, { limitInputPixels: 25000000, animated: false, failOn: 'warning' });
-    const meta = await input.metadata();
-    if (!['jpeg', 'png', 'webp'].includes(meta.format || '') || (meta.pages || 1) > 1)
-      throw new Error('format');
-    output = await input
-      .rotate()
-      .resize({ width: 1920, height: 1920, fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 82 })
-      .toBuffer();
+    output = await prepareSiteImage(bytes);
   } catch {
     throw new ApiError(
       400,
