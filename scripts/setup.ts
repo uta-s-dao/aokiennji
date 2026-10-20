@@ -8,7 +8,7 @@ if (existsSync('.env.local')) {
   const hash = `scrypt$${salt.toString('base64url')}$${scryptSync(password, salt, 64).toString('base64url')}`;
   writeFileSync(
     '.env.local',
-    `APP_ORIGIN=http://localhost:3000\nDATA_DIR=.data\nDEMO_MODE=true\nALLOW_LIVE_ORDERS=false\nADMIN_PASSWORD_HASH='${hash.replaceAll('$', '\\$')}'\nSESSION_SECRET=${randomBytes(48).toString('base64url')}\n`,
+    `APP_ORIGIN=http://localhost:3000\nDATABASE_URL=\nDEMO_MODE=true\nALLOW_LIVE_ORDERS=false\nADMIN_PASSWORD_HASH='${hash.replaceAll('$', '\\$')}'\nSESSION_SECRET=${randomBytes(48).toString('base64url')}\n`,
     { mode: 0o600 },
   );
   writeFileSync(
@@ -17,7 +17,7 @@ if (existsSync('.env.local')) {
     { mode: 0o600 },
   );
   console.log(
-    '初期設定を作成しました。管理パスワード: .local-admin.txt / npm run dev で起動できます。',
+    '初期設定を作成しました。管理パスワード: .local-admin.txt / docs/DATABASE_MIGRATION.md に沿ってローカルDBを設定してください。',
   );
 }
 console.log(

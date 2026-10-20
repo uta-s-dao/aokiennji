@@ -1,79 +1,24 @@
-import Database from 'better-sqlite3';
-import { mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { asyncForEach } from '@/lib/async-arrays';
 import { randomUUID } from 'node:crypto';
 import { DEFAULT_SETTINGS, type AppSettings, type Product, type Source } from '../contracts';
-
-let singleton: Database.Database | undefined;
+import { database } from './database';
+export { lockResource } from './database';
 export const now = () => new Date().toISOString();
 export const uid = () => randomUUID();
 export const demoMode = () => process.env.DEMO_MODE !== 'false';
-
-export function db(): Database.Database {
-  if (singleton) return singleton;
-  // Vercel Functions have no durable local disk. Use their writable temp area
-  // for an explicitly disposable demo only; production must set DATA_DIR on a
-  // persistent Node host or replace SQLite with a managed database.
-  const dir =
-    process.env.DATA_DIR ||
-    (process.env.VERCEL ? '/tmp/aokienji-demo' : join(process.cwd(), '.data'));
-  mkdirSync(dir, { recursive: true });
-  const conn = new Database(join(dir, 'aokienji.sqlite'));
-  conn.pragma('journal_mode = WAL');
-  conn.pragma('foreign_keys = ON');
-  conn.exec(`
-    CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY CHECK(id=1), json TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, source_id TEXT, supplier_id TEXT, model_key TEXT, json TEXT NOT NULL);
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_product_source_model ON products(source_id,model_key) WHERE source_id IS NOT NULL AND model_key IS NOT NULL AND model_key!='';
-    CREATE TABLE IF NOT EXISTS sources (id TEXT PRIMARY KEY, json TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS source_runs (id TEXT PRIMARY KEY, source_id TEXT NOT NULL, json TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS documents (id TEXT PRIMARY KEY, source_id TEXT NOT NULL, content TEXT NOT NULL, json TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS suppliers (id TEXT PRIMARY KEY, json TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS supplier_knowledge (id TEXT PRIMARY KEY, source_id TEXT NOT NULL, json TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS conversations (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, json TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, conversation_id TEXT NOT NULL, json TEXT NOT NULL, FOREIGN KEY(conversation_id) REFERENCES conversations(id) ON DELETE CASCADE);
-    CREATE INDEX IF NOT EXISTS messages_conversation ON messages(conversation_id);
-    CREATE TABLE IF NOT EXISTS inquiries (id TEXT PRIMARY KEY, json TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS quotes (id TEXT PRIMARY KEY, token TEXT NOT NULL UNIQUE, json TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, quote_id TEXT NOT NULL UNIQUE, idempotency_key TEXT NOT NULL, json TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS audit_events (id TEXT PRIMARY KEY, json TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS ai_calls (id TEXT PRIMARY KEY, created_at TEXT NOT NULL, provider TEXT NOT NULL, conversation_id TEXT, turn_id TEXT, scope TEXT NOT NULL, json TEXT NOT NULL);
-    CREATE INDEX IF NOT EXISTS ai_calls_created ON ai_calls(created_at);
-    CREATE INDEX IF NOT EXISTS ai_calls_turn ON ai_calls(turn_id);
-    CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, kind TEXT NOT NULL, expires_at INTEGER NOT NULL);
-    CREATE TABLE IF NOT EXISTS rate_limits (bucket TEXT PRIMARY KEY, count INTEGER NOT NULL, reset_at INTEGER NOT NULL);
-    CREATE TABLE IF NOT EXISTS import_previews (id TEXT PRIMARY KEY, source_id TEXT NOT NULL, expires_at INTEGER NOT NULL, json TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS research_notes (id TEXT PRIMARY KEY, conversation_id TEXT NOT NULL, created_at TEXT NOT NULL, json TEXT NOT NULL);
-    CREATE INDEX IF NOT EXISTS research_notes_conversation ON research_notes(conversation_id);
-    CREATE TABLE IF NOT EXISTS procurement_cases (id TEXT PRIMARY KEY, context_key TEXT NOT NULL, model_key TEXT NOT NULL, json TEXT NOT NULL);
-    CREATE INDEX IF NOT EXISTS procurement_cases_context ON procurement_cases(context_key);
-    CREATE INDEX IF NOT EXISTS procurement_cases_model ON procurement_cases(model_key);
-    CREATE TABLE IF NOT EXISTS procurement_events (id TEXT PRIMARY KEY, context_key TEXT NOT NULL, case_id TEXT, json TEXT NOT NULL);
-    CREATE INDEX IF NOT EXISTS procurement_events_context ON procurement_events(context_key);
-  `);
-  conn
-    .prepare('INSERT OR IGNORE INTO settings(id,json) VALUES(1,?)')
-    .run(JSON.stringify(DEFAULT_SETTINGS));
-  singleton = conn;
-  seedDemo(conn);
-  if (!conn.prepare("SELECT key FROM metadata WHERE key='product_identity_v2'").get()) {
-    conn.transaction(() => {
-      const rows = conn.prepare('SELECT id,json FROM products').all() as {
-        id: string;
-        json: string;
-      }[];
-      const update = conn.prepare('UPDATE products SET model_key=? WHERE id=?');
-      for (const row of rows) update.run(productIdentity(JSON.parse(row.json)), row.id);
-      conn.prepare("INSERT INTO metadata(key,value) VALUES('product_identity_v2','1')").run();
-    })();
-  }
-  return conn;
+export function db() {
+  return database;
 }
-
-function seedDemo(conn: Database.Database) {
-  if (!demoMode() || conn.prepare("SELECT key FROM metadata WHERE key='demo_seeded'").get()) return;
-  conn.prepare("INSERT INTO metadata(key,value) VALUES('demo_seeded','1')").run();
+// Explicit development fixture; never called implicitly on application startup.
+export async function seedDemoData() {
+  await seedDemo(database);
+}
+async function seedDemo(conn: typeof database) {
+  if (!demoMode() || (await conn.prepare("SELECT key FROM metadata WHERE key='demo_seeded'").get()))
+    return;
+  await conn
+    .prepare("INSERT INTO metadata(key,value) VALUES('demo_seeded','1') ON CONFLICT DO NOTHING")
+    .run();
   const createdAt = now();
   const source: Source = {
     id: 'demo-catalog',
@@ -90,10 +35,10 @@ function seedDemo(conn: Database.Database) {
     recordCount: 6,
     createdAt,
   };
-  conn
-    .prepare('INSERT OR IGNORE INTO sources(id,json) VALUES(?,?)')
+  await conn
+    .prepare('INSERT INTO sources(id,json) VALUES(?,?) ON CONFLICT DO NOTHING')
     .run(source.id, JSON.stringify(source));
-  conn.prepare('INSERT OR IGNORE INTO suppliers(id,json) VALUES(?,?)').run(
+  await conn.prepare('INSERT INTO suppliers(id,json) VALUES(?,?) ON CONFLICT DO NOTHING').run(
     'demo-supplier',
     JSON.stringify({
       id: 'demo-supplier',
@@ -146,34 +91,35 @@ function seedDemo(conn: Database.Database) {
     ],
   ];
   const insert = conn.prepare(
-    'INSERT OR IGNORE INTO products(id,source_id,supplier_id,model_key,json) VALUES(?,?,?,?,?)',
+    'INSERT INTO products(id,source_id,supplier_id,model_key,json) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING',
   );
-  conn.transaction(() =>
-    examples.forEach(([name, model, category, description], i) => {
-      const p: Product = {
-        id: `demo-${i + 1}`,
-        name,
-        model,
-        manufacturer: '',
-        category,
-        description,
-        specifications: '仕様は相談時に確認します。',
-        image: '',
-        availability: i < 2 ? 'available' : i < 4 ? 'orderable' : 'needs_review',
-        price: i < 4 ? 4800 + i * 1200 : null,
-        stock: i < 2 ? 12 + i * 8 : null,
-        leadTime: i < 4 ? '確認後3〜5営業日（デモ）' : '',
-        sourceId: source.id,
-        supplierId: 'demo-supplier',
-        approved: true,
-        visibility: 'public',
-        verifiedAt: createdAt,
-        isDemo: true,
-        createdAt,
-        updatedAt: createdAt,
-      };
-      insert.run(p.id, p.sourceId, p.supplierId, productIdentity(p), JSON.stringify(p));
-    }),
+  await conn.transaction(
+    async () =>
+      await asyncForEach(examples, async ([name, model, category, description], i) => {
+        const p: Product = {
+          id: `demo-${i + 1}`,
+          name,
+          model,
+          manufacturer: '',
+          category,
+          description,
+          specifications: '仕様は相談時に確認します。',
+          image: '',
+          availability: i < 2 ? 'available' : i < 4 ? 'orderable' : 'needs_review',
+          price: i < 4 ? 4800 + i * 1200 : null,
+          stock: i < 2 ? 12 + i * 8 : null,
+          leadTime: i < 4 ? '確認後3〜5営業日（デモ）' : '',
+          sourceId: source.id,
+          supplierId: 'demo-supplier',
+          approved: true,
+          visibility: 'public',
+          verifiedAt: createdAt,
+          isDemo: true,
+          createdAt,
+          updatedAt: createdAt,
+        };
+        await insert.run(p.id, p.sourceId, p.supplierId, productIdentity(p), JSON.stringify(p));
+      }),
   )();
 }
 export function normalize(s: string) {
@@ -185,9 +131,9 @@ export function normalize(s: string) {
 export function productIdentity(p: Pick<Product, 'manufacturer' | 'model'>) {
   return p.model ? `${normalize(p.manufacturer)}:${normalize(p.model)}` : '';
 }
-export function getSettings(): AppSettings {
+export async function getSettings(): Promise<AppSettings> {
   const saved = JSON.parse(
-    (db().prepare('SELECT json FROM settings WHERE id=1').get() as { json: string }).json,
+    ((await db().prepare('SELECT json FROM settings WHERE id=1').get()) as { json: string }).json,
   );
   return {
     ...DEFAULT_SETTINGS,
@@ -197,10 +143,10 @@ export function getSettings(): AppSettings {
     sourcingEstimate: { ...DEFAULT_SETTINGS.sourcingEstimate, ...saved.sourcingEstimate },
   };
 }
-export function putSettings(s: AppSettings) {
-  db().prepare('UPDATE settings SET json=? WHERE id=1').run(JSON.stringify(s));
+export async function putSettings(s: AppSettings) {
+  await db().prepare('UPDATE settings SET json=? WHERE id=1').run(JSON.stringify(s));
 }
-export function list<T>(table: string): T[] {
+export async function list<T>(table: string): Promise<T[]> {
   if (
     ![
       'products',
@@ -218,11 +164,11 @@ export function list<T>(table: string): T[] {
     ].includes(table)
   )
     throw Error('Invalid table');
-  return (db().prepare(`SELECT json FROM ${table}`).all() as { json: string }[]).map((r) =>
+  return ((await db().prepare(`SELECT json FROM ${table}`).all()) as { json: string }[]).map((r) =>
     JSON.parse(r.json),
   );
 }
-export function byId<T>(table: string, id: string): T | undefined {
+export async function byId<T>(table: string, id: string): Promise<T | undefined> {
   if (
     ![
       'products',
@@ -240,31 +186,57 @@ export function byId<T>(table: string, id: string): T | undefined {
     ].includes(table)
   )
     throw Error('Invalid table');
-  const r = db().prepare(`SELECT json FROM ${table} WHERE id=?`).get(id) as
+  const r = (await db().prepare(`SELECT json FROM ${table} WHERE id=?`).get(id)) as
     { json: string } | undefined;
   return r && JSON.parse(r.json);
 }
-export function save<T extends { id: string }>(
+export async function save<T extends { id: string }>(
   table: string,
   value: T,
   extra: Record<string, string | null> = {},
 ) {
+  const allowed: Record<string, string[]> = {
+    products: ['source_id', 'supplier_id', 'model_key'],
+    sources: [],
+    source_runs: ['source_id'],
+    documents: ['source_id', 'content'],
+    suppliers: [],
+    supplier_knowledge: ['source_id'],
+    conversations: ['owner_id'],
+    messages: ['conversation_id'],
+    inquiries: [],
+    quotes: ['token'],
+    orders: ['quote_id', 'idempotency_key'],
+    audit_events: [],
+    research_notes: ['conversation_id', 'created_at'],
+    procurement_cases: ['context_key', 'model_key'],
+    procurement_events: ['context_key', 'case_id'],
+  };
+  if (
+    !Object.hasOwn(allowed, table) ||
+    Object.keys(extra).some((key) => !allowed[table].includes(key))
+  )
+    throw new Error('Invalid table or column');
   const cols = ['id', ...Object.keys(extra), 'json'];
   const vals = [value.id, ...Object.values(extra), JSON.stringify(value)];
-  db()
+  const updates = cols
+    .slice(1)
+    .filter((c) => !(table === 'conversations' && c === 'owner_id'))
+    .map((c) =>
+      table === 'conversations' && c === 'json'
+        ? "json=CASE WHEN conversations.json::jsonb->>'status'='handed_off' AND excluded.json::jsonb->>'status'='open' THEN jsonb_set(excluded.json::jsonb,'{status}','\"handed_off\"'::jsonb)::text ELSE excluded.json END"
+        : `${c}=excluded.${c}`,
+    );
+  await db()
     .prepare(
-      `INSERT INTO ${table}(${cols.join(',')}) VALUES(${cols.map(() => '?').join(',')}) ON CONFLICT(id) DO UPDATE SET ${cols
-        .slice(1)
-        .map((c) => `${c}=excluded.${c}`)
-        .join(',')}`,
+      `INSERT INTO ${table}(${cols.join(',')}) VALUES(${cols.map(() => '?').join(',')}) ON CONFLICT(id) DO UPDATE SET ${updates.join(',')}`,
     )
     .run(...vals);
 }
-export function audit(action: string, entityId: string, summary: string) {
+export async function audit(action: string, entityId: string, summary: string) {
   const value = { id: uid(), action, entityId, summary, createdAt: now() };
-  save('audit_events', value);
+  await save('audit_events', value);
 }
-export function resetDbForTests() {
-  singleton?.close();
-  singleton = undefined;
+export async function resetDbForTests() {
+  return await database.close();
 }

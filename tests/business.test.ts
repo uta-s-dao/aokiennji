@@ -25,14 +25,14 @@ const directory = mkdtempSync(join(tmpdir(), 'aoki-business-'));
 process.env.DATA_DIR = directory;
 process.env.DEMO_MODE = 'true';
 process.env.ALLOW_LIVE_ORDERS = 'false';
-beforeEach(() => {
-  resetDbForTests();
+beforeEach(async () => {
+  (await resetDbForTests());
   rmSync(directory, { recursive: true, force: true });
   db();
-  putSettings(structuredClone(DEFAULT_SETTINGS));
+  (await putSettings(structuredClone(DEFAULT_SETTINGS)));
 });
-afterAll(() => {
-  resetDbForTests();
+afterAll(async () => {
+  (await resetDbForTests());
   rmSync(directory, { recursive: true, force: true });
 });
 const request = {
@@ -45,31 +45,31 @@ const request = {
 };
 
 describe('facts and publication', () => {
-  it('requires a valid source, approval, freshness and supplier for orderable items', () => {
-    const p = list<Product>('products')[0];
-    expect(validProduct(p)).toBe(true);
-    expect(publicProduct({ ...p, approved: false })?.availability).toBe('needs_review');
-    expect(publicProduct({ ...p, verifiedAt: '2000-01-01T00:00:00Z' })?.price).toBeNull();
+  it('requires a valid source, approval, freshness and supplier for orderable items', async () => {
+    const p = (await list<Product>('products'))[0];
+    expect((await validProduct(p))).toBe(true);
+    expect((await publicProduct({ ...p, approved: false }))?.availability).toBe('needs_review');
+    expect((await publicProduct({ ...p, verifiedAt: '2000-01-01T00:00:00Z' }))?.price).toBeNull();
     expect(
-      publicProduct({ ...p, verifiedAt: new Date(Date.now() + 86400000).toISOString() })?.price,
+      (await publicProduct({ ...p, verifiedAt: new Date(Date.now() + 86400000).toISOString() }))?.price,
     ).toBeNull();
-    expect(validProduct({ ...p, availability: 'orderable', supplierId: null })).toBe(false);
-    const s = byId<Source>('sources', p.sourceId!)!;
-    save('sources', { ...s, enabled: false });
-    expect(publicProduct(p)?.availability).toBe('needs_review');
+    expect((await validProduct({ ...p, availability: 'orderable', supplierId: null }))).toBe(false);
+    const s = (await byId<Source>('sources', p.sourceId!))!;
+    (await save('sources', { ...s, enabled: false }));
+    expect((await publicProduct(p))?.availability).toBe('needs_review');
   });
-  it('server hides price, stock and lead time when disabled and hides private products', () => {
-    putSettings({
+  it('server hides price, stock and lead time when disabled and hides private products', async () => {
+    (await putSettings({
       ...DEFAULT_SETTINGS,
       flags: { ...DEFAULT_SETTINGS.flags, showPrice: false, showStock: false, showLeadTime: false },
-    });
-    const p = list<Product>('products')[0];
-    const visible = publicProduct(p)!;
+    }));
+    const p = (await list<Product>('products'))[0];
+    const visible = (await publicProduct(p))!;
     expect(visible.price).toBeNull();
     expect(visible.stock).toBeNull();
     expect(visible.leadTime).toBe('');
     expect(visible.supplierId).toBeNull();
-    expect(publicProduct({ ...p, visibility: 'internal' })).toBeNull();
+    expect((await publicProduct({ ...p, visibility: 'internal' }))).toBeNull();
   });
   it('rejects contradictory feature flags', () => {
     expect(() =>
@@ -82,16 +82,16 @@ describe('facts and publication', () => {
   it('does not treat similar model numbers as a confirmed match and respects conversation ownership', async () => {
     const res = await answerChat('DEMO-GLASS-019を売っていますか', 'owner-one');
     expect(res.message.products).toHaveLength(0);
-    await expect(answerChat('在庫は？', 'owner-two', res.conversationId)).rejects.toThrow(
+    await expect(((answerChat('在庫は？', 'owner-two', res.conversationId)))).rejects.toThrow(
       'アクセス',
     );
     const valid = await answerChat('DEMO-GLASS-01の価格は？', 'owner-one');
     expect(valid.message.products?.[0].model).toBe('DEMO-GLASS-01');
   });
-  it('does not recreate demo products after all products are deleted', () => {
-    db().prepare('DELETE FROM products').run();
-    resetDbForTests();
-    expect(list<Product>('products')).toHaveLength(0);
+  it('does not recreate demo products after all products are deleted', async () => {
+    (await db().prepare('DELETE FROM products').run());
+    (await resetDbForTests());
+    expect((await list<Product>('products'))).toHaveLength(0);
   });
   it('answers natural delivery, price and stock follow-ups in the same conversation', async () => {
     const first = await answerChat('DEMO-CAST-01を売っていますか', 'follow-up-owner');
@@ -110,7 +110,7 @@ describe('facts and publication', () => {
     expect(thanks.message.content).toContain('どういたしまして');
     const stock = await answerChat('在庫は？', 'follow-up-owner', first.conversationId);
     expect(stock.message.products?.[0].id).toBe(product.id);
-    const history = currentMessages(first.conversationId);
+    const history = (await currentMessages(first.conversationId));
     expect(history[0].role).toBe('user');
     expect(history[1].role).toBe('assistant');
   });
@@ -130,13 +130,13 @@ describe('facts and publication', () => {
     expect(reply.message.content).not.toContain('何個ほど');
   });
   it('clarifies multiple candidates and understands an ordinal selection', async () => {
-    const original = byId<Product>('products', 'demo-1')!;
-    save('products', {
+    const original = (await byId<Product>('products', 'demo-1'))!;
+    (await save('products', {
       ...original,
       id: 'glass-second',
       name: '耐熱ガラス別仕様',
       model: 'GLASS-02',
-    });
+    }));
     const first = await answerChat('耐熱ガラスを探している', 'choice-owner');
     expect(first.message.products).toHaveLength(2);
     const followup = await answerChat('いつぐらいに届く？', 'choice-owner', first.conversationId);
@@ -159,11 +159,11 @@ describe('facts and publication', () => {
     const product = first.message.products![0];
     const amount = product.price!.toLocaleString('ja-JP');
     expect(first.message.content).toContain(amount);
-    putSettings({ ...DEFAULT_SETTINGS, flags: { ...DEFAULT_SETTINGS.flags, showPrice: false } });
-    expect(currentMessages(first.conversationId).at(-1)!.content).not.toContain(amount);
-    const rawProduct = byId<Product>('products', product.id)!;
-    const source = byId<Source>('sources', rawProduct.sourceId!)!;
-    save('sources', { ...source, enabled: false });
+    (await putSettings({ ...DEFAULT_SETTINGS, flags: { ...DEFAULT_SETTINGS.flags, showPrice: false } }));
+    expect((await currentMessages(first.conversationId)).at(-1)!.content).not.toContain(amount);
+    const rawProduct = (await byId<Product>('products', product.id))!;
+    const source = (await byId<Source>('sources', rawProduct.sourceId!))!;
+    (await save('sources', { ...source, enabled: false }));
     const next = await answerChat('いつぐらいに届く？', 'history-owner', first.conversationId);
     expect(next.message.content).not.toContain(product.leadTime);
     expect(next.message.content).toContain('確認する必要');
@@ -171,27 +171,27 @@ describe('facts and publication', () => {
 });
 describe('quotes and orders', () => {
   it('persists settings, products, conversations, quotes and orders after reopening the database', async () => {
-    putSettings({ ...DEFAULT_SETTINGS, flags: { ...DEFAULT_SETTINGS.flags, orders: true } });
-    const product = byId<Product>('products', 'demo-1')!;
-    save('products', { ...product, name: '永続化確認用商品' });
+    (await putSettings({ ...DEFAULT_SETTINGS, flags: { ...DEFAULT_SETTINGS.flags, orders: true } }));
+    const product = (await byId<Product>('products', 'demo-1'))!;
+    (await save('products', { ...product, name: '永続化確認用商品' }));
     const chat = await answerChat('DEMO-GLASS-01を売っていますか', 'persistent-owner');
-    const quote = createQuote(
+    const quote = (await createQuote(
       { ...request, productId: 'demo-1', conversationId: chat.conversationId },
       'persistent-owner',
-    );
-    updateQuote(quote.id, {
+    ));
+    (await updateQuote(quote.id, {
       status: 'issued',
       aokiReviewed: true,
       lines: [{ productId: 'demo-1', name: '永続化確認用商品', quantity: 2, unitPrice: 2500 }],
-    });
-    const order = acceptQuote(quote.token, true, 'persistent-key');
-    resetDbForTests();
-    expect(byId<Product>('products', product.id)?.name).toBe('永続化確認用商品');
-    expect(byId('conversations', chat.conversationId)).not.toBeNull();
-    expect(getQuoteByToken(quote.token).status).toBe('accepted');
-    expect(acceptQuote(quote.token, true, 'persistent-key').id).toBe(order.id);
-    expect(list('orders')).toHaveLength(1);
-    expect(approveOrder(order.id).status).toBe('approved');
+    }));
+    const order = (await acceptQuote(quote.token, true, 'persistent-key'));
+    (await resetDbForTests());
+    expect((await byId<Product>('products', product.id))?.name).toBe('永続化確認用商品');
+    expect((await byId('conversations', chat.conversationId))).not.toBeNull();
+    expect((await getQuoteByToken(quote.token)).status).toBe('accepted');
+    expect((await acceptQuote(quote.token, true, 'persistent-key')).id).toBe(order.id);
+    expect((await list('orders'))).toHaveLength(1);
+    expect((await approveOrder(order.id)).status).toBe('approved');
   });
   it('calculates integer tax with shipping and rejects unsafe quantities', () => {
     expect(
@@ -202,59 +202,59 @@ describe('quotes and orders', () => {
     ).toThrow();
   });
   it('makes quote issuance immutable and enforces expiry, consent and idempotency', async () => {
-    putSettings({ ...DEFAULT_SETTINGS, flags: { ...DEFAULT_SETTINGS.flags, orders: true } });
-    const q = createQuote({ ...request, productId: 'demo-1' }, null);
-    updateQuote(q.id, {
+    (await putSettings({ ...DEFAULT_SETTINGS, flags: { ...DEFAULT_SETTINGS.flags, orders: true } }));
+    const q = (await createQuote({ ...request, productId: 'demo-1' }, null));
+    (await updateQuote(q.id, {
       status: 'issued',
       aokiReviewed: true,
       lines: [{ productId: 'demo-1', name: '確認用部品', quantity: 2, unitPrice: 2500 }],
       shipping: 500,
-    });
-    expect(() =>
-      updateQuote(q.id, {
+    }));
+    await expect(async () =>
+      (await updateQuote(q.id, {
         lines: [{ productId: 'demo-1', name: '変更', quantity: 1, unitPrice: 1 }],
-      }),
-    ).toThrow();
-    expect(() => acceptQuote(q.token, false, 'test-key')).toThrow();
-    const o = acceptQuote(q.token, true, 'test-key');
-    expect(acceptQuote(q.token, true, 'test-key').id).toBe(o.id);
-    expect(() => acceptQuote(q.token, true, 'other-key')).toThrow();
-    expect(list('orders')).toHaveLength(1);
-    expect(() => approveOrder('unknown')).toThrow();
-    approveOrder(o.id);
+      })),
+    ).rejects.toThrow();
+    await expect(async () => (await acceptQuote(q.token, false, 'test-key'))).rejects.toThrow();
+    const o = (await acceptQuote(q.token, true, 'test-key'));
+    expect((await acceptQuote(q.token, true, 'test-key')).id).toBe(o.id);
+    await expect(async () => (await acceptQuote(q.token, true, 'other-key'))).rejects.toThrow();
+    expect((await list('orders'))).toHaveLength(1);
+    await expect(async () => (await approveOrder('unknown'))).rejects.toThrow();
+    (await approveOrder(o.id));
     expect((await dispatchOrder(o.id)).status).toBe('simulated');
-    const memory = procurementHistory({ kind: 'order', orderId: o.id, line: 0 });
+    const memory = (await procurementHistory({ kind: 'order', orderId: o.id, line: 0 }));
     expect(memory.events).toHaveLength(1);
     expect(memory.cases[0]).toMatchObject({ quantity: 2, receivedQuantity: 0, isDemo: true });
     expect(memory.summary.completed).toBe(0);
-    await expect(dispatchOrder(o.id)).rejects.toThrow();
-    expect(getQuoteByToken(q.token).status).toBe('accepted');
+    await expect(((dispatchOrder(o.id)))).rejects.toThrow();
+    expect((await getQuoteByToken(q.token)).status).toBe('accepted');
   });
-  it('requires Aoki review even when automatic quotation was enabled', () => {
-    putSettings({ ...DEFAULT_SETTINGS, flags: { ...DEFAULT_SETTINGS.flags, autoQuote: true } });
-    const q = createQuote({ ...request, productId: 'demo-1' }, null);
+  it('requires Aoki review even when automatic quotation was enabled', async () => {
+    (await putSettings({ ...DEFAULT_SETTINGS, flags: { ...DEFAULT_SETTINGS.flags, autoQuote: true } }));
+    const q = (await createQuote({ ...request, productId: 'demo-1' }, null));
     expect(q.status).toBe('requested');
-    expect(() =>
-      updateQuote(q.id, {
+    await expect(async () =>
+      (await updateQuote(q.id, {
         status: 'issued',
         lines: [{ productId: 'demo-1', name: '確認用部品', quantity: 2, unitPrice: 2500 }],
-      }),
-    ).toThrow('青木');
-    expect(list<Quote>('quotes').find((item) => item.id === q.id)?.reviewedAt).toBeUndefined();
-    expect(createQuote({ ...request, productId: 'demo-5' }, null).status).toBe('requested');
+      })),
+    ).rejects.toThrow('青木');
+    expect((await list<Quote>('quotes')).find((item) => item.id === q.id)?.reviewedAt).toBeUndefined();
+    expect((await createQuote({ ...request, productId: 'demo-5' }, null)).status).toBe('requested');
   });
-  it('blocks expired quotes and orders when the option is disabled', () => {
-    const q = createQuote({ ...request, productId: 'demo-1' }, null);
-    updateQuote(q.id, {
+  it('blocks expired quotes and orders when the option is disabled', async () => {
+    const q = (await createQuote({ ...request, productId: 'demo-1' }, null));
+    (await updateQuote(q.id, {
       status: 'issued',
       aokiReviewed: true,
       lines: [{ productId: 'demo-1', name: '部品', quantity: 1, unitPrice: 100 }],
-    });
-    expect(() => acceptQuote(q.token, true, 'test-key')).toThrow('利用');
-    putSettings({ ...DEFAULT_SETTINGS, flags: { ...DEFAULT_SETTINGS.flags, orders: true } });
-    const raw = byId<Quote>('quotes', q.id)!;
-    save('quotes', { ...raw, expiresAt: '2000-01-01T00:00:00Z' }, { token: q.token });
-    expect(() => acceptQuote(q.token, true, 'test-key')).toThrow('有効期限');
+    }));
+    await expect(async () => (await acceptQuote(q.token, true, 'test-key'))).rejects.toThrow('利用');
+    (await putSettings({ ...DEFAULT_SETTINGS, flags: { ...DEFAULT_SETTINGS.flags, orders: true } }));
+    const raw = (await byId<Quote>('quotes', q.id))!;
+    (await save('quotes', { ...raw, expiresAt: '2000-01-01T00:00:00Z' }, { token: q.token }));
+    await expect(async () => (await acceptQuote(q.token, true, 'test-key'))).rejects.toThrow('有効期限');
   });
 });
 describe('ingestion and login', () => {
@@ -264,13 +264,13 @@ describe('ingestion and login', () => {
       'brands.csv',
       Buffer.from('商品名,型番,メーカー\n部品A,SAME-1,メーカーA\n部品B,SAME-1,メーカーB\n'),
     );
-    expect(commitPreview(preview.previewId, preview.suggestedMapping, false).imported).toBe(2);
-    expect(list<Product>('products').filter((p) => p.model === 'SAME-1')).toHaveLength(2);
+    expect((await commitPreview(preview.previewId, preview.suggestedMapping, false)).imported).toBe(2);
+    expect((await list<Product>('products')).filter((p) => p.model === 'SAME-1')).toHaveLength(2);
   });
   it('returns an actionable parse error for an image-only PDF', async () => {
     const { readFileSync } = await import('node:fs');
     await expect(
-      previewUpload('demo-catalog', 'scanned.pdf', readFileSync('tests/fixtures/scanned.pdf')),
+      ((previewUpload('demo-catalog', 'scanned.pdf', readFileSync('tests/fixtures/scanned.pdf')))),
     ).rejects.toMatchObject({ status: 400, code: 'parse_failed' });
   });
   it('previews Japanese CSV, maps columns and refuses unconfirmed freshness', async () => {
@@ -280,12 +280,12 @@ describe('ingestion and login', () => {
       Buffer.from('商品名,型番,販売価格\n試験部品,TEST-01,500\n'),
     );
     expect(preview.suggestedMapping.price).toBe('販売価格');
-    const result = commitPreview(preview.previewId, preview.suggestedMapping, true);
+    const result = (await commitPreview(preview.previewId, preview.suggestedMapping, true));
     expect(result.imported).toBe(1);
-    const p = list<Product>('products').find((p) => p.model === 'TEST-01')!;
+    const p = (await list<Product>('products')).find((p) => p.model === 'TEST-01')!;
     expect(p.approved).toBe(false);
-    expect(publicProduct(p)?.price).toBeNull();
-    expect(() => commitPreview(preview.previewId, preview.suggestedMapping, true)).toThrow();
+    expect((await publicProduct(p))?.price).toBeNull();
+    await expect(async () => (await commitPreview(preview.previewId, preview.suggestedMapping, true))).rejects.toThrow();
   });
   it('verifies the scrypt password without accepting an altered hash', () => {
     const hash = hashPassword('test-only-password');

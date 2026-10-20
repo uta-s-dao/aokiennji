@@ -60,7 +60,7 @@ export function responseEndpoint() {
 
 export async function fetchOpenaiResponse(options: SafeFetchOptions): Promise<SafeResponse> {
   const endpoint = localAgentEndpoint();
-  if (!endpoint) return safeFetch(OPENAI_RESPONSES, options);
+  if (!endpoint) return (await safeFetch(OPENAI_RESPONSES, options));
   const tokenFile = process.env.LOCAL_AGENT_API_TOKEN_FILE;
   if (!tokenFile) throw Error('Local agent token file is required');
   const token = readFileSync(tokenFile, 'utf8').trim();
@@ -90,7 +90,7 @@ export async function fetchOpenaiResponse(options: SafeFetchOptions): Promise<Sa
         if (size > (options.maxBytes || 300000))
           throw Error('Local agent response exceeds byte limit');
         chunks.push(value);
-        options.onChunk?.(value);
+        await options.onChunk?.(value);
       }
     } finally {
       await reader.cancel();

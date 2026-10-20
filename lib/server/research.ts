@@ -1,3 +1,4 @@
+import { asyncMap } from '@/lib/async-arrays';
 import * as cheerio from 'cheerio';
 import { z } from 'zod';
 import {
@@ -53,15 +54,15 @@ export interface ResearchRequest {
   local: { research: boolean; aspects: ResearchAspect[] };
 }
 
-export function researchNotes(conversationId: string): ResearchNote[] {
+export async function researchNotes(conversationId: string): Promise<ResearchNote[]> {
   return (
-    db()
+    (await db()
       .prepare('SELECT json FROM research_notes WHERE conversation_id=? ORDER BY created_at')
-      .all(conversationId) as { json: string }[]
+      .all(conversationId)) as { json: string }[]
   ).map((r) => JSON.parse(r.json));
 }
-function store(note: ResearchNote) {
-  save('research_notes', note, {
+async function store(note: ResearchNote) {
+  await save('research_notes', note, {
     conversation_id: note.conversationId,
     created_at: note.createdAt,
   });
@@ -174,7 +175,7 @@ async function decide(request: ResearchRequest, context: AiUsageContext) {
     }),
     questions,
   };
-  const usage = beginAiCall({
+  const usage = await beginAiCall({
     provider: 'jev',
     purpose: 'research_decision',
     model: body.model,
@@ -201,7 +202,7 @@ async function decide(request: ResearchRequest, context: AiUsageContext) {
     const p = (id: string) => result.answers?.[id]?.noul;
     if (typeof p('wanted') !== 'number' || typeof p('identifiable') !== 'number')
       throw Error('invalid_classification');
-    usage.finish(true);
+    await usage.finish(true);
     const aspects = ASPECTS.filter((a) => (p(a) ?? 0) >= 0.5);
     return {
       research: p('wanted') >= 0.6 && p('identifiable') >= 0.5,
@@ -209,7 +210,7 @@ async function decide(request: ResearchRequest, context: AiUsageContext) {
       decidedBy: 'jev' as const,
     };
   } catch (error) {
-    usage.finish(false, error);
+    await usage.finish(false, error);
     return local;
   }
 }
@@ -289,7 +290,7 @@ async function search(
   aspects: ResearchAspect[],
   context: AiUsageContext,
   domains: string[] = [],
-  onSearch?: (search: SearchTelemetry) => void,
+  onSearch?: (search: SearchTelemetry) => unknown,
 ) {
   const key = process.env.OPENAI_API_KEY!;
   const model = process.env.OPENAI_RESEARCH_MODEL || 'gpt-5-mini';
@@ -327,7 +328,7 @@ async function search(
     max_output_tokens: 3000,
     text: { format: { type: 'json_schema', name: 'research', strict: true, schema: outputSchema } },
   });
-  const usage = beginAiCall({
+  const usage = await beginAiCall({
     provider: 'openai',
     purpose: 'research',
     model,
@@ -404,7 +405,7 @@ async function search(
           }
         }
     }
-    onSearch?.({
+    await onSearch?.({
       provider: 'openai',
       model,
       queries,
@@ -419,7 +420,7 @@ async function search(
       }),
     });
     const parsed = resultSchema.parse(JSON.parse(text));
-    usage.finish(true);
+    await usage.finish(true);
     // A site the search never visited is an invented source, and a supplier
     // search keeps only pages on those sites. The value itself is checked
     // against the page afterwards.
@@ -436,7 +437,7 @@ async function search(
       });
     return { ...parsed, findings, dropped: parsed.findings.length - findings.length };
   } catch (error) {
-    usage.finish(false, error instanceof SyntaxError ? Error('invalid_research') : error);
+    await usage.finish(false, error instanceof SyntaxError ? Error('invalid_research') : error);
     throw error;
   }
 }
@@ -560,7 +561,7 @@ async function relevance(
     }),
     questions,
   };
-  const usage = beginAiCall({
+  const usage = await beginAiCall({
     provider: 'jev',
     purpose: 'research_decision',
     model: body.model,
@@ -585,13 +586,13 @@ async function relevance(
       usage.response,
     );
     usage.usage(result.usage);
-    usage.finish(true);
+    await usage.finish(true);
     return findings.map((_, i) => {
       const value = result.answers?.[`f${i}`]?.noul;
       return typeof value === 'number' ? Math.round(value * 100) / 100 : null;
     });
   } catch (error) {
-    usage.finish(false, error);
+    await usage.finish(false, error);
     return findings.map(() => null);
   }
 }
@@ -599,7 +600,7 @@ async function relevance(
 export async function researchForStaff(request: ResearchRequest, context: AiUsageContext) {
   // Without credits the search cannot run; the admin overview says so.
   if (!process.env.OPENAI_API_KEY || openaiQuotaPaused()) return;
-  const previous = researchNotes(request.conversationId).filter((note) => !note.sourcing);
+  const previous = (await researchNotes(request.conversationId)).filter((note) => !note.sourcing);
   if (previous.length >= MAX_NOTES_PER_CONVERSATION) return;
   const decision = await decide(request, context);
   if (!decision.research) return;
@@ -629,9 +630,9 @@ export async function researchForStaff(request: ResearchRequest, context: AiUsag
     findings: [],
     summary: '',
     decidedBy: decision.decidedBy,
-    sourceTrace: createSourceTrace(),
+    sourceTrace: await createSourceTrace(),
   };
-  store(note);
+  await store(note);
   try {
     const trace = note.sourceTrace!;
     const suppliers = new Map(
@@ -704,7 +705,7 @@ export async function researchForStaff(request: ResearchRequest, context: AiUsag
           ? '登録参照先を優先して調査'
           : '登録参照先で未確認の項目があるため外部Webへ拡張',
       );
-      store(note);
+      await store(note);
       try {
         // Do not truncate the registered list at 20 domains; cover every batch.
         for (let offset = 0; offset < Math.max(1, target.length); offset += 100) {
@@ -713,9 +714,9 @@ export async function researchForStaff(request: ResearchRequest, context: AiUsag
             remaining,
             context,
             target.slice(offset, offset + 100),
-            (search) => {
+            async (search) => {
               (stage.searches ||= []).push(search);
-              store(note);
+              await store(note);
             },
           );
           summaries.push(result.summary);
@@ -730,7 +731,7 @@ export async function researchForStaff(request: ResearchRequest, context: AiUsag
         lastError = error;
         finishSourceStage(stage, 'failed', error instanceof Error ? error.message : '検索失敗');
       }
-      store(note);
+      await store(note);
     }
     if (!succeeded) throw lastError || Error('research_failed');
     const scores = await relevance(note.subject, request.destination, checked, context);
@@ -771,5 +772,5 @@ export async function researchForStaff(request: ResearchRequest, context: AiUsag
     note.error = error instanceof Error ? error.message.slice(0, 200) : 'research_failed';
   }
   note.completedAt = now();
-  store(note);
+  await store(note);
 }

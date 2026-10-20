@@ -1,3 +1,4 @@
+import './legacy-sqlite-harness';
 import Database from 'better-sqlite3';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -148,13 +149,13 @@ async function main() {
   const { aiUsageReport } = await import('../lib/server/ai-usage');
   const { researchNotes } = await import('../lib/server/research');
   const { createSourceTrace, preferredDomains } = await import('../lib/server/preferred-sources');
-  const settings = getSettings();
+  const settings = (await getSettings());
   if (settings.responseProvider !== 'openai' || settings.responseModel !== 'gpt-4.1')
     throw Error('Keep the requested GPT-4.1 configuration');
-  putSettings({
+  (await putSettings({
     ...settings,
     flags: { ...settings.flags, autoQuote: false, orders: false, autoOrder: false },
-  });
+  }));
   const profiles = read<Profile[]>('scripts/fixtures/staged-natural-customers.json');
   if (profiles.length !== 10 || new Set(profiles.map((p) => p.id)).size !== 10)
     throw Error('Ten unique profiles required');
@@ -194,16 +195,16 @@ async function main() {
         const owner = `${profile.id}-${session.startedAt}`;
         if (!session.conversationId)
           session.conversationId = (
-            db()
+            (await db()
               .prepare('SELECT id FROM conversations WHERE owner_id=? ORDER BY rowid DESC LIMIT 1')
-              .get(owner) as { id: string } | undefined
+              .get(owner)) as { id: string } | undefined
           )?.id;
         while (
           !session.finished &&
           session.actions.filter((a) => a.action !== 'finish').length < 16
         ) {
           const messages = session.conversationId
-            ? conversationMessages(session.conversationId)
+            ? (await conversationMessages(session.conversationId))
             : [];
           const history = messages.map((m) => ({
             role: m.role,
@@ -264,7 +265,7 @@ async function main() {
                 write(sessionPath, session);
                 continue;
               }
-              session.quote ||= createQuote(
+              session.quote ||= (await createQuote(
                 {
                   name: '会話検証のお客様',
                   company: '架空の検証会社',
@@ -275,7 +276,7 @@ async function main() {
                   conversationId: session.conversationId,
                 },
                 owner,
-              );
+              ));
             }
             session.actions.push({ round, ...action });
             write(sessionPath, session);
@@ -303,11 +304,11 @@ async function main() {
           }
         }
         if (!session.conversationId) continue;
-        const messages = conversationMessages(session.conversationId) as StoredChatMessage[];
-        const answers = aiAnswerReport({
+        const messages = (await conversationMessages(session.conversationId)) as StoredChatMessage[];
+        const answers = (await aiAnswerReport({
           conversationId: session.conversationId,
           limit: 100,
-        }).items.toReversed();
+        })).items.toReversed();
         const last = answers.at(-1);
         if (!last) continue;
         let review: z.infer<typeof reviewSchema>;
@@ -366,7 +367,7 @@ async function main() {
                   a.sourceTrace.stages.findIndex((s) => s.scope === 'public_web')),
           ),
           noPrivateTraceInPublicMessages: !JSON.stringify(
-            currentMessages(session.conversationId),
+            (await currentMessages(session.conversationId)),
           ).includes('sourceTrace'),
           noInternalTermsInReplies: assistantMessages.every(
             (m) =>
@@ -389,9 +390,9 @@ async function main() {
           conversationId: session.conversationId,
           answerId: last.id,
           sourceTrace: trace,
-          aiCalls: aiUsageReport({ conversationId: session.conversationId, limit: 100 }),
+          aiCalls: (await aiUsageReport({ conversationId: session.conversationId, limit: 100 })),
           checks,
-          notes: researchNotes(session.conversationId),
+          notes: (await researchNotes(session.conversationId)),
           messages,
           answers,
           procurementAssessment: [],
@@ -468,7 +469,7 @@ async function main() {
   const report: SourceVerificationReport & { originalUnchanged: boolean } = {
     testedAt: new Date().toISOString(),
     responseModel: 'gpt-4.1',
-    initialPreferredDomains: preferredDomains(createSourceTrace()),
+    initialPreferredDomains: preferredDomains((await createSourceTrace())),
     scenarios,
     originalUnchanged,
   };
@@ -503,7 +504,7 @@ async function main() {
   write(join(root, 'summary.json'), summary);
   write('docs/research/staged-natural-live-2026-10-18.json', report);
   write('docs/research/staged-natural-validation-2026-10-18.json', summary);
-  resetDbForTests();
+  (await resetDbForTests());
   console.log(JSON.stringify({ phase: 'complete', ...summary }));
 }
 function validTransitions(messages: ChatMessage[]) {

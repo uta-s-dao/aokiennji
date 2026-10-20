@@ -33,7 +33,7 @@ test('chat keeps the topic, reserves space and keeps the composer clear at diffe
     await page.setViewportSize(viewport);
     await expect
       .poll(async () => {
-        return page.evaluate(() => {
+        return (await page.evaluate(() => {
           const rect = (s: string) => document.querySelector(s)!.getBoundingClientRect();
           const panel = rect('.chat-panel');
           const messages = rect('.chat-messages');
@@ -49,7 +49,7 @@ test('chat keeps the topic, reserves space and keeps the composer clear at diffe
             reserved: window.innerWidth < 1200 || content.right <= panel.left,
             pageOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
           };
-        });
+        }));
       })
       .toEqual({ contained: true, clear: true, reserved: true, pageOverflow: false });
   }

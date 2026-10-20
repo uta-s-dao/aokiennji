@@ -92,7 +92,7 @@ test('shows streamed text before the result and keeps it clear of the composer',
     const original = window.fetch;
     window.fetch = async (input, init) => {
       if (input !== '/api/chat' || new Headers(init?.headers).get('Accept') !== 'text/event-stream')
-        return original(input, init);
+        return (await original(input, init));
       const encoder = new TextEncoder();
       return new Response(
         new ReadableStream({

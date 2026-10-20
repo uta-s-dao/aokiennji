@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
-import Database from 'better-sqlite3';
-import { join } from 'node:path';
+import { db as appDb } from '../../lib/server/db';
 import type { ChatResponse, SourceTrace, StoredChatMessage } from '../../lib/contracts';
 
 test('staff can inspect the source and fallback path of an individual answer while public history excludes it', async ({
@@ -76,15 +75,17 @@ test('staff can inspect the source and fallback path of an individual answer whi
   };
   const directory = process.env.AOKI_E2E_DATA_DIR;
   if (!directory?.includes('aoki-eng-e2e-')) throw Error('Disposable test database required');
-  const database = new Database(join(directory, 'aokienji.sqlite'), { fileMustExist: true });
-  const row = database.prepare('SELECT json FROM messages WHERE id=?').get(reply.message.id) as {
+  const database = appDb();
+  const row = (await database
+    .prepare('SELECT json FROM messages WHERE id=?')
+    .get(reply.message.id)) as {
     json: string;
   };
   const message: StoredChatMessage = { ...JSON.parse(row.json), sourceTrace: trace };
-  database
+  await database
     .prepare('UPDATE messages SET json=? WHERE id=?')
     .run(JSON.stringify(message), reply.message.id);
-  database.close();
+  await database.close();
   const anonymous = await request.get(`/api/admin/conversations/${reply.conversationId}`);
   expect(anonymous.status()).toBe(401);
   const publicHistory = await page.request.get(`/api/chat/${reply.conversationId}`);

@@ -114,7 +114,7 @@ export async function classifyQuery(
 ): Promise<QueryIntent> {
   const local = localIntent(message);
   if (settings.decisionProvider === 'local') return local;
-  let usage: ReturnType<typeof beginAiCall> | undefined;
+  let usage: Awaited<ReturnType<typeof beginAiCall>> | undefined;
   try {
     let intent: unknown;
     let confidence = 0;
@@ -191,7 +191,7 @@ export async function classifyQuery(
             : {}),
         },
       };
-      usage = beginAiCall({
+      usage = (await beginAiCall({
         endpoint,
         provider: 'jev',
         purpose: 'classification',
@@ -219,7 +219,7 @@ export async function classifyQuery(
             ]),
           ),
         },
-      });
+      }));
       const result = await jsonRequest(
         endpoint,
         { Authorization: `Bearer ${key}` },
@@ -276,7 +276,7 @@ export async function classifyQuery(
           },
         },
       };
-      usage = beginAiCall({
+      usage = (await beginAiCall({
         provider: 'gemini',
         purpose: 'classification',
         model: modelName,
@@ -288,7 +288,7 @@ export async function classifyQuery(
           bodyKeys: Object.keys(body),
           responseFormat: 'JSON classification',
         },
-      });
+      }));
       const result = await jsonRequest(
         endpoint,
         { 'x-goog-api-key': key },
@@ -330,7 +330,7 @@ export async function classifyQuery(
       confidence > 1
     )
       throw Error('invalid_classification');
-    usage?.finish(true);
+    (await usage?.finish(true));
     return {
       intent: intent as QueryIntent['intent'],
       terms,
@@ -342,7 +342,7 @@ export async function classifyQuery(
       evidenceIndex,
     };
   } catch (error) {
-    usage?.finish(false, error);
+    (await usage?.finish(false, error));
     return { ...local, warning: '外部モデルを利用できないため、登録情報に基づいてご案内します。' };
   }
 }
@@ -353,7 +353,7 @@ export async function searchWeb(
   options: {
     context?: AiUsageContext;
     signal?: AbortSignal;
-    onSearch?: (search: SearchTelemetry) => void;
+    onSearch?: (search: SearchTelemetry) => unknown;
   } = {},
 ): Promise<Evidence[]> {
   if (!settings.flags.webSearch || settings.searchProvider === 'none') return [];
@@ -369,7 +369,7 @@ export async function searchWeb(
     });
   }
   if (settings.searchProvider === 'openai')
-    return searchOpenai(query, domains, options.context, options.signal, options.onSearch);
+    return (await searchOpenai(query, domains, options.context, options.signal, options.onSearch));
   const key = process.env[settings.searchProvider === 'exa' ? 'EXA_API_KEY' : 'TAVILY_API_KEY'];
   if (!key) throw Error('Web検索の接続キーが未設定です');
   const result =
@@ -403,7 +403,7 @@ export async function searchWeb(
   const consultedUrls: string[] = (Array.isArray(result.results) ? result.results : []).flatMap(
     (item: { url?: unknown }) => (typeof item.url === 'string' ? [item.url] : []),
   );
-  options.onSearch?.({
+  await options.onSearch?.({
     provider: settings.searchProvider,
     queries: [query],
     consultedUrls,

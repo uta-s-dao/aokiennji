@@ -1,3 +1,4 @@
+import { asyncForEach } from '@/lib/async-arrays';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import type { ChatMessage, Order, Product, Quote, ResearchNote, Supplier } from '../contracts';
@@ -8,7 +9,7 @@ import type {
   ProcurementHistory,
 } from '../procurement-memory';
 import { ApiError } from './auth';
-import { byId, db, demoMode, now, save, uid } from './db';
+import { byId, db, lockResource, demoMode, now, save, uid } from './db';
 import { modelIdentity } from './product-model';
 
 type Resolved = {
@@ -29,18 +30,18 @@ function urlKey(url: string) {
   parsed.hash = '';
   return parsed.href;
 }
-function resolve(context: ProcurementContext): Resolved {
+async function resolve(context: ProcurementContext): Promise<Resolved> {
   if (context.kind === 'offer') {
-    const row = db()
+    const row = (await db()
       .prepare('SELECT json FROM research_notes WHERE id=? AND conversation_id=?')
-      .get(context.noteId, context.conversationId) as { json: string } | undefined;
+      .get(context.noteId, context.conversationId)) as { json: string } | undefined;
     const note: ResearchNote | undefined = row && JSON.parse(row.json);
     const offer = note?.offers?.find((o) => o.id === context.offerId);
     if (!note || !offer) throw new ApiError(404, 'not_found', '調達候補が見つかりません');
     const messages = (
-      db()
-        .prepare('SELECT json FROM messages WHERE conversation_id=? ORDER BY rowid DESC')
-        .all(context.conversationId) as { json: string }[]
+      (await db()
+        .prepare('SELECT json FROM messages WHERE conversation_id=? ORDER BY sequence DESC')
+        .all(context.conversationId)) as { json: string }[]
     ).map((r) => JSON.parse(r.json) as ChatMessage);
     const quantity = messages.find(
       (m) =>
@@ -62,11 +63,11 @@ function resolve(context: ProcurementContext): Resolved {
       snapshot: { offer, findings: note.findings.filter((f) => f.url === offer.url) },
     };
   }
-  const order = byId<Order>('orders', context.orderId);
-  const quote = order && byId<Quote>('quotes', order.quoteId);
+  const order = await byId<Order>('orders', context.orderId);
+  const quote = order && (await byId<Quote>('quotes', order.quoteId));
   const line = quote?.lines[context.line];
   const key = `order:${context.orderId}:${context.line}`;
-  const archived = cases('context_key=?', key)[0];
+  const archived = (await cases('context_key=?', key))[0];
   if (order && line && archived)
     return {
       key,
@@ -79,7 +80,7 @@ function resolve(context: ProcurementContext): Resolved {
       canStart: false,
       snapshot: archived.snapshot,
     };
-  const product = line?.productId ? byId<Product>('products', line.productId) : undefined;
+  const product = line?.productId ? await byId<Product>('products', line.productId) : undefined;
   if (
     !order ||
     !line ||
@@ -88,7 +89,7 @@ function resolve(context: ProcurementContext): Resolved {
     product.supplierId !== order.supplierId
   )
     throw new ApiError(404, 'not_found', '型番と仕入先を確認できる注文明細がありません');
-  const supplier = byId<Supplier>('suppliers', order.supplierId);
+  const supplier = await byId<Supplier>('suppliers', order.supplierId);
   return {
     key,
     model: product.model,
@@ -102,37 +103,37 @@ function resolve(context: ProcurementContext): Resolved {
     snapshot: { productId: product.id },
   };
 }
-function cases(where: string, ...args: string[]) {
+async function cases(where: string, ...args: string[]) {
   return (
-    db()
-      .prepare(`SELECT json FROM procurement_cases WHERE ${where} ORDER BY rowid DESC`)
-      .all(...args) as { json: string }[]
+    (await db()
+      .prepare(`SELECT json FROM procurement_cases WHERE ${where} ORDER BY sequence DESC`)
+      .all(...args)) as { json: string }[]
   )
     .map((r) => JSON.parse(r.json) as ProcurementCase)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
-function events(key: string) {
+async function events(key: string) {
   return (
-    db()
+    (await db()
       .prepare(
-        'SELECT json FROM procurement_events WHERE context_key=? ORDER BY rowid DESC LIMIT 100',
+        'SELECT json FROM procurement_events WHERE context_key=? ORDER BY sequence DESC LIMIT 100',
       )
-      .all(key) as { json: string }[]
+      .all(key)) as { json: string }[]
   ).map((r) => JSON.parse(r.json) as ProcurementEvent);
 }
-function storeCase(value: ProcurementCase) {
-  save('procurement_cases', value, {
+async function storeCase(value: ProcurementCase) {
+  await save('procurement_cases', value, {
     context_key: value.contextKey,
     model_key: modelIdentity(value.model),
   });
 }
-function append(key: string, event: ProcurementEvent) {
-  db()
+async function append(key: string, event: ProcurementEvent) {
+  await db()
     .prepare('INSERT INTO procurement_events(id,context_key,case_id,json) VALUES(?,?,?,?)')
     .run(event.id, key, event.caseId, JSON.stringify(event));
 }
-function history(source: Resolved): ProcurementHistory {
-  const same = cases('model_key=?', modelIdentity(source.model)).filter(
+async function history(source: Resolved): Promise<ProcurementHistory> {
+  const same = (await cases('model_key=?', modelIdentity(source.model))).filter(
     (c) => c.supplierKey === source.supplierKey && !c.isDemo && c.status !== 'void',
   );
   return {
@@ -141,8 +142,8 @@ function history(source: Resolved): ProcurementHistory {
     suggestedQuantity: source.quantity,
     isDemo: source.isDemo,
     canStart: source.canStart,
-    cases: cases('context_key=?', source.key),
-    events: events(source.key),
+    cases: await cases('context_key=?', source.key),
+    events: await events(source.key),
     summary: {
       completed: same.filter((c) => c.status === 'received').length,
       unavailable: same.filter((c) => c.status === 'unavailable').length,
@@ -151,8 +152,8 @@ function history(source: Resolved): ProcurementHistory {
     },
   };
 }
-export function procurementHistory(context: ProcurementContext) {
-  return history(resolve(context));
+export async function procurementHistory(context: ProcurementContext) {
+  return await history(await resolve(context));
 }
 const outcomeSchema = z
   .object({
@@ -173,13 +174,15 @@ const outcomeSchema = z
   })
   .strict();
 
-export function recordProcurementOutcome(context: ProcurementContext, input: unknown) {
+export async function recordProcurementOutcome(context: ProcurementContext, input: unknown) {
   const change = outcomeSchema.parse(input);
-  return db().transaction(() => {
-    const source = resolve(context);
-    const previous = db()
+  return await db().transaction(async () => {
+    const source = await resolve(context);
+    await lockResource(`procurement:${source.key}`);
+    await lockResource(`procurement-event:${change.eventId}`);
+    const previous = (await db()
       .prepare('SELECT context_key,json FROM procurement_events WHERE id=?')
-      .get(change.eventId) as { context_key: string; json: string } | undefined;
+      .get(change.eventId)) as { context_key: string; json: string } | undefined;
     if (previous) {
       const event = JSON.parse(previous.json) as ProcurementEvent;
       if (
@@ -187,9 +190,9 @@ export function recordProcurementOutcome(context: ProcurementContext, input: unk
         JSON.stringify(event.snapshot) !== JSON.stringify(change)
       )
         throw new ApiError(409, 'conflict', '記録IDが別の操作で使用されています');
-      return history(source);
+      return await history(source);
     }
-    const existing = cases('context_key=?', source.key);
+    const existing = await cases('context_key=?', source.key);
     let item = existing.find((c) => c.id === change.caseId);
     const active = (c: ProcurementCase) => ['ordered', 'partial'].includes(c.status);
     if (!change.caseId && ['ordered', 'unavailable'].includes(change.action)) {
@@ -248,8 +251,8 @@ export function recordProcurementOutcome(context: ProcurementContext, input: unk
         );
       item.updatedAt = now();
     }
-    storeCase(item);
-    append(source.key, {
+    await storeCase(item);
+    await append(source.key, {
       id: change.eventId,
       caseId: item.id,
       action: change.action,
@@ -259,20 +262,20 @@ export function recordProcurementOutcome(context: ProcurementContext, input: unk
       note: change.note,
       snapshot: change,
     });
-    return history(source);
+    return await history(source);
   })();
 }
 
 // Immutable staff confirmation evidence, distinct from purchase/receipt outcomes.
-export function rememberProcurementConfirmation(context: ProcurementContext) {
-  const source = resolve(context);
+export async function rememberProcurementConfirmation(context: ProcurementContext) {
+  const source = await resolve(context);
   if (!source.snapshot.offer?.approved) return;
   const { confirmedAt: _date, ...conditions } = source.snapshot.offer;
   const id = `confirmation:${createHash('sha256')
     .update(JSON.stringify([source.key, source.isDemo, conditions]))
     .digest('hex')}`;
-  if (db().prepare('SELECT id FROM procurement_events WHERE id=?').get(id)) return;
-  append(source.key, {
+  if (await db().prepare('SELECT id FROM procurement_events WHERE id=?').get(id)) return;
+  await append(source.key, {
     id,
     caseId: null,
     action: 'conditions_confirmed',
@@ -285,19 +288,19 @@ export function rememberProcurementConfirmation(context: ProcurementContext) {
 }
 
 // A sent order is an attempt, not proof of stock, allocation, or receipt.
-export function rememberDispatchedOrder(order: Order) {
+export async function rememberDispatchedOrder(order: Order) {
   if (!['dispatched', 'simulated'].includes(order.status)) return;
-  const quote = byId<Quote>('quotes', order.quoteId);
-  quote?.lines.forEach((_, line) => {
+  const quote = await byId<Quote>('quotes', order.quoteId);
+  await asyncForEach(quote?.lines || [], async (_, line) => {
     let source: Resolved;
     try {
-      source = resolve({ kind: 'order', orderId: order.id, line });
+      source = await resolve({ kind: 'order', orderId: order.id, line });
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) return;
       throw error;
     }
     const id = `sent:${order.id}:${line}`;
-    if (db().prepare('SELECT id FROM procurement_events WHERE id=?').get(id)) return;
+    if (await db().prepare('SELECT id FROM procurement_events WHERE id=?').get(id)) return;
     const isDemo = source.isDemo || order.status === 'simulated';
     const item: ProcurementCase = {
       id: uid(),
@@ -316,8 +319,8 @@ export function rememberDispatchedOrder(order: Order) {
       updatedAt: now(),
       snapshot: source.snapshot,
     };
-    storeCase(item);
-    append(source.key, {
+    await storeCase(item);
+    await append(source.key, {
       id,
       caseId: item.id,
       action: 'order_sent',
@@ -330,9 +333,11 @@ export function rememberDispatchedOrder(order: Order) {
   });
 }
 
-export function successfulProcurementSources(model: string): { url: string; title: string }[] {
+export async function successfulProcurementSources(
+  model: string,
+): Promise<{ url: string; title: string }[]> {
   const seen = new Set<string>();
-  return cases('model_key=?', modelIdentity(model))
+  return (await cases('model_key=?', modelIdentity(model)))
     .flatMap((c) => {
       if (c.isDemo || c.status !== 'received' || !c.url || seen.has(c.url)) return [];
       seen.add(c.url);

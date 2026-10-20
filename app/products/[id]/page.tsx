@@ -8,16 +8,16 @@ import { ApiError } from '@/lib/server/auth';
 import { pageMetadata, siteOrigin } from '@/lib/seo';
 export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ id: string }> };
-const productById = cache((id: string) => {
+const productById = cache(async (id: string) => {
   try {
-    return getPublicProduct(id);
+    return (await getPublicProduct(id));
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) notFound();
     throw error;
   }
 });
 export async function generateMetadata({ params }: Props) {
-  const product = productById((await params).id);
+  const product = (await productById((await params).id));
   return pageMetadata(
     `${product.name} ${product.model}`,
     product.description || `${product.name}の仕様と調達についてご相談ください。`,
@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: Props) {
   );
 }
 export default async function Page({ params }: Props) {
-  const product = productById((await params).id);
+  const product = (await productById((await params).id));
   return (
     <>
       {product.approved && !product.isDemo && (
@@ -47,7 +47,7 @@ export default async function Page({ params }: Props) {
       <ProductDetailPage
         key={product.id}
         initialProduct={product}
-        initialConfig={getPublicConfig()}
+        initialConfig={(await getPublicConfig())}
       />
     </>
   );

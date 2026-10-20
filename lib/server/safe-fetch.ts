@@ -75,7 +75,7 @@ export interface SafeFetchOptions {
   httpsOnly?: boolean;
   allowedDomains?: string[];
   signal?: AbortSignal;
-  onChunk?: (chunk: Uint8Array) => void;
+  onChunk?: (chunk: Uint8Array) => unknown;
   onResponse?: (status: number, headers: Headers) => void;
 }
 
@@ -112,7 +112,7 @@ export async function safeFetch(
       throw new Error('許可ドメイン外のURLです');
     const hostname = url.hostname.replace(/^\[|\]$/g, '');
     const addresses = await Promise.race([
-      lookup(hostname, { all: true, verbatim: true }),
+      (await lookup(hostname, { all: true, verbatim: true })),
       new Promise<never>((_, reject) => {
         if (deadline.aborted) reject(new Error('取得がタイムアウトしました'));
         else
@@ -191,7 +191,7 @@ export async function safeFetch(
             throw new Error('取得サイズが上限を超えています');
           }
           chunks.push(chunk);
-          options.onChunk?.(chunk);
+          await options.onChunk?.(chunk);
         }
       return {
         status: response.status,

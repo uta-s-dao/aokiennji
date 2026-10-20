@@ -1,3 +1,4 @@
+import { asyncFilter, asyncMap } from '@/lib/async-arrays';
 import type {
   ChatMessage,
   ChatResponse,
@@ -86,22 +87,22 @@ export async function answerChat(
   owner: string,
   conversationId?: string,
   output: {
-    onText?: (text: string) => void;
+    onText?: (text: string) => unknown;
     signal?: AbortSignal;
     // Runs work after the reply is sent, such as research for the staff.
     defer?: (work: () => Promise<void>) => void;
   } = {},
 ): Promise<ChatResponse> {
-  requireFlag('chat');
+  await requireFlag('chat');
   const userCreatedAt = now();
-  const settings = getSettings();
+  const settings = await getSettings();
   const budgets = responseBudgets(settings.flags.webSearch, responseModel(settings));
   output = {
     ...output,
     signal: output.signal || AbortSignal.timeout(budgets.chat),
   };
   const conversation: Conversation = conversationId
-    ? verifyConversation(conversationId, owner)
+    ? await verifyConversation(conversationId, owner)
     : {
         id: uid(),
         title: message.slice(0, 60),
@@ -109,13 +110,13 @@ export async function answerChat(
         createdAt: userCreatedAt,
         updatedAt: now(),
       };
-  const previous = conversationId ? currentMessages(conversation.id) : [];
+  const previous = conversationId ? await currentMessages(conversation.id) : [];
   const usageContext = { scope: 'chat' as const, conversationId: conversation.id, turnId: uid() };
   // Record receipt before any external service runs. An interrupted reply must
   // not erase the customer's question or the conversation from the admin list.
-  db().transaction(() => {
-    save('conversations', { ...conversation, updatedAt: userCreatedAt }, { owner_id: owner });
-    save(
+  await db().transaction(async () => {
+    await save('conversations', { ...conversation, updatedAt: userCreatedAt }, { owner_id: owner });
+    await save(
       'messages',
       {
         id: usageContext.turnId,
@@ -126,17 +127,18 @@ export async function answerChat(
       },
       { conversation_id: conversation.id },
     );
-    if (!conversationId) audit('conversation.created', conversation.id, '商品相談を受け付けました');
+    if (!conversationId)
+      await audit('conversation.created', conversation.id, '商品相談を受け付けました');
   })();
   const assistantId = uid();
-  const sourceTrace = createSourceTrace();
+  const sourceTrace = await createSourceTrace();
   const onText = output.onText;
   if (onText) {
-    output.onText = (content) => {
+    output.onText = async (content) => {
       // Keep the latest text offered to the stream, even if delivery fails.
       // Completion replaces this same row, without duplicating the reply.
       if (content.trim())
-        save(
+        await save(
           'messages',
           {
             id: assistantId,
@@ -150,10 +152,10 @@ export async function answerChat(
           },
           { conversation_id: conversation.id },
         );
-      onText(content);
+      await onText(content);
     };
   }
-  const privateQuestion = privateSupplierQuestion(message);
+  const privateQuestion = await privateSupplierQuestion(message);
   if (!privateQuestion && shouldUseSalesConversation(message, previous, settings)) {
     const result = await salesConversation({
       message,
@@ -181,8 +183,8 @@ export async function answerChat(
     sourceTrace.answerCanonical = assistant.content;
     sourceTrace.answerFacts = [{ id: 'sales_stage', text: JSON.stringify(result.salesState) }];
     sourceTrace.conclusion ||= `段階：${result.salesState.stage}`;
-    db().transaction(() => {
-      save(
+    await db().transaction(async () => {
+      await save(
         'messages',
         {
           ...assistant,
@@ -201,17 +203,20 @@ export async function answerChat(
         },
         { conversation_id: conversation.id },
       );
-      save(
+      await save(
         'conversations',
-        { ...verifyConversation(conversation.id, owner), updatedAt: now() },
+        { ...(await verifyConversation(conversation.id, owner)), updatedAt: now() },
         { owner_id: owner },
       );
-      audit('chat.sales_stage', conversation.id, `会話段階：${result.salesState.stage}`);
+      await audit('chat.sales_stage', conversation.id, `会話段階：${result.salesState.stage}`);
     })();
-    onText?.(assistant.content);
+    await onText?.(assistant.content);
     return { conversationId: conversation.id, message: assistant };
   }
-  const safeHistory = previous.filter((m) => !privateSupplierQuestion(m.content));
+  const safeHistory = await asyncFilter(
+    previous,
+    async (m) => !(await privateSupplierQuestion(m.content)),
+  );
   // The customer's own words, oldest first: conditions to keep and summarize.
   const customerTexts = [
     ...safeHistory.filter((m) => m.role === 'user').map((m) => m.content),
@@ -219,10 +224,10 @@ export async function answerChat(
   ];
   const request = stripCourtesy(message) || message.normalize('NFKC').trim();
   const local = localIntent(message);
-  const catalog = publicProducts();
+  const catalog = await publicProducts();
   const lastReply = previous.toReversed().find((m) => m.role === 'assistant');
   const localMatches = matchCatalog(message, local, catalog);
-  const localTopic = knowledgeTopic(message, local, lastReply);
+  const localTopic = await knowledgeTopic(message, local, lastReply);
   const routeInput = {
     message,
     intent: local,
@@ -237,7 +242,7 @@ export async function answerChat(
   const candidates =
     privateQuestion || (!planned.classify && planned.response === 'local')
       ? []
-      : documentCandidates(message, local);
+      : await documentCandidates(message, local);
   const registeredStage = !local.model
     ? startSourceStage(
         sourceTrace,
@@ -275,19 +280,19 @@ export async function answerChat(
     !local.model &&
     !sourcingFollowup;
   // Start only after classification/sourcing: an eager public search would bypass priority.
-  const webWork = () =>
+  const webWork = async () =>
     shouldSearchWeb && !intent.model && !sourcing && !candidates.some((c) => c.matched)
-      ? searchRegisteredFirst(message, settings, sourceTrace, {
+      ? await searchRegisteredFirst(message, settings, sourceTrace, {
           context: usageContext,
           signal: output.signal,
         })
           .then((data) => ({ data, failed: false }))
           .catch(() => ({ data: [] as Evidence[], failed: true }))
-      : Promise.resolve({ data: [] as Evidence[], failed: false });
+      : await Promise.resolve({ data: [] as Evidence[], failed: false });
   const intent = !planned.classify
     ? local
     : await classifyQuery(message, settings, safeHistory, {
-        fields: availableFields(),
+        fields: await availableFields(),
         evidence: candidates.map((c) => c.evidence),
         signal: output.signal,
         usageContext,
@@ -420,7 +425,7 @@ export async function answerChat(
     : continued
       ? last?.factDetail?.unit
       : undefined;
-  let topic = knowledgeTopic(message, intent, last);
+  let topic = await knowledgeTopic(message, intent, last);
   // A product named now or carried from the previous answer is more specific
   // than a field remembered from history or suggested by a classifier.
   if (topic?.mode === 'fields' && matches.length && !itemFieldsFromText(message).length)
@@ -500,7 +505,13 @@ export async function answerChat(
         (sameSource || sourceCorrection ? lastReply?.requestedDestination : undefined)
       : undefined;
   const estimateResult = sourcing
-    ? sourcingEstimate(conversation.id, sourcing, requestedQuantity, sourceDestination, settings)
+    ? await sourcingEstimate(
+        conversation.id,
+        sourcing,
+        requestedQuantity,
+        sourceDestination,
+        settings,
+      )
     : undefined;
   const sourcedReply = () => {
     if (estimateResult?.estimate) return estimateReply(estimateResult.estimate);
@@ -545,21 +556,22 @@ export async function answerChat(
           .map((c) => c.evidence),
       );
     evidence.push(
-      ...external.data.filter(
-        (e) =>
+      ...(await asyncFilter(
+        external.data,
+        async (e) =>
           e.visibility === 'public' &&
-          !privateSupplierQuestion([e.title, e.excerpt].join(' ')) &&
-          !containsPrivateSupplierIdentity(e.url || ''),
-      ),
+          !(await privateSupplierQuestion([e.title, e.excerpt].join(' '))) &&
+          !(await containsPrivateSupplierIdentity(e.url || '')),
+      )),
     );
   }
 
   const handedOff = conversation.status === 'handed_off';
   const quoteReceived =
     handedOff &&
-    !!db()
-      .prepare("SELECT 1 FROM quotes WHERE json_extract(json, '$.conversationId')=? LIMIT 1")
-      .get(conversation.id);
+    !!(await db()
+      .prepare("SELECT 1 FROM quotes WHERE (json::jsonb->>'conversationId')=? LIMIT 1")
+      .get(conversation.id));
   const thanks = thanksPattern.test(message);
   // The phone number is given once per conversation unless asked for again.
   const phoneShown = safeHistory.some(
@@ -741,9 +753,9 @@ export async function answerChat(
       ? `${lead}\n必要な数量を教えていただけますか？`
       : lead;
   };
-  const facts = () =>
+  const facts = async () =>
     topic
-      ? knowledgeReply(topic, settings, route.facts)
+      ? await knowledgeReply(topic, settings, route.facts)
       : matches.length
         ? factualReply(
             matches,
@@ -764,7 +776,7 @@ export async function answerChat(
   // The fixed part a reply starts with; empty when the whole reply is a
   // conversation written by the response model. With repeat, sentences given
   // earlier in the conversation are kept (used when nothing else can answer).
-  const fixedPart = (repeat: boolean) => {
+  const fixedPart = async (repeat: boolean) => {
     const once = (text: string) => (repeat ? text : unsaid(text, said));
     // The statement that the staff confirms unregistered values is given once
     // for each of price, stock and delivery.
@@ -787,15 +799,15 @@ export async function answerChat(
             }`
           : introduction
         : topic
-          ? knowledgeReply(topic, settings)
+          ? await knowledgeReply(topic, settings)
           : introduction;
     if (route.reason === 'policy')
       return join(
         policy,
         route.facts.length
           ? matches.length
-            ? facts()
-            : statement(topic ? facts() : unregisteredFacts())
+            ? await facts()
+            : statement(topic ? await facts() : unregisteredFacts())
           : '',
       );
     if (route.reason === 'transaction')
@@ -827,10 +839,10 @@ export async function answerChat(
       );
     const answer = join(
       matches.length
-        ? facts()
+        ? await facts()
         : intent.model && !topic && !repeat && modelSaid
           ? ''
-          : statement(facts()),
+          : statement(await facts()),
       policy,
     );
     // A field has no registered values, so the next step comes from the
@@ -839,7 +851,7 @@ export async function answerChat(
       ? join(answer, once(composeConsultation(compose, 'next')))
       : answer;
   };
-  let fixed = fixedPart(false);
+  let fixed = await fixedPart(false);
   // Conversation-dependent text cannot be rebuilt from registered facts later.
   let composed =
     route.response !== 'local' ||
@@ -893,7 +905,7 @@ export async function answerChat(
   const repeated = !fixed.trim() && route.response !== 'ai';
   // Taken before the route changes: the fixed answer given again is what the
   // response model restates, and what is shown if it cannot answer.
-  const givenBefore = repeated ? fixedPart(true) : '';
+  const givenBefore = repeated ? await fixedPart(true) : '';
   if (repeated) {
     if (aiReady && !['privacy', 'social'].includes(route.reason)) route.response = 'ai';
     else fixed = givenBefore;
@@ -988,14 +1000,14 @@ export async function answerChat(
               ? summarizeConsultation(compose)
               : intent.intent === 'general' || (topic?.mode === 'fields' && topic.fields.length > 2)
                 ? topic
-                  ? knowledgeReply(topic, settings)
+                  ? await knowledgeReply(topic, settings)
                   : introduction
                 : composeConsultation({
                     ...compose,
                     lead: [demoNotice, compose.lead].filter(Boolean).join('\n') || undefined,
                   });
-  const fields = availableFields();
-  if (route.response === 'mixed') output.onText?.(fixed);
+  const fields = await availableFields();
+  if (route.response === 'mixed') await output.onText?.(fixed);
   const generated =
     route.response !== 'local'
       ? await generateGroundedReply(
@@ -1018,19 +1030,21 @@ export async function answerChat(
             facts: [
               ...(sourcing ? [{ id: 'sourcing_outcome', text: sourcedReply() }] : []),
               { id: 'business_rules', text: rules },
-              ...matches.map((p, i) => ({
+              ...(await asyncMap(matches, async (p, i) => ({
                 id: `product_${i}`,
                 text: JSON.stringify({
                   name: p.name,
                   model: p.model,
                   description:
-                    p.approved && !privateSupplierQuestion(p.description) ? p.description : '',
+                    p.approved && !(await privateSupplierQuestion(p.description))
+                      ? p.description
+                      : '',
                   specifications:
-                    p.approved && !privateSupplierQuestion(p.specifications)
+                    p.approved && !(await privateSupplierQuestion(p.specifications))
                       ? p.specifications
                       : '',
                 }),
-              })),
+              }))),
               ...evidence.slice(0, 6).map((e, i) => ({
                 id: `evidence_${i}`,
                 text: `${e.title}: ${e.excerpt}`,
@@ -1145,7 +1159,7 @@ export async function answerChat(
   // no response model could answer.
   if (!content.trim())
     content =
-      finish(givenBefore || fixedPart(true)) ||
+      finish(givenBefore || (await fixedPart(true))) ||
       finish(composeConsultation(compose, 'next')) ||
       'ご相談の内容は、この会話をもとにご案内します。';
   if (output.signal?.aborted) throw new Error('処理が中断されました');
@@ -1162,8 +1176,8 @@ export async function answerChat(
         '情報源・取込の登録商品・取込資料を照合',
       );
     for (const p of matches) {
-      const raw = byId<Product>('products', p.id);
-      const source = raw?.sourceId ? byId<Source>('sources', raw.sourceId) : undefined;
+      const raw = await byId<Product>('products', p.id);
+      const source = raw?.sourceId ? await byId<Source>('sources', raw.sourceId) : undefined;
       sourceTrace.observations.push({
         title: source ? `${source.name}：${p.name}` : p.name,
         url: source?.url || '',
@@ -1178,12 +1192,12 @@ export async function answerChat(
     for (const candidate of candidates.filter((c) => c.matched)) {
       const e = candidate.evidence;
       const doc = e.id
-        ? byId<{ title: string; content: string; url: string; createdAt: string }>(
+        ? await byId<{ title: string; content: string; url: string; createdAt: string }>(
             'documents',
             e.id,
           )
         : undefined;
-      const source = e.sourceId ? byId<Source>('sources', e.sourceId) : undefined;
+      const source = e.sourceId ? await byId<Source>('sources', e.sourceId) : undefined;
       sourceTrace.observations.push({
         title: source ? `${source.name}：${doc?.title || e.title}` : e.title,
         url: doc?.url || e.url || '',
@@ -1241,7 +1255,7 @@ export async function answerChat(
       topic,
       evidence,
       settings.flags,
-      sourcingContextRevision(conversation.id, settings),
+      await sourcingContextRevision(conversation.id, settings),
     ),
     knowledge: topic,
     products: matches,
@@ -1312,13 +1326,13 @@ export async function answerChat(
     ),
     createdAt: now(),
   };
-  db().transaction(() => {
-    save(
+  await db().transaction(async () => {
+    await save(
       'conversations',
-      { ...verifyConversation(conversation.id, owner), updatedAt: now() },
+      { ...(await verifyConversation(conversation.id, owner)), updatedAt: now() },
       { owner_id: owner },
     );
-    save(
+    await save(
       'messages',
       {
         ...assistant,
@@ -1340,13 +1354,13 @@ export async function answerChat(
       },
       { conversation_id: conversation.id },
     );
-    audit(
+    await audit(
       'chat.routed',
       conversation.id,
       `振り分け:${CHAT_ROUTE_LABELS[route.reason]} / ${route.reason} / 分類:${intent.provider} / 回答:${generated.provider} / ${generated.reason} / Web:${shouldSearchWeb || sourcing ? '実行' : '省略'} / ${Date.now() - Date.parse(userCreatedAt)}ms`,
     );
   })();
-  onText?.(content);
+  await onText?.(content);
   // Staff-only research of the price, stock, lead time or shipping of an item
   // the registry cannot answer. It runs after the reply and never reaches the
   // customer.
@@ -1369,37 +1383,38 @@ export async function answerChat(
     !matches.some((p) => p.isDemo) &&
     (!registered || aspects.length)
   ) {
-    const available = availableFields();
-    output.defer(() =>
-      researchForStaff(
-        {
-          conversationId: conversation.id,
-          turnId: usageContext.turnId,
-          message,
-          customerTexts,
-          subject:
-            matches.length === 1
-              ? [matches[0].manufacturer, matches[0].name, matches[0].model]
-                  .filter(Boolean)
-                  .join(' ')
-              : researchSubject(customerTexts, catalog),
-          // Fields of the item itself: bearings for a pump motor do not send
-          // the search to pump makers.
-          fields: [
-            ...new Set([...(topic?.fields || []), ...topicTexts.flatMap(itemFieldsFromText)]),
-          ].filter((f) => available.includes(f)),
-          destination:
-            sourcing || rememberedSourcing ? sourceDestination : destinationIn(customerTexts),
-          quantity: statedQuantities(topicTexts),
-          local: {
-            research:
-              buying &&
-              (matches.length > 0 || !!intent.model || statedConditions(topicTexts).length > 0),
-            aspects: aspects.length ? aspects : ['price', 'lead_time'],
+    const available = await availableFields();
+    output.defer(
+      async () =>
+        await researchForStaff(
+          {
+            conversationId: conversation.id,
+            turnId: usageContext.turnId,
+            message,
+            customerTexts,
+            subject:
+              matches.length === 1
+                ? [matches[0].manufacturer, matches[0].name, matches[0].model]
+                    .filter(Boolean)
+                    .join(' ')
+                : researchSubject(customerTexts, catalog),
+            // Fields of the item itself: bearings for a pump motor do not send
+            // the search to pump makers.
+            fields: [
+              ...new Set([...(topic?.fields || []), ...topicTexts.flatMap(itemFieldsFromText)]),
+            ].filter((f) => available.includes(f)),
+            destination:
+              sourcing || rememberedSourcing ? sourceDestination : destinationIn(customerTexts),
+            quantity: statedQuantities(topicTexts),
+            local: {
+              research:
+                buying &&
+                (matches.length > 0 || !!intent.model || statedConditions(topicTexts).length > 0),
+              aspects: aspects.length ? aspects : ['price', 'lead_time'],
+            },
           },
-        },
-        usageContext,
-      ),
+          usageContext,
+        ),
     );
   }
   const { estimateRevision: _privateRevision, ...publicAssistant } = assistant;
@@ -1468,20 +1483,25 @@ function buttonLabels(content: string, label?: string) {
       .trim();
   return labels.reduce((text, l) => (l === label ? text : text.replaceAll(l, label)), content);
 }
-export function currentMessages(id: string): ChatMessage[] {
-  const settings = getSettings();
-  const registeredRevision = createSourceTrace().registeredRevision;
-  const fields = availableFields();
-  const sourceContext = sourcingContextRevision(id, settings);
+export async function currentMessages(id: string): Promise<ChatMessage[]> {
+  const settings = await getSettings();
+  const registeredRevision = (await createSourceTrace()).registeredRevision;
+  const fields = await availableFields();
+  const sourceContext = await sourcingContextRevision(id, settings);
   // Partial replies remain in the staff transcript; only completed replies
   // can be restored publicly or used as context for the next answer.
-  return (conversationMessages(id) as StoredChatMessage[])
-    .filter((m) => !m.incomplete)
-    .map(
-      ({ replyToId: _replyToId, processing: _processing, sourceTrace: _sourceTrace, ...message }) =>
-        message,
-    )
-    .map((original) => {
+  return await asyncMap(
+    ((await conversationMessages(id)) as StoredChatMessage[])
+      .filter((m) => !m.incomplete)
+      .map(
+        ({
+          replyToId: _replyToId,
+          processing: _processing,
+          sourceTrace: _sourceTrace,
+          ...message
+        }) => message,
+      ),
+    async (original) => {
       if (original.salesState) {
         const selection = original.selection
           ? {
@@ -1528,7 +1548,7 @@ export function currentMessages(id: string): ChatMessage[] {
       )
         return { ...m, content: sourcingReply(m.sourcing, !!m.requestedQuantity) };
       if (m.estimate && m.sourcing) {
-        const latest = sourcingEstimate(
+        const latest = await sourcingEstimate(
           id,
           m.sourcing,
           m.estimate.quantity,
@@ -1552,13 +1572,16 @@ export function currentMessages(id: string): ChatMessage[] {
       const knowledge = m.knowledge
         ? { ...m.knowledge, fields: m.knowledge.fields.filter((f) => fields.includes(f)) }
         : undefined;
-      const products = m.products
-        ?.map((p) => byId<Product>('products', p.id))
-        .filter((p): p is Product => !!p)
-        .map(publicProduct)
-        .filter((p): p is Product => !!p);
-      const evidence = m.evidence?.filter((e) => {
-        const source = e.sourceId ? byId<Source>('sources', e.sourceId) : undefined;
+      const products = (
+        await asyncMap(
+          (
+            await asyncMap(m.products || [], async (p) => await byId<Product>('products', p.id))
+          ).filter((p): p is Product => !!p),
+          publicProduct,
+        )
+      ).filter((p): p is Product => !!p);
+      const evidence = await asyncFilter(m.evidence || [], async (e) => {
+        const source = e.sourceId ? await byId<Source>('sources', e.sourceId) : undefined;
         if (
           e.visibility !== 'public' ||
           (e.sourceId && !source?.enabled) ||
@@ -1567,12 +1590,12 @@ export function currentMessages(id: string): ChatMessage[] {
         )
           return false;
         if (e.id) {
-          const document = byId<{ createdAt: string }>('documents', e.id);
+          const document = await byId<{ createdAt: string }>('documents', e.id);
           if (!document || document.createdAt !== e.retrievedAt) return false;
         }
         return (
-          !privateSupplierQuestion([e.title, e.excerpt].join(' ')) &&
-          !containsPrivateSupplierIdentity(e.url || '')
+          !(await privateSupplierQuestion([e.title, e.excerpt].join(' '))) &&
+          !(await containsPrivateSupplierIdentity(e.url || ''))
         );
       });
       // Generated text and replies built from this conversation are kept only
@@ -1589,7 +1612,7 @@ export function currentMessages(id: string): ChatMessage[] {
         content: stillValid
           ? m.content
           : m.role === 'assistant' && knowledge && m.intent !== 'general'
-            ? knowledgeReply(knowledge, settings, m.factualIntents)
+            ? await knowledgeReply(knowledge, settings, m.factualIntents)
             : m.role === 'assistant' &&
                 m.products?.length &&
                 m.intent &&
@@ -1612,7 +1635,8 @@ export function currentMessages(id: string): ChatMessage[] {
         products,
         evidence,
       };
-    });
+    },
+  );
 }
 
 function matchCatalog(message: string, intent: QueryIntent, catalog: Product[]): Product[] {

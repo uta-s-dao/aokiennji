@@ -1,3 +1,4 @@
+import './legacy-sqlite-harness';
 import Database from 'better-sqlite3';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -106,7 +107,7 @@ async function main() {
   } = {
     testedAt: now(),
     settings,
-    initialPreferredDomains: preferredDomains(createSourceTrace()),
+    initialPreferredDomains: preferredDomains((await createSourceTrace())),
     scenarios: [],
   };
   write('environment.json', {
@@ -155,8 +156,8 @@ async function main() {
           recordCount: 1,
           createdAt: now(),
         };
-        save('sources', source);
-        save(
+        (await save('sources', source));
+        (await save(
           'documents',
           {
             id: 'live-import-real-document',
@@ -167,7 +168,7 @@ async function main() {
             createdAt: now(),
           },
           { source_id: source.id, content },
-        );
+        ));
         importedPage = {
           url: response.url,
           status: response.status,
@@ -178,10 +179,10 @@ async function main() {
         writeFileSync(join(root, 'imported-page.html'), html);
       }
       const reply = await answerChat(scenario.question, owner);
-      const messages = conversationMessages(reply.conversationId) as StoredChatMessage[];
+      const messages = (await conversationMessages(reply.conversationId)) as StoredChatMessage[];
       const stored = messages.find((m) => m.id === reply.message.id)!;
-      const notes = researchNotes(reply.conversationId);
-      const calls = aiUsageReport({ conversationId: reply.conversationId, limit: 500 });
+      const notes = (await researchNotes(reply.conversationId));
+      const calls = (await aiUsageReport({ conversationId: reply.conversationId, limit: 500 }));
       const trace = stored.sourceTrace!;
       const scopes = trace.stages.map((s) => s.scope);
       const firstNetwork = trace.stages.find((s) => s.scope !== 'registered_data');
@@ -208,7 +209,7 @@ async function main() {
             scopes.indexOf('preferred_sites') < scopes.indexOf('public_web')),
         privateTraceExcludedFromPublic: !JSON.stringify([
           reply,
-          currentMessages(reply.conversationId),
+          (await currentMessages(reply.conversationId)),
         ]).includes('sourceTrace'),
         noAutomaticProcurementApproval: notes.every((n) =>
           (n.offers || []).every(
@@ -254,17 +255,17 @@ async function main() {
         }),
       );
     } catch (error) {
-      const row = db()
+      const row = (await db()
         .prepare('SELECT id FROM conversations WHERE owner_id=? ORDER BY rowid DESC LIMIT 1')
-        .get(owner) as { id: string } | undefined;
+        .get(owner)) as { id: string } | undefined;
       const record = {
         ...scenario,
         startedAt,
         completedAt: now(),
         error: error instanceof Error ? error.message : String(error),
         conversationId: row?.id,
-        notes: row ? researchNotes(row.id) : [],
-        aiCalls: row ? aiUsageReport({ conversationId: row.id, limit: 500 }) : undefined,
+        notes: row ? (await researchNotes(row.id)) : [],
+        aiCalls: row ? (await aiUsageReport({ conversationId: row.id, limit: 500 })) : undefined,
       };
       report.scenarios.push(record);
       write(`${scenario.id}.json`, record);
@@ -317,7 +318,7 @@ async function main() {
       originalUnchanged: report.originalUnchanged,
     }),
   );
-  resetDbForTests();
+  (await resetDbForTests());
 }
 main().catch((error) => {
   console.error(error instanceof Error ? error.message : String(error));

@@ -25,7 +25,7 @@ export async function searchOpenai(
   domains: string[],
   context?: AiUsageContext,
   signal?: AbortSignal,
-  onSearch?: (search: SearchTelemetry) => void,
+  onSearch?: (search: SearchTelemetry) => unknown,
 ): Promise<Evidence[]> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw Error('Web検索の接続キーが未設定です');
@@ -85,14 +85,14 @@ export async function searchOpenai(
       },
     },
   });
-  const usage = beginAiCall({
+  const usage = (await beginAiCall({
     provider: 'openai',
     purpose: 'research',
     model,
     body,
     context,
     requestShape: { tool: 'web_search', scope: 'product_sourcing', allowedDomains: domains.length },
-  });
+  }));
   try {
     const response = await safeFetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -139,7 +139,7 @@ export async function searchOpenai(
           }
         }
     }
-    onSearch?.({
+    await onSearch?.({
       provider: 'openai',
       model,
       queries,
@@ -176,10 +176,10 @@ export async function searchOpenai(
         },
       ];
     });
-    usage.finish(true);
+    (await usage.finish(true));
     return results.slice(0, 5);
   } catch (error) {
-    usage.finish(false, error);
+    (await usage.finish(false, error));
     throw error;
   }
 }

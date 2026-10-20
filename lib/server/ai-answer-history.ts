@@ -1,7 +1,7 @@
 import type { AiAnswer, AiAnswerReport, AiCall, StoredChatMessage } from '../contracts';
 import { db } from './db';
 
-export function aiAnswerReport(
+export async function aiAnswerReport(
   filters: {
     provider?: AiCall['provider'] | 'local';
     since?: string;
@@ -9,18 +9,18 @@ export function aiAnswerReport(
     conversationId?: string;
     limit?: number;
   } = {},
-): AiAnswerReport {
+): Promise<AiAnswerReport> {
   const database = db();
   const calls = new Map<string, AiCall[]>();
   const callRows = filters.conversationId
-    ? database
+    ? (await database
         .prepare(
-          "SELECT json FROM ai_calls WHERE scope='chat' AND conversation_id=? ORDER BY created_at, rowid",
+          "SELECT json FROM ai_calls WHERE scope='chat' AND conversation_id=? ORDER BY created_at, sequence",
         )
-        .all(filters.conversationId)
-    : database
-        .prepare("SELECT json FROM ai_calls WHERE scope='chat' ORDER BY created_at, rowid")
-        .all();
+        .all(filters.conversationId))
+    : (await database
+        .prepare("SELECT json FROM ai_calls WHERE scope='chat' ORDER BY created_at, sequence")
+        .all());
   for (const row of callRows as { json: string }[]) {
     const call = JSON.parse(row.json) as AiCall;
     if (!call.context.conversationId || !call.context.turnId) continue;
@@ -28,10 +28,10 @@ export function aiAnswerReport(
     calls.set(key, [...(calls.get(key) || []), call]);
   }
   const rows = filters.conversationId
-    ? database
-        .prepare('SELECT conversation_id,json FROM messages WHERE conversation_id=? ORDER BY rowid')
-        .all(filters.conversationId)
-    : database.prepare('SELECT conversation_id,json FROM messages ORDER BY rowid').all();
+    ? (await database
+        .prepare('SELECT conversation_id,json FROM messages WHERE conversation_id=? ORDER BY sequence')
+        .all(filters.conversationId))
+    : (await database.prepare('SELECT conversation_id,json FROM messages ORDER BY sequence').all());
   const pending = new Map<string, string[]>();
   const answers: AiAnswer[] = [];
   for (const row of rows as { conversation_id: string; json: string }[]) {
@@ -70,7 +70,7 @@ export function aiAnswerReport(
       continue;
     answers.push(answer);
   }
-  // rowid order breaks ties in timestamps and keeps the most recent reply first.
+  // sequence order breaks ties in timestamps and keeps the most recent reply first.
   answers.reverse().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return {
     total: answers.length,

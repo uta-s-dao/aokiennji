@@ -28,14 +28,14 @@ function website(raw: string) {
   }
 }
 
-export function preferredSites(): PreferredSite[] {
+export async function preferredSites(): Promise<PreferredSite[]> {
   const sites: PreferredSite[] = [];
   const add = (raw: string, rest: Omit<PreferredSite, 'url' | 'domain'>) => {
     const parsed = website(raw);
     if (parsed) sites.push({ ...parsed, ...rest });
   };
-  for (const row of list<SupplierKnowledge>('supplier_knowledge')) {
-    const source = byId<Source>('sources', row.sourceId);
+  for (const row of (await list<SupplierKnowledge>('supplier_knowledge'))) {
+    const source = (await byId<Source>('sources', row.sourceId));
     if (!row.approved || !source?.enabled) continue;
     const audit = withSupplierSiteAudit(row).siteAudit;
     add(row.website, {
@@ -49,7 +49,7 @@ export function preferredSites(): PreferredSite[] {
           : '登録済みの仕入先。商品・在庫・取引条件は別途確認',
     });
   }
-  for (const source of list<Source>('sources').filter((s) => s.enabled)) {
+  for (const source of (await list<Source>('sources')).filter((s) => s.enabled)) {
     // API/CSV endpoints are ingested as records, not treated as HTML product pages.
     if (source.kind === 'website')
       add(source.url, {
@@ -68,7 +68,7 @@ export function preferredSites(): PreferredSite[] {
         reason: '情報源に登録された参照ドメイン',
       });
   }
-  for (const supplier of list<Supplier>('suppliers').filter((s) => s.approved && s.enabled))
+  for (const supplier of (await list<Supplier>('suppliers')).filter((s) => s.approved && s.enabled))
     for (const domain of supplier.domains)
       add(`https://${domain}/`, {
         name: supplier.name,
@@ -78,22 +78,22 @@ export function preferredSites(): PreferredSite[] {
       });
   return sites;
 }
-export function createSourceTrace(): SourceTrace {
+export async function createSourceTrace(): Promise<SourceTrace> {
   const registeredRevision = createHash('sha256')
     .update(
       JSON.stringify([
-        list('sources'),
-        list('documents'),
-        list('products'),
-        list('supplier_knowledge'),
-        list('suppliers'),
+        (await list('sources')),
+        (await list('documents')),
+        (await list('products')),
+        (await list('supplier_knowledge')),
+        (await list('suppliers')),
       ]),
     )
     .digest('hex');
   return {
     version: 1,
     registeredRevision,
-    preferredSites: preferredSites(),
+    preferredSites: (await preferredSites()),
     stages: [],
     observations: [],
   };
@@ -139,10 +139,10 @@ export function finishSourceStage(
   stage.completedAt = now();
   if (reason) stage.reason = reason;
 }
-export function registeredModelRecords(model: string): SourceObservation[] {
+export async function registeredModelRecords(model: string): Promise<SourceObservation[]> {
   const records: SourceObservation[] = [];
-  for (const p of list<Product>('products')) {
-    const source = p.sourceId && byId<Source>('sources', p.sourceId);
+  for (const p of (await list<Product>('products'))) {
+    const source = p.sourceId && (await byId<Source>('sources', p.sourceId));
     if (!source || !source.enabled || modelIdentity(p.model) !== modelIdentity(model)) continue;
     records.push({
       title: `${source.name}：${p.name}`,
@@ -163,15 +163,15 @@ export function registeredModelRecords(model: string): SourceObservation[] {
       retrievedAt: p.updatedAt,
     });
   }
-  for (const doc of list<{
+  for (const doc of (await list<{
     id: string;
     sourceId: string;
     title: string;
     content: string;
     url: string;
     createdAt: string;
-  }>('documents')) {
-    const source = byId<Source>('sources', doc.sourceId);
+  }>('documents'))) {
+    const source = (await byId<Source>('sources', doc.sourceId));
     if (!source?.enabled || !exactModelOnPage(model, doc.content)) continue;
     const index = doc.content.toUpperCase().indexOf(model.toUpperCase());
     records.push({

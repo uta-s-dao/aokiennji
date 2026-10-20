@@ -11,6 +11,7 @@ const password = 'aoki-e2e-test-password-only';
 const passwordHash = `scrypt$${salt.toString('base64url')}$${scryptSync(password, salt, 64).toString('base64url')}`;
 export default defineConfig({
   testDir: './tests/e2e',
+  globalSetup: './tests/e2e/global-setup.ts',
   fullyParallel: false,
   workers: 1,
   timeout: 60000,

@@ -41,21 +41,21 @@ function sse(event: unknown) {
 }
 function mockReply(block: unknown, finish = true) {
   network.mockImplementation(async (_url, options) => {
-    options?.onChunk?.(
+    await options?.onChunk?.(
       sse({ type: 'response.output_text.delta', delta: JSON.stringify({ blocks: [block] }) }),
     );
-    if (finish) options?.onChunk?.(sse({ type: 'response.completed' }));
+    if (finish) await options?.onChunk?.(sse({ type: 'response.completed' }));
     return response;
   });
 }
-beforeEach(() => {
+beforeEach(async () => {
   vi.stubEnv('DATA_DIR', testDirectory);
-  resetDbForTests();
+  await resetDbForTests();
   network.mockReset();
   vi.stubEnv('OPENAI_API_KEY', 'unit-only');
 });
-afterEach(() => {
-  resetDbForTests();
+afterEach(async () => {
+  await resetDbForTests();
   vi.unstubAllEnvs();
 });
 afterAll(() => rmSync(testDirectory, { recursive: true, force: true }));
@@ -78,7 +78,7 @@ describe('grounded AI response and streaming', () => {
       stream: true,
       text: { format: { type: 'json_schema', strict: true } },
     });
-    expect(aiUsageReport({ turnId: 'flagship-test' }).items[0]).toMatchObject({
+    expect((await aiUsageReport({ turnId: 'flagship-test' })).items[0]).toMatchObject({
       model: 'gpt-6-astra',
       outcome: 'accepted',
       requestShape: { maxOutputTokens: 6000, reasoning: { effort: 'high' } },
@@ -87,7 +87,7 @@ describe('grounded AI response and streaming', () => {
   it('distinguishes incomplete HTTP 200 generation from validation rejection and retains reported usage', async () => {
     network.mockImplementation(async (_url, options) => {
       options?.onResponse?.(200, new Headers());
-      options?.onChunk?.(
+      await options?.onChunk?.(
         sse({
           type: 'response.incomplete',
           response: { usage: { input_tokens: 50, output_tokens: 9 } },
@@ -99,7 +99,7 @@ describe('grounded AI response and streaming', () => {
       usageContext: { scope: 'standalone', turnId: 'incomplete-test' },
     });
     expect(result.provider).toBe('local');
-    expect(aiUsageReport({ turnId: 'incomplete-test' }).items[0]).toMatchObject({
+    expect((await aiUsageReport({ turnId: 'incomplete-test' })).items[0]).toMatchObject({
       httpStatus: 200,
       outcome: 'network_error',
       errorCode: 'generation_failed',
@@ -113,10 +113,10 @@ describe('grounded AI response and streaming', () => {
         type: 'response.output_text.delta',
         delta: `{"blocks":[${JSON.stringify(paragraph)}`,
       });
-      for (let i = 0; i < event.length; i += 7) options?.onChunk?.(event.slice(i, i + 7));
+      for (let i = 0; i < event.length; i += 7) await options?.onChunk?.(event.slice(i, i + 7));
       expect(onText).toHaveBeenCalledWith(paragraph.text);
-      options?.onChunk?.(sse({ type: 'response.output_text.delta', delta: ']}' }));
-      options?.onChunk?.(sse({ type: 'response.completed' }));
+      await options?.onChunk?.(sse({ type: 'response.output_text.delta', delta: ']}' }));
+      await options?.onChunk?.(sse({ type: 'response.completed' }));
       return response;
     });
     expect(await generateGroundedReply(context, { onText })).toMatchObject({
@@ -149,9 +149,9 @@ describe('grounded AI response and streaming', () => {
     });
     expect(onText.mock.calls.flat()).not.toContain(block.text);
   });
-  it('drops a citation of a missing fact but keeps the checked text', () => {
+  it('drops a citation of a missing fact but keeps the checked text', async () => {
     expect(
-      validateReplyBlock(
+      await validateReplyBlock(
         { text: 'ご相談いただけます。', evidenceIds: ['invented', 'scope'] },
         context,
       ),
@@ -160,7 +160,7 @@ describe('grounded AI response and streaming', () => {
   it('drops supplement paragraphs that only restate the fixed answer', async () => {
     const canonical = '送料はお届け先と数量によって変わるため、お見積りで確定してご案内します。';
     network.mockImplementation(async (_url, options) => {
-      options?.onChunk?.(
+      await options?.onChunk?.(
         sse({
           type: 'response.output_text.delta',
           delta: JSON.stringify({
@@ -177,7 +177,7 @@ describe('grounded AI response and streaming', () => {
           }),
         }),
       );
-      options?.onChunk?.(sse({ type: 'response.completed' }));
+      await options?.onChunk?.(sse({ type: 'response.completed' }));
       return response;
     });
     const result = await generateGroundedReply({ ...context, canonical, mode: 'supplement' });
@@ -206,7 +206,7 @@ describe('grounded AI response and streaming', () => {
   it('stops calling OpenAI for a while after the account runs out of credits', async () => {
     network.mockImplementation(async (_url, options) => {
       options?.onResponse?.(200, new Headers());
-      options?.onChunk?.(
+      await options?.onChunk?.(
         sse({
           type: 'error',
           error: { type: 'insufficient_quota', code: 'credit_balance_exhausted' },
@@ -222,11 +222,11 @@ describe('grounded AI response and streaming', () => {
       const second = await generateGroundedReply(context);
       expect(second).toMatchObject({ provider: 'local', reason: 'insufficient_quota' });
       expect(network).toHaveBeenCalledTimes(1);
-      expect(aiUsageReport({ turnId: 'quota-pause-test' }).items[0]).toMatchObject({
+      expect((await aiUsageReport({ turnId: 'quota-pause-test' })).items[0]).toMatchObject({
         outcome: 'http_error',
         errorCode: 'insufficient_quota',
       });
-      expect(overview().openaiQuotaExhaustedAt).toBeTruthy();
+      expect((await overview()).openaiQuotaExhaustedAt).toBeTruthy();
     } finally {
       pauseOpenaiForQuota(false);
     }
@@ -274,7 +274,7 @@ describe('grounded AI response and streaming', () => {
     });
     expect(result.provider).toBe('gemini');
     expect(network.mock.calls[0][1]?.headers?.['x-goog-api-key']).toBe('unit-only');
-    expect(aiUsageReport({ provider: 'gemini' }).items[0]).toMatchObject({
+    expect((await aiUsageReport({ provider: 'gemini' })).items[0]).toMatchObject({
       purpose: 'response',
       model: 'gemini-2.5-flash',
       outcome: 'accepted',
@@ -287,7 +287,7 @@ describe('grounded AI response and streaming', () => {
         reasoningTokens: 5,
       },
     });
-    expect(JSON.stringify(aiUsageReport({ provider: 'gemini' }))).not.toContain('unit-only');
+    expect(JSON.stringify(await aiUsageReport({ provider: 'gemini' }))).not.toContain('unit-only');
   });
   it('parses braces in strings and never emits incomplete JSON blocks', () => {
     expect(completedBlocks('{"blocks":[{"text":"unfinished')).toEqual([]);
@@ -298,10 +298,10 @@ describe('grounded AI response and streaming', () => {
     const drafts = [{ text: '耐熱温度は500度です。', evidenceIds: ['scope'] }, paragraph];
     network.mockImplementation(async (_url, options) => {
       const block = drafts.shift() || paragraph;
-      options?.onChunk?.(
+      await options?.onChunk?.(
         sse({ type: 'response.output_text.delta', delta: JSON.stringify({ blocks: [block] }) }),
       );
-      options?.onChunk?.(sse({ type: 'response.completed' }));
+      await options?.onChunk?.(sse({ type: 'response.completed' }));
       return response;
     });
     expect(await generateGroundedReply(context)).toMatchObject({
@@ -338,8 +338,8 @@ describe('reply validation', () => {
     '取り扱っているかどうかは当社で確認します。',
     '納期の確約はできかねますが、当社で確認します。',
     'ご注文はまだ完了していません。',
-  ])('accepts a hedged or customer-sourced statement: %s', (text) => {
-    expect(() => validateReplyBlock({ text, evidenceIds: [] }, said)).not.toThrow();
+  ])('accepts a hedged or customer-sourced statement: %s', async (text) => {
+    await expect(validateReplyBlock({ text, evidenceIds: [] }, said)).resolves.toBeDefined();
   });
   it.each([
     ['送料は無料です。', 'business_fact_owned_locally'],
@@ -354,7 +354,9 @@ describe('reply validation', () => {
     // The customer named these amounts, but they must not become the offer.
     ['はい、価格は1万円です。', 'business_fact_owned_locally'],
     ['2割引になります。', 'business_fact_owned_locally'],
-  ])('rejects a commitment or an invented value: %s', (text, code) => {
-    expect(() => validateReplyBlock({ text, evidenceIds: [] }, said)).toThrow(code);
+  ])('rejects a commitment or an invented value: %s', async (text, code) => {
+    await expect(
+      async () => await validateReplyBlock({ text, evidenceIds: [] }, said),
+    ).rejects.toThrow(code);
   });
 });

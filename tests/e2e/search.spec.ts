@@ -89,12 +89,12 @@ test('successful inquiries emit one lead event and failed submissions emit none'
   await page.getByLabel('お名前').fill('検証用担当者');
   await page.getByLabel('メールアドレス').fill('search-test@example.invalid');
   await page.getByRole('checkbox').check();
-  await page.route('**/api/inquiries', (route) =>
-    route.fulfill({
+  await page.route('**/api/inquiries', async (route) =>
+    (await route.fulfill({
       status: 500,
       contentType: 'application/json',
       body: JSON.stringify({ error: { message: '検証用エラー' } }),
-    }),
+    })),
   );
   await page.getByRole('button', { name: '内容を送信する', exact: true }).click();
   await expect(page.locator('.form-error')).toBeVisible();

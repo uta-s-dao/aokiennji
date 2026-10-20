@@ -8,6 +8,6 @@ export const metadata = pageMetadata(
   '耐熱ガラス・鋳物・工業用部材を商品名や型番から検索。北九州・福岡の法人様の仕様確認・調達相談・見積依頼を承ります。',
   '/products',
 );
-export default function Page() {
-  return <ProductsPage initialProducts={publicProducts()} initialConfig={getPublicConfig()} />;
+export default async function Page() {
+  return <ProductsPage initialProducts={(await publicProducts())} initialConfig={(await getPublicConfig())} />;
 }

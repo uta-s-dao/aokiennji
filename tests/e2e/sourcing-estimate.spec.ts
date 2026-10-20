@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
-import Database from 'better-sqlite3';
-import { join } from 'node:path';
+import { db as appDb } from '../../lib/server/db';
 import { randomUUID } from 'node:crypto';
 import type { ResearchNote, StoredChatMessage } from '../../lib/contracts';
 
@@ -83,19 +82,19 @@ test('staff confirms source conditions and the chat presents all selling terms w
   const directory = process.env.AOKI_E2E_DATA_DIR;
   if (!directory || !directory.includes('aoki-eng-e2e-'))
     throw Error('Disposable test database required');
-  const db = new Database(join(directory, 'aokienji.sqlite'), { fileMustExist: true });
+  const db = appDb();
   try {
     // Reuse the actual registry revision so this fixture is a current source check.
-    const previous = db
-      .prepare('SELECT json FROM messages WHERE conversation_id=? ORDER BY rowid DESC LIMIT 1')
-      .get(conversationId) as { json: string };
+    const previous = (await db
+      .prepare('SELECT json FROM messages WHERE conversation_id=? ORDER BY sequence DESC LIMIT 1')
+      .get(conversationId)) as { json: string };
     note.sourceTrace = (JSON.parse(previous.json) as StoredChatMessage).sourceTrace;
     expect(note.sourceTrace?.registeredRevision).toBeTruthy();
-    db.prepare(
-      'INSERT INTO research_notes(id,conversation_id,created_at,json) VALUES(?,?,?,?)',
-    ).run(note.id, conversationId, checkedAt, JSON.stringify(note));
+    await db
+      .prepare('INSERT INTO research_notes(id,conversation_id,created_at,json) VALUES(?,?,?,?)')
+      .run(note.id, conversationId, checkedAt, JSON.stringify(note));
   } finally {
-    db.close();
+    await db.close();
   }
 
   const login = await page.request.post('/api/auth/login', {

@@ -19,14 +19,14 @@ function reply(json: unknown) {
     url: 'https://supplier.example/catalog',
   });
 }
-beforeEach(() => {
+beforeEach(async () => {
   vi.stubEnv('DATA_DIR', testDirectory);
-  resetDbForTests();
+  (await resetDbForTests());
   mock.mockReset();
   vi.stubEnv('TYPESAFE_API_BASE_URL', 'https://api.typesafe.ai');
 });
-afterEach(() => {
-  resetDbForTests();
+afterEach(async () => {
+  (await resetDbForTests());
   vi.unstubAllEnvs();
 });
 afterAll(() => rmSync(testDirectory, { recursive: true, force: true }));
@@ -45,7 +45,7 @@ describe('provider contracts', () => {
     expect(result.provider).toBe('jev');
     expect(mock.mock.calls[0][0]).toBe('https://ai-gateway.vercel.sh/typesafe/v1/systemone');
     expect(mock.mock.calls[0][1]?.headers?.Authorization).toBe('Bearer unit-gateway-only');
-    const [call] = aiUsageReport().items;
+    const [call] = (await aiUsageReport()).items;
     expect(call.endpoint).toBe('https://ai-gateway.vercel.sh/typesafe/v1/systemone');
     expect(call.outcome).toBe('accepted');
     expect(call.usage?.totalTokens).toBe(294);
@@ -105,7 +105,7 @@ describe('provider contracts', () => {
     expect(result.provider).toBe('gemini');
     expect(result.model).toBe('ABC-123');
     expect(result.terms).not.toContain('INVENTED-999');
-    expect(aiUsageReport({ provider: 'gemini' }).items[0]).toMatchObject({
+    expect((await aiUsageReport({ provider: 'gemini' })).items[0]).toMatchObject({
       provider: 'gemini',
       purpose: 'classification',
       outcome: 'accepted',

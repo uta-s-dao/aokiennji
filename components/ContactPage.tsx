@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, CheckCircle2, Phone } from 'lucide-react';
 import SiteShell from '@/components/SiteShell';
 import { api, errorMessage } from '@/components/api';
@@ -51,16 +51,22 @@ export default function Contact() {
       .then(setConfig)
       .catch(() => {});
   }, []);
+  const submission = useRef<{ body: string; key: string } | null>(null);
   const quoteEnabled = !!config?.flags.quoteRequests;
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.consent) return;
+    const signature = JSON.stringify({ form, productId, quote });
+    if (submission.current?.body !== signature)
+      submission.current = { body: signature, key: crypto.randomUUID() };
+    const requestKey = submission.current.key;
     setBusy(true);
     setError('');
     try {
       if (quote && quoteEnabled) {
         const data = await api<Quote>('/api/quotes', {
           method: 'POST',
+          headers: { 'Idempotency-Key': requestKey },
           body: JSON.stringify({
             name: form.name,
             company: form.company,
@@ -80,6 +86,7 @@ export default function Contact() {
       } else {
         const data = await api<Inquiry>('/api/inquiries', {
           method: 'POST',
+          headers: { 'Idempotency-Key': requestKey },
           body: JSON.stringify({
             name: form.name,
             company: form.company,

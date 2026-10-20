@@ -16,14 +16,14 @@ export default async function SitePreview({
   searchParams: Promise<{ view?: string }>;
 }) {
   try {
-    requireAdmin(
+    (await requireAdmin(
       new NextRequest('http://localhost/admin/site-preview', { headers: await headers() }),
-    );
+    ));
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) redirect('/admin/login');
     throw error;
   }
-  const content = previewSiteContent(getSiteEditor().draft);
+  const content = previewSiteContent((await getSiteEditor()).draft);
   const view = (await searchParams).view;
   return (
     <>

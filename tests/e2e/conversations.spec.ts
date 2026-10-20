@@ -22,7 +22,7 @@ test('all consultations remain in admin after browser history deletion, with cus
     await expect(panel.locator('.chat-message.assistant')).toHaveCount(i + 1);
   }
   await expect
-    .poll(() => page.evaluate(() => !!localStorage.getItem('aoki-chat-current')))
+    .poll(async () => (await page.evaluate(() => !!localStorage.getItem('aoki-chat-current'))))
     .toBe(true);
   const original = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('aoki-chat-current')!),
@@ -115,7 +115,7 @@ test('all consultations remain in admin after browser history deletion, with cus
   await expect(
     first.getByText('この回答にAIのAPI呼び出しはありません。', { exact: true }),
   ).toBeVisible();
-  const downloadEvent = page.waitForEvent('download');
+  const downloadEvent = (await page.waitForEvent('download'));
   await page.getByRole('button', { name: '表示中の記録をJSON保存' }).click();
   const download = await downloadEvent;
   const stream = await download.createReadStream();
@@ -237,11 +237,11 @@ test('each answer shows its recorded AI model, retries and final fallback', asyn
       makeCall('rejected-2', 'openai', 'response', 'rejected'),
     ],
   };
-  await page.route('**/api/admin/ai-answers?*', (route) =>
-    route.fulfill({ json: { data: { total: 2, items: [generated, fallback] } } }),
+  await page.route('**/api/admin/ai-answers?*', async (route) =>
+    (await route.fulfill({ json: { data: { total: 2, items: [generated, fallback] } } })),
   );
-  await page.route('**/api/admin/conversations/preview', (route) =>
-    route.fulfill({
+  await page.route('**/api/admin/conversations/preview', async (route) =>
+    (await route.fulfill({
       json: {
         data: {
           conversation: {
@@ -261,7 +261,7 @@ test('each answer shows its recorded AI model, retries and final fallback', asyn
           ],
         },
       },
-    }),
+    })),
   );
   await page.goto('/admin?tab=ai-usage');
   const cards = page.getByRole('article', { name: '回答の利用記録' });
@@ -281,12 +281,12 @@ test('each answer shows its recorded AI model, retries and final fallback', asyn
   const modal = page.getByRole('dialog', { name: '回答とAI処理の詳細' });
   await expect(modal.locator('.ai-usage-selected')).toHaveClass(/assistant/);
   await expect
-    .poll(() =>
-      modal.evaluate(
+    .poll(async () =>
+      (await modal.evaluate(
         (el) =>
           el.querySelector('.ai-usage-selected .chat-bubble')!.getBoundingClientRect().top >=
           el.querySelector('header')!.getBoundingClientRect().bottom,
-      ),
+      )),
     )
     .toBe(true);
   for (const width of [1440, 390]) {
@@ -345,13 +345,13 @@ test('legacy answers omit missing processing fields while keeping AI uses and ca
       },
     ],
   };
-  await page.route('**/api/admin/ai-answers?*', (route) =>
-    route.fulfill({
+  await page.route('**/api/admin/ai-answers?*', async (route) =>
+    (await route.fulfill({
       json: { data: { total: 1, items: [answer] } },
-    }),
+    })),
   );
-  await page.route('**/api/admin/conversations/legacy-preview', (route) =>
-    route.fulfill({
+  await page.route('**/api/admin/conversations/legacy-preview', async (route) =>
+    (await route.fulfill({
       json: {
         data: {
           conversation: {
@@ -405,7 +405,7 @@ test('legacy answers omit missing processing fields while keeping AI uses and ca
           ],
         },
       },
-    }),
+    })),
   );
   await page.goto('/admin?tab=ai-usage');
   const card = page.getByRole('article', { name: '回答の利用記録' });

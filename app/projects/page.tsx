@@ -8,6 +8,6 @@ export const metadata = pageMetadata(
   'アオキエンジのサイロ、屋外タンク、排ガスダクト、搬送台車、熱交換器、工業炉の耐火材施工の実績をご紹介します。',
   '/projects',
 );
-export default function Page() {
-  return <ProjectsPage projects={getPublishedSiteContent().projects} />;
+export default async function Page() {
+  return <ProjectsPage projects={(await getPublishedSiteContent()).projects} />;
 }

@@ -23,7 +23,7 @@ it('checks redirect DNS and blocks an internal destination before a second reque
   dns
     .mockResolvedValueOnce([{ address: '93.184.216.34', family: 4 }] as never)
     .mockResolvedValueOnce([{ address: '169.254.169.254', family: 4 }] as never);
-  await expect(safeFetch('https://supplier.example')).rejects.toThrow();
+  await expect(((safeFetch('https://supplier.example')))).rejects.toThrow();
   expect(network).toHaveBeenCalledTimes(1);
 });
 it('drops source credentials when redirecting to another public host', async () => {
@@ -45,5 +45,5 @@ it('drops source credentials when redirecting to another public host', async () 
 });
 it('enforces response byte limits', async () => {
   network.mockResolvedValueOnce(new Response('0123456789', { status: 200 }) as never);
-  await expect(safeFetch('https://supplier.example', { maxBytes: 4 })).rejects.toThrow();
+  await expect(((safeFetch('https://supplier.example', { maxBytes: 4 })))).rejects.toThrow();
 });

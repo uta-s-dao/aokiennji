@@ -58,11 +58,11 @@ test('staff edit, save, preview, publish and hide website content', async ({
       frame.getByRole('heading', { name: title + ' お知らせ', exact: true }),
     ).toBeVisible();
     await expect
-      .poll(() =>
-        frame
+      .poll(async () =>
+        (await frame
           .locator('.hero-slide img')
           .first()
-          .evaluate((img) => (img as HTMLImageElement).naturalWidth),
+          .evaluate((img) => (img as HTMLImageElement).naturalWidth)),
       )
       .toBeGreaterThan(0);
     await page.getByRole('button', { name: 'スマートフォン表示', exact: true }).click();

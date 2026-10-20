@@ -15,14 +15,17 @@ Node.js 24 と npm を使用します。
 ```sh
 npm install
 npm run setup
-npm run dev
+node scripts/supabase-local.mjs start
+node scripts/supabase-local.mjs status
+npm run db:local:migrate
+node scripts/database-local.mjs npm run dev
 ```
 
 公開ページ: http://localhost:3000 / 管理画面: http://localhost:3000/admin
 
 `setup` が開発用の認証情報を `.env.local` に作り、ログイン用のランダムパスワードを `.local-admin.txt` に保存します。両ファイルはGit管理対象外です。管理画面へはそのパスワードでログインします。
 
-初期状態は**デモモード**です。架空の確認用商品・価格を使い、注文送信は外部通信なしで記録されます。実際の会社の商品台帳、価格、在庫、販売条件、仕入先連携が検証済みであることを意味しません。
+DB移行・接続は [Postgres移行手順](docs/DATABASE_MIGRATION.md) を参照してください。初期設定の**デモモード**では、明示的に投入した架空の確認用商品・価格を使い、注文送信は外部通信なしで記録されます。実際の会社の商品台帳、価格、在庫、販売条件、仕入先連携が検証済みであることを意味しません。
 
 ## 画面
 
@@ -126,6 +129,10 @@ Vercel用の面談プレビューは架空の商品だけを使い、SQLiteを�
 6. デモを終了する場合は `DEMO_MODE=false`。実発注を有効にする場合のみ `ALLOW_LIVE_ORDERS=true` とし、管理画面の注文設定も有効にする。
 
 汎用注文連携は署名付きJSON Webhookです。取引先の既存システムがそのまま受信できるとは限らず、専用変換処理が必要な場合があります。今回、実発注・実メール送信・公開ドメインの変更は行っていません。
+
+## 検索・地域集客と相談導線
+
+事業別の案内は `/services`、チャット見積システムの導入相談は `/estimate-system`。検索公開は本番・実データ・正規URL・明示設定がそろうまで無効です。無料の検索分析、Googleマップ、任意のGA4、公開時の設定と実施した検証は [検索・受注導線の運用資料](docs/SEARCH_AND_LEADS.md) を参照してください。
 
 ## 開発・検証
 

@@ -1,3 +1,4 @@
+import './legacy-sqlite-harness';
 import Database from 'better-sqlite3';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
@@ -78,12 +79,12 @@ async function main() {
     }[]
   ).map((fixture) => ({ ...fixture, id: batch ? `${batch}-${fixture.id}` : fixture.id }));
   if (fixtures.length !== 10) throw Error('Ten scenarios required');
-  const settings = getSettings();
+  const settings = (await getSettings());
   if (settings.responseProvider !== 'openai' || settings.searchProvider !== 'openai')
     throw Error('Use configured OpenAI providers');
   const report: SourceVerificationReport = {
     testedAt: new Date().toISOString(),
-    initialPreferredDomains: preferredDomains(createSourceTrace()),
+    initialPreferredDomains: preferredDomains((await createSourceTrace())),
     responseModel: settings.responseModel,
     scenarios: [],
   };
@@ -104,18 +105,18 @@ async function main() {
         }
         const owner = `sales-simulation-${fixture.id}`;
         if (recheck.includes(fixture.id)) {
-          const previous = db()
+          const previous = (await db()
             .prepare('SELECT id FROM conversations WHERE owner_id=?')
-            .all(owner) as { id: string }[];
+            .all(owner)) as { id: string }[];
           for (const { id } of previous)
-            db().transaction(() => {
+            (await db().transaction(async () => {
               for (const table of ['messages', 'research_notes', 'ai_calls'])
-                db().prepare(`DELETE FROM ${table} WHERE conversation_id=?`).run(id);
-              db()
+                (await db().prepare(`DELETE FROM ${table} WHERE conversation_id=?`).run(id));
+              (await db()
                 .prepare("DELETE FROM quotes WHERE json_extract(json, '$.conversationId')=?")
-                .run(id);
-              db().prepare('DELETE FROM conversations WHERE id=?').run(id);
-            })();
+                .run(id));
+              (await db().prepare('DELETE FROM conversations WHERE id=?').run(id));
+            })());
           if (existsSync(recordPath)) {
             mkdirSync(join(root, 'previous'), { recursive: true });
             renameSync(recordPath, join(root, 'previous', `${fixture.id}-${Date.now()}.json`));
@@ -124,20 +125,20 @@ async function main() {
 
         // Resume the original session after an interrupted run; do not duplicate accepted turns or quotes.
         let conversationId = (
-          db()
+          (await db()
             .prepare('SELECT id FROM conversations WHERE owner_id=? ORDER BY rowid DESC LIMIT 1')
-            .get(owner) as { id: string } | undefined
+            .get(owner)) as { id: string } | undefined
         )?.id;
         const startedAt = new Date().toISOString();
         const errors: { round: number; message: string }[] = [];
         let quote: Quote | undefined;
-        const existing = db().prepare('SELECT json FROM quotes').all() as { json: string }[];
+        const existing = (await db().prepare('SELECT json FROM quotes').all()) as { json: string }[];
         quote = existing
           .map((r) => JSON.parse(r.json) as Quote)
           .find((q) => q.conversationId === conversationId);
         for (const [index, message] of fixture.turns.entries()) {
           const count = conversationId
-            ? conversationMessages(conversationId).filter((m) => m.role === 'assistant').length
+            ? (await conversationMessages(conversationId)).filter((m) => m.role === 'assistant').length
             : 0;
           if (count > index) continue;
           try {
@@ -160,7 +161,7 @@ async function main() {
             // Simulate the explicit form submission only after the customer requested a quote.
             // No staff approval or prices are fabricated, and no email or supplier order is sent.
             if (index === fixture.turns.length - 2 && reply.message.handoff === 'quote' && !quote) {
-              quote = createQuote(
+              quote = (await createQuote(
                 {
                   name: '会話検証のお客様',
                   company: '架空の検証会社',
@@ -172,7 +173,7 @@ async function main() {
                   productId: reply.message.handoffProductId,
                 },
                 owner,
-              );
+              ));
             }
           } catch (e) {
             errors.push({
@@ -184,10 +185,10 @@ async function main() {
           }
         }
         if (!conversationId) throw Error('No conversation saved');
-        const messages = conversationMessages(conversationId) as StoredChatMessage[];
-        const answers = aiAnswerReport({ conversationId, limit: 500 }).items.toReversed();
+        const messages = (await conversationMessages(conversationId)) as StoredChatMessage[];
+        const answers = (await aiAnswerReport({ conversationId, limit: 500 })).items.toReversed();
         const last = answers.at(-1)!;
-        const notes = researchNotes(conversationId);
+        const notes = (await researchNotes(conversationId));
         const publicReplies = messages.filter((m) => m.role === 'assistant');
         const checks = {
           everyTurnAnswered: answers.length === fixture.turns.length,
@@ -202,7 +203,7 @@ async function main() {
           noAutomaticProcurementApproval: notes.every((n) =>
             (n.offers || []).every((o) => !o.approved && o.confirmedAt === null),
           ),
-          publicTraceExcluded: !JSON.stringify(currentMessages(conversationId)).includes(
+          publicTraceExcluded: !JSON.stringify((await currentMessages(conversationId))).includes(
             'sourceTrace',
           ),
           noExecutionErrors: errors.length === 0,
@@ -217,7 +218,7 @@ async function main() {
           conversationId,
           answerId: last.id,
           sourceTrace: last.sourceTrace!,
-          aiCalls: aiUsageReport({ conversationId, limit: 500 }),
+          aiCalls: (await aiUsageReport({ conversationId, limit: 500 })),
           checks,
           notes,
           messages,
@@ -353,7 +354,7 @@ async function main() {
       )
       .join('\n\n'),
   );
-  resetDbForTests();
+  (await resetDbForTests());
   console.log(JSON.stringify({ phase: 'complete', ...summary, scenarios: undefined }));
 }
 main().catch((e) => {

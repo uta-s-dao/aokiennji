@@ -1,3 +1,4 @@
+import { asyncMap } from '@/lib/async-arrays';
 import * as cheerio from 'cheerio';
 import { z } from 'zod';
 import type {
@@ -79,8 +80,10 @@ const verdictSchema = {
 };
 type Page = { evidence: Evidence; text: string; html?: string };
 const clean = (s: string) => s.normalize('NFKC').replace(/\s+/g, ' ').trim();
-const publicText = (s: string) =>
-  !/https?:|www\./i.test(s) && !containsPrivateSupplierIdentity(s) && !privateSupplierQuestion(s);
+const publicText = async (s: string) =>
+  !/https?:|www\./i.test(s) &&
+  !(await containsPrivateSupplierIdentity(s)) &&
+  !(await privateSupplierQuestion(s));
 
 export async function selectProducts(input: {
   query: string;
@@ -106,8 +109,8 @@ export async function selectProducts(input: {
     [],
     '仕様による選定でも登録商品・取込資料を最初に照合',
   );
-  for (const p of list<Product>('products')) {
-    const source = p.sourceId ? byId<Source>('sources', p.sourceId) : undefined;
+  for (const p of await list<Product>('products')) {
+    const source = p.sourceId ? await byId<Source>('sources', p.sourceId) : undefined;
     if (!source?.enabled || p.isDemo) continue;
     pages.push({
       evidence: {
@@ -122,14 +125,14 @@ export async function selectProducts(input: {
       text: `${p.model} ${p.name} ${p.description} ${p.specifications}`,
     });
   }
-  for (const d of list<{
+  for (const d of await list<{
     sourceId: string;
     title: string;
     content: string;
     url: string;
     createdAt: string;
   }>('documents')) {
-    const source = byId<Source>('sources', d.sourceId);
+    const source = await byId<Source>('sources', d.sourceId);
     if (!source?.enabled || source.config.answerEnabled === false) continue;
     pages.push({
       evidence: {
@@ -191,7 +194,7 @@ export async function selectProducts(input: {
         !/[A-Za-z0-9]/.test(c.model) ||
         (!/\d/.test(model) && /型$|シリーズ|series/i.test(model)) ||
         !exactModelOnPage(model, page.text) ||
-        !publicText(c.model)
+        !(await publicText(c.model))
       )
         continue;
       const checks = requirements.map((_, i) => {

@@ -99,7 +99,7 @@ it('refuses redirects rather than forwarding local credentials', async () => {
     }),
   );
   localEnv(url);
-  await expect(fetchOpenaiResponse({ body: '{}' })).rejects.toThrow();
+  await expect(((fetchOpenaiResponse({ body: '{}' })))).rejects.toThrow();
   expect(target).not.toHaveBeenCalled();
 });
 it('authenticates the API, refuses fabricated web research, and supports SSE completion', async () => {
@@ -113,12 +113,12 @@ it('authenticates the API, refuses fabricated web research, and supports SSE com
   const url = await listen(createResponsesServer({ responder, token }));
   expect((await fetch(url + '/v1/responses', { method: 'POST', body: '{}' })).status).toBe(401);
   const headers = { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' };
-  const request = (data: object) =>
-    fetch(url + '/v1/responses', {
+  const request = async (data: object) =>
+    (await fetch(url + '/v1/responses', {
       method: 'POST',
       headers,
       body: JSON.stringify({ model: 'local-agent', input: '相談', ...data }),
-    });
+    }));
   expect((await request({ tools: [{ type: 'web_search' }] })).status).toBe(400);
   expect(responder.respond).not.toHaveBeenCalled();
   const response = await request({ stream: true });

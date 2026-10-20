@@ -47,10 +47,10 @@ export function quotaError(text: string) {
 }
 // The newest finished OpenAI call failed for lack of credits: generated
 // replies and the staff research are stopped until credits are added.
-export function openaiQuotaAlert(): string | undefined {
-  const rows = db()
+export async function openaiQuotaAlert(): Promise<string | undefined> {
+  const rows = (await db()
     .prepare("SELECT json FROM ai_calls WHERE provider='openai' ORDER BY created_at DESC LIMIT 10")
-    .all() as { json: string }[];
+    .all()) as { json: string }[];
   const latest = rows.map((r) => JSON.parse(r.json) as AiCall).find((c) => c.completedAt);
   return latest?.errorCode === 'insufficient_quota' ? latest.completedAt! : undefined;
 }
@@ -59,7 +59,7 @@ const integer = (value: unknown): number | null =>
 
 // Only schema metadata and numeric usage are saved. Never persist request bodies,
 // Authorization headers, provider error bodies, or model output here.
-export function beginAiCall(input: {
+export async function beginAiCall(input: {
   provider: AiCall['provider'];
   purpose: AiCall['purpose'];
   model: string;
@@ -88,8 +88,8 @@ export function beginAiCall(input: {
     errorCode: null,
     usage: null,
   };
-  function persist() {
-    db()
+  async function persist() {
+    await db()
       .prepare(
         `INSERT INTO ai_calls(id,created_at,provider,conversation_id,turn_id,scope,json)
       VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET json=excluded.json`,
@@ -104,10 +104,10 @@ export function beginAiCall(input: {
         JSON.stringify(record),
       );
   }
-  db()
-    .prepare('INSERT OR IGNORE INTO metadata(key,value) VALUES(?,?)')
+  await db()
+    .prepare('INSERT INTO metadata(key,value) VALUES(?,?) ON CONFLICT DO NOTHING')
     .run('ai_usage_started_at', record.createdAt);
-  persist();
+  await persist();
   return {
     response(status: number, headers?: Headers) {
       record.httpStatus = status;
@@ -146,7 +146,7 @@ export function beginAiCall(input: {
         reasoningTokens: integer(value.output_tokens_details?.reasoning_tokens),
       };
     },
-    finish(accepted: boolean, error?: unknown) {
+    async finish(accepted: boolean, error?: unknown) {
       if (record.completedAt) return;
       record.completedAt = now();
       record.durationMs = Math.round(performance.now() - start);
@@ -184,12 +184,12 @@ export function beginAiCall(input: {
         )
       )
         record.outcome = 'network_error';
-      persist();
+      await persist();
     },
   };
 }
 
-export function aiUsageReport(
+export async function aiUsageReport(
   filters: {
     provider?: AiCall['provider'];
     scope?: AiUsageContext['scope'];
@@ -199,7 +199,7 @@ export function aiUsageReport(
     turnId?: string;
     limit?: number;
   } = {},
-): AiUsageReport {
+): Promise<AiUsageReport> {
   const where: string[] = [],
     values: string[] = [];
   for (const [column, value] of [
@@ -237,9 +237,9 @@ export function aiUsageReport(
   }));
   // Summaries cover all matching calls; only the detail list is limited.
   let total = 0;
-  for (const row of db()
+  for (const row of (await db()
     .prepare(`SELECT json FROM ai_calls${clause}`)
-    .iterate(...values) as Iterable<{ json: string }>) {
+    .iterate(...values)) as Iterable<{ json: string }>) {
     const call = JSON.parse(row.json) as AiCall;
     const s = summaries.find((s) => s.provider === call.provider)!;
     total++;
@@ -261,12 +261,12 @@ export function aiUsageReport(
     }
   }
   const limit = Math.min(Math.max(filters.limit || 200, 1), 500);
-  const rows = db()
+  const rows = (await db()
     .prepare(`SELECT json FROM ai_calls${clause} ORDER BY created_at DESC, id DESC LIMIT ?`)
-    .all(...values, limit) as { json: string }[];
-  const metadata = db()
+    .all(...values, limit)) as { json: string }[];
+  const metadata = (await db()
     .prepare('SELECT value FROM metadata WHERE key=?')
-    .get('ai_usage_started_at') as { value: string } | undefined;
+    .get('ai_usage_started_at')) as { value: string } | undefined;
   return {
     recordingStartedAt: metadata?.value || null,
     total,

@@ -6,7 +6,7 @@ async function main() {
   const { syncSource } = await import('../lib/server/ingestion');
 
   let failed = false;
-  for (const source of list<Source>('sources')) {
+  for (const source of (await list<Source>('sources'))) {
     if (
       !source.enabled ||
       !['website', 'json_api', 'csv_url'].includes(source.kind) ||
