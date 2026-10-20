@@ -46,20 +46,20 @@ const source: Source = {
 };
 const question =
   '台車が欲しいです。耐荷重300kg以上、荷台幅600mm以下で、2台、大阪府です。条件を満たす型番を全部探してください。';
-beforeEach(() => {
-  resetDbForTests();
+beforeEach(async () => {
+  (await resetDbForTests());
   rmSync(directory, { recursive: true, force: true });
   vi.stubEnv('DATA_DIR', directory);
   vi.stubEnv('DEMO_MODE', 'true');
   db();
-  putSettings({
+  (await putSettings({
     ...DEFAULT_SETTINGS,
     responseProvider: 'openai',
     responseModel: 'gpt-4.1',
     searchProvider: 'exa',
     flags: { ...DEFAULT_SETTINGS.flags, webSearch: true },
-  });
-  save('sources', source);
+  }));
+  (await save('sources', source));
   model.mockReset();
   vi.mocked(missingSalesConditions).mockReset().mockResolvedValue([]);
   network.mockReset();
@@ -116,14 +116,14 @@ beforeEach(() => {
   });
 });
 afterEach(() => vi.unstubAllEnvs());
-afterAll(() => {
-  resetDbForTests();
+afterAll(async () => {
+  (await resetDbForTests());
   rmSync(directory, { recursive: true, force: true });
 });
-const turn = (message: string, prior?: ChatResponse) =>
-  answerChat(message, 'stage-owner', prior?.conversationId);
+const turn = async (message: string, prior?: ChatResponse) =>
+  (await answerChat(message, 'stage-owner', prior?.conversationId));
 async function candidates() {
-  return turn('はい、この条件で探してください', await turn(question));
+  return (await turn('はい、この条件で探してください', await turn(question)));
 }
 function naturalTurn(patch: Partial<z.infer<typeof salesTurnSchema>>) {
   const impl = model.getMockImplementation()!;
@@ -139,7 +139,7 @@ function naturalTurn(patch: Partial<z.infer<typeof salesTurnSchema>>) {
         question: 'none',
         ...patch,
       };
-    return impl(input);
+    return (await impl(input));
   });
 }
 
@@ -149,8 +149,8 @@ it('completes only one stage per reply and requires selection and quote consent 
   expect(intake.message.handoff).toBeUndefined();
   expect(search).not.toHaveBeenCalled();
   const found = await turn('はい、この条件で探してください', intake);
-  expect(() =>
-    createQuote(
+  await expect(async () =>
+    (await createQuote(
       {
         name: '早すぎる依頼',
         company: '',
@@ -161,8 +161,8 @@ it('completes only one stage per reply and requires selection and quote consent 
         conversationId: found.conversationId,
       },
       'stage-owner',
-    ),
-  ).toThrow('型番の選択');
+    )),
+  ).rejects.toThrow('型番の選択');
   expect(found.message.salesState?.stage).toBe('candidates');
   expect(found.message.selection?.candidates).toHaveLength(4);
   expect(found.message.content).toContain('CART-100');
@@ -189,7 +189,7 @@ it('completes only one stage per reply and requires selection and quote consent 
   expect(consent.message.requestedQuantity).toBe(2);
   expect(consent.message.requestedDestination).toBe('大阪府');
   expect(consent.message.handoffDraft).not.toContain('private-shop.example');
-  createQuote(
+  (await createQuote(
     {
       name: '検証',
       company: '',
@@ -200,17 +200,17 @@ it('completes only one stage per reply and requires selection and quote consent 
       conversationId: consent.conversationId,
     },
     'stage-owner',
-  );
+  ));
   const review = await turn('見積依頼を送信しました', consent);
   expect(review.message.salesState?.stage).toBe('review');
   expect(review.message.content).not.toMatch(/送信しました|送信済み/);
   expect(review.message.content).toContain('青木の確認後');
-  const stored = conversationMessages(review.conversationId) as StoredChatMessage[];
+  const stored = (await conversationMessages(review.conversationId)) as StoredChatMessage[];
   expect(stored.find((m) => m.selection)?.sourceTrace?.stages.map((s) => s.scope)).toEqual([
     'registered_data',
     'preferred_sites',
   ]);
-  expect(JSON.stringify(currentMessages(review.conversationId))).not.toMatch(
+  expect(JSON.stringify((await currentMessages(review.conversationId)))).not.toMatch(
     /private-shop|非公開登録先|sourceTrace/,
   );
 });
@@ -240,15 +240,15 @@ it('reopens requirement confirmation after corrections without searching or reta
 });
 it('reapplies visibility flags to saved selection replies and invalidates results when registered sources change', async () => {
   const found = await candidates();
-  putSettings({
+  (await putSettings({
     ...DEFAULT_SETTINGS,
     responseModel: 'gpt-4.1',
     flags: { ...DEFAULT_SETTINGS.flags, showStock: false, showLeadTime: false },
-  });
-  expect(JSON.stringify(currentMessages(found.conversationId))).not.toMatch(
+  }));
+  expect(JSON.stringify((await currentMessages(found.conversationId)))).not.toMatch(
     /in_stock|out_of_stock|掲載上は在庫あり|掲載上は欠品/,
   );
-  save('sources', { ...source, enabled: false });
+  (await save('sources', { ...source, enabled: false }));
   const next = await turn('1番でお願いします', found);
   expect(next.message.salesState?.stage).toBe('requirements_confirmation');
   expect(next.message.selection).toBeUndefined();

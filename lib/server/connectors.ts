@@ -74,19 +74,19 @@ async function parseXlsx(buffer: Buffer): Promise<ParsedSource> {
 }
 
 async function parsePdf(buffer: Buffer, title: string): Promise<ParsedSource> {
-  // The worker installs DOMMatrix and the other canvas globals before PDF.js loads.
-  // Load PDF dependencies only for PDF imports so a failure cannot disable every API.
-  const { CanvasFactory, getData } = await import('pdf-parse/worker');
-  const { PDFParse } = await import('pdf-parse');
-  PDFParse.setWorker(getData());
-  const parser = new PDFParse({ data: new Uint8Array(buffer), CanvasFactory });
+  const { getDocumentProxy, extractText } = await import('unpdf');
+  const pdf = await getDocumentProxy(new Uint8Array(buffer), {
+    maxImageSize: 16777216,
+    disableFontFace: true,
+  });
   try {
-    const result = await parser.getText();
-    const content = normalized(result.pages.map((p) => p.text).join('\n')).slice(0, MAX_DOCUMENT);
+    if (pdf.numPages > 500) throw new Error('PDFは500ページ以下にしてください');
+    const { text } = await extractText(pdf, { mergePages: true });
+    const content = normalized(text).slice(0, MAX_DOCUMENT);
     if (!content) throw new Error('PDFから文字を抽出できません。OCRが必要です');
     return { ...empty(), documents: [{ title, content }] };
   } finally {
-    await parser.destroy();
+    await pdf.loadingTask.destroy();
   }
 }
 

@@ -1,3 +1,4 @@
+import { asyncMap } from '@/lib/async-arrays';
 import * as cheerio from 'cheerio';
 import type {
   AiUsageContext,
@@ -258,7 +259,7 @@ async function judgePages(
     }),
     questions,
   };
-  const usage = beginAiCall({
+  const usage = await beginAiCall({
     provider: 'jev',
     purpose: 'research_decision',
     model: body.model,
@@ -280,7 +281,7 @@ async function judgePages(
     if (!scores.every((v) => typeof v === 'number' && v >= 0 && v <= 1))
       throw Error('invalid_classification');
     usage.usage(result.usage);
-    usage.finish(true);
+    await usage.finish(true);
     return {
       scores: scores as number[],
       decidedBy: 'jev' as const,
@@ -289,7 +290,7 @@ async function judgePages(
       ),
     };
   } catch (error) {
-    usage.finish(false, error);
+    await usage.finish(false, error);
     return fallback;
   }
 }
@@ -303,9 +304,9 @@ export async function sourceProduct(input: {
   checkAvailability?: boolean;
 }): Promise<ProductSourcing> {
   const { model, settings, context, signal } = input;
-  const trace = input.sourceTrace || createSourceTrace();
+  const trace = input.sourceTrace || (await createSourceTrace());
   // Reuse the same item's checked sources for follow-up quantity/price questions.
-  const cached = researchNotes(context.conversationId)
+  const cached = (await researchNotes(context.conversationId))
     .toReversed()
     .find(
       (n) =>
@@ -349,12 +350,12 @@ export async function sourceProduct(input: {
     decidedBy: 'local',
     sourceTrace: trace,
   };
-  const store = () =>
-    save('research_notes', note, {
+  const store = async () =>
+    await save('research_notes', note, {
       conversation_id: note.conversationId,
       created_at: note.createdAt,
     });
-  store();
+  await store();
   try {
     const localStage = startSourceStage(
       trace,
@@ -363,7 +364,7 @@ export async function sourceProduct(input: {
       [],
       '情報源・取込の登録商品・資料を最初に照合',
     );
-    const localRecords = registeredModelRecords(model);
+    const localRecords = await registeredModelRecords(model);
     trace.observations.push(...localRecords);
     finishSourceStage(
       localStage,
@@ -389,15 +390,15 @@ export async function sourceProduct(input: {
         trace.conclusion = `登録商品・資料${localRecords.length}件から情報を取得しました。外部Web検索は省略。必要数量の在庫・発送日・購入条件は担当者確認です。`;
       note.status = 'done';
       note.completedAt = now();
-      store();
+      await store();
       return note.sourcing;
     }
-    store();
+    await store();
     const spacedModel = model
       .normalize('NFKC')
       .replace(/[-_‐‑–—−\s]+/g, ' ')
       .trim();
-    const pastSources = successfulProcurementSources(model);
+    const pastSources = await successfulProcurementSources(model);
     const domains = preferredDomains(trace);
     const query = `${model} ${spacedModel} 商品 購入 価格 在庫 数量 出荷 納期`;
     const evidence: Evidence[] = [];
@@ -432,7 +433,7 @@ export async function sourceProduct(input: {
             ? '登録先で購入・見積候補を確認できなかったため、過去の調達先URLを再取得'
             : '登録情報・優先参照先で購入・見積候補を確認できなかったため外部Webへ拡張',
       );
-      store();
+      await store();
       try {
         const found: Evidence[] =
           scope === 'past_sources'
@@ -446,9 +447,9 @@ export async function sourceProduct(input: {
             : await searchWeb(query, settings, stage.domains, {
                 context,
                 signal,
-                onSearch: (search) => {
+                onSearch: async (search) => {
                   (stage.searches ||= []).push(search);
-                  store();
+                  await store();
                 },
               });
         stage.returnedUrls = found.flatMap((e) => (e.url ? [e.url] : []));
@@ -461,8 +462,14 @@ export async function sourceProduct(input: {
           .slice(0, 5);
         evidence.push(...fresh);
         const results = await Promise.allSettled(
-          fresh.map((e) =>
-            inspectPage(e, model, signal, scope === 'preferred_sites' ? domains : undefined),
+          fresh.map(
+            async (e) =>
+              await inspectPage(
+                e,
+                model,
+                signal,
+                scope === 'preferred_sites' ? domains : undefined,
+              ),
           ),
         );
         const stagePages = results.flatMap((r) =>
@@ -523,7 +530,7 @@ export async function sourceProduct(input: {
         judged.availability.push(...stageJudged.availability);
         if (stageJudged.decidedBy === 'jev') judged.decidedBy = 'jev';
         finishSourceStage(stage, 'done');
-        store();
+        await store();
         // Unknown stock is retained for staff confirmation; it does not force an external search.
         if (
           (!input.checkAvailability ||
@@ -540,7 +547,7 @@ export async function sourceProduct(input: {
           break;
       } catch (error) {
         finishSourceStage(stage, 'failed', error instanceof Error ? error.message : '検索失敗');
-        store();
+        await store();
         if (signal?.aborted || (scope === 'public_web' && !pages.length)) throw error;
       }
     }
@@ -647,6 +654,6 @@ export async function sourceProduct(input: {
     note.sourcing = { model, status: 'failed', checkedAt: now() };
   }
   note.completedAt = now();
-  store();
+  await store();
   return note.sourcing!;
 }

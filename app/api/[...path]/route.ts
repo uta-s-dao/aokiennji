@@ -1,3 +1,5 @@
+import { asyncEvery } from '@/lib/async-arrays';
+import { once } from '@/lib/server/idempotency';
 import { NextRequest, NextResponse, after } from 'next/server';
 import { z } from 'zod';
 import type {
@@ -98,8 +100,8 @@ async function body(req: NextRequest) {
     throw new ApiError(400, 'invalid_json', '入力形式を確認してください');
   }
 }
-function found<T>(table: string, id: string): T {
-  const x = byId<T>(table, id);
+async function found<T>(table: string, id: string): Promise<T> {
+  const x = await byId<T>(table, id);
   if (!x) throw new ApiError(404, 'not_found', 'データが見つかりません');
   return x;
 }
@@ -112,13 +114,13 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
     const path = p.join('/');
     const method = req.method;
     if (method !== 'GET') checkOrigin(req);
-    if (p[0] === 'admin') requireAdmin(req);
+    if (p[0] === 'admin') await requireAdmin(req);
     if (path === 'config' && method === 'GET') {
-      const s = getSettings();
+      const s = await getSettings();
       return ok({ flags: s.flags, demoMode: demoMode(), welcomeMessage: s.welcomeMessage });
     }
     if (path === 'auth/login' && method === 'POST') {
-      rateLimit(`login:${clientKey(req)}`, 15, 15 * 60000);
+      await rateLimit(`login:${clientKey(req)}`, 15, 15 * 60000);
       const { password } = z
         .object({ password: z.string().min(1).max(300) })
         .parse(await body(req));
@@ -127,26 +129,26 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
       if (!verifyPassword(password, hash))
         throw new ApiError(401, 'invalid_login', 'パスワードを確認してください');
       const res = ok({ authenticated: true });
-      setSession(res, 'admin');
+      await setSession(res, 'admin');
       return res;
     }
     if (path === 'auth/logout' && method === 'POST') {
       const res = ok({ authenticated: false });
-      clearAdmin(req, res);
+      await clearAdmin(req, res);
       return res;
     }
     if (path === 'products' && method === 'GET')
       return ok(
-        publicProducts(
+        await publicProducts(
           req.nextUrl.searchParams.get('q') || '',
           req.nextUrl.searchParams.get('category') || '',
         ),
       );
     if (p[0] === 'products' && p.length === 2 && method === 'GET')
-      return ok(getPublicProduct(p[1]));
+      return ok(await getPublicProduct(p[1]));
     if (path === 'chat' && method === 'POST') {
-      requireFlag('chat');
-      rateLimit(`chat:${clientKey(req)}`, 90, 60000);
+      await requireFlag('chat');
+      await rateLimit(`chat:${clientKey(req)}`, 90, 60000);
       const input = z
         .object({
           message: z.string().trim().min(1).max(2000),
@@ -154,9 +156,9 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
         })
         .parse(await body(req));
       const cookieResponse = ok(null);
-      let owner = anonOwner(req);
-      if (!owner) owner = setSession(cookieResponse, 'anon');
-      if (input.conversationId) verifyConversation(input.conversationId, owner);
+      let owner = await anonOwner(req);
+      if (!owner) owner = await setSession(cookieResponse, 'anon');
+      if (input.conversationId) await verifyConversation(input.conversationId, owner);
       if (req.headers.get('accept')?.includes('text/event-stream')) {
         const encoder = new TextEncoder();
         const controller = new AbortController();
@@ -164,7 +166,10 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
           req.signal,
           controller.signal,
           AbortSignal.timeout(
-            responseBudgets(getSettings().flags.webSearch, responseModel(getSettings())).chat,
+            responseBudgets(
+              (await getSettings()).flags.webSearch,
+              responseModel(await getSettings()),
+            ).chat,
           ),
         ]);
         const stream = new ReadableStream<Uint8Array>({
@@ -211,72 +216,96 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
       return response;
     }
     if (p[0] === 'chat' && p.length === 2 && method === 'GET') {
-      requireFlag('chat');
+      await requireFlag('chat');
       return ok({
-        conversation: verifyConversation(p[1], anonOwner(req)),
-        messages: currentMessages(p[1]),
+        conversation: await verifyConversation(p[1], await anonOwner(req)),
+        messages: await currentMessages(p[1]),
       });
     }
     if (path === 'inquiries' && method === 'POST') {
-      requireFlag('humanHandoff');
-      rateLimit(`inquiry:${clientKey(req)}`, 30, 60000);
+      await requireFlag('humanHandoff');
+      await rateLimit(`inquiry:${clientKey(req)}`, 30, 60000);
       const input = inquirySchema.parse(await body(req));
-      if (input.conversationId) handOff(verifyConversation(input.conversationId, anonOwner(req)));
-      const inquiry: Inquiry = { ...input, id: uid(), status: 'new', notes: '', createdAt: now() };
-      save('inquiries', inquiry);
-      audit('inquiry.created', inquiry.id, '担当者への相談を受け付けました');
+      const owner = await anonOwner(req);
+      const inquiry = await once(
+        `inquiry:${owner || clientKey(req)}`,
+        req.headers.get('idempotency-key'),
+        input,
+        async () => {
+          if (input.conversationId)
+            await handOff(await verifyConversation(input.conversationId, owner));
+          const value: Inquiry = {
+            ...input,
+            id: uid(),
+            status: 'new',
+            notes: '',
+            createdAt: now(),
+          };
+          await save('inquiries', value);
+          await audit('inquiry.created', value.id, '担当者への相談を受け付けました');
+          return value;
+        },
+      );
       return ok(inquiry, 201);
     }
     if (path === 'quotes' && method === 'POST') {
-      requireFlag('quoteRequests');
-      rateLimit(`quote:${clientKey(req)}`, 30, 60000);
-      return ok(createQuote(quoteRequestSchema.parse(await body(req)), anonOwner(req)), 201);
+      await requireFlag('quoteRequests');
+      await rateLimit(`quote:${clientKey(req)}`, 30, 60000);
+      const input = quoteRequestSchema.parse(await body(req));
+      const owner = await anonOwner(req);
+      const quote = await once(
+        `quote:${owner || clientKey(req)}`,
+        req.headers.get('idempotency-key'),
+        input,
+        async () => await createQuote(input, owner),
+      );
+      return ok(quote, 201);
     }
     if (p[0] === 'quotes' && p.length === 2 && method === 'GET')
-      return ok(customerQuote(getQuoteByToken(p[1])));
+      return ok(customerQuote(await getQuoteByToken(p[1])));
     if (p[0] === 'quotes' && p[2] === 'accept' && p.length === 3 && method === 'POST') {
       const input = z
         .object({ confirmed: z.literal(true), idempotencyKey: z.string().min(8).max(128) })
         .parse(await body(req));
-      let order = acceptQuote(p[1], input.confirmed, input.idempotencyKey);
-      const s = getSettings();
+      let order = await acceptQuote(p[1], input.confirmed, input.idempotencyKey);
+      const s = await getSettings();
       if (
         s.flags.autoOrder &&
         order.status === 'pending_approval' &&
         order.total <= s.maxAutoOrderAmount &&
         order.supplierId
       ) {
-        const supplier = byId<Supplier>('suppliers', order.supplierId);
-        const quote = found<Quote>('quotes', order.quoteId);
+        const supplier = await byId<Supplier>('suppliers', order.supplierId);
+        const quote = await found<Quote>('quotes', order.quoteId);
         if (
           supplier?.enabled &&
           supplier.approved &&
-          quote.lines.every((l) => {
-            const product = l.productId ? byId<Product>('products', l.productId) : null;
-            return product && validProduct(product) && product.supplierId === supplier.id;
-          })
+          (await asyncEvery(quote.lines, async (l) => {
+            const product = l.productId ? await byId<Product>('products', l.productId) : null;
+            return product && (await validProduct(product)) && product.supplierId === supplier.id;
+          }))
         ) {
-          order = approveOrder(order.id);
+          order = await approveOrder(order.id);
           if (demoMode() || process.env.ALLOW_LIVE_ORDERS === 'true')
             order = await dispatchOrder(order.id);
         }
       }
       return ok(publicOrder(order));
     }
-    if (path === 'admin/overview' && method === 'GET') return ok(overview());
+    if (path === 'admin/overview' && method === 'GET') return ok(await overview());
     if (path === 'admin/source-verification' && method === 'GET')
       return ok(sourceVerificationReport());
     if (path === 'admin/settings') {
-      if (method === 'GET') return ok(getSettings());
+      if (method === 'GET') return ok(await getSettings());
       if (method === 'PUT') {
         const value = settingsSchema.parse(await body(req));
         validateSettings(value);
-        putSettings(value);
-        audit('settings.updated', 'settings', '機能設定を更新しました');
+        await putSettings(value);
+        await audit('settings.updated', 'settings', '機能設定を更新しました');
         return ok(value);
       }
     }
-    if (path === 'admin/providers' && method === 'GET') return ok(aiProviderStatuses());
+    if (path === 'admin/providers' && method === 'GET') return ok(await aiProviderStatuses());
     if (path === 'admin/ai-answers' && method === 'GET') {
       const filters = z
         .object({
@@ -287,7 +316,7 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
           limit: z.coerce.number().int().min(1).max(500).optional(),
         })
         .parse(Object.fromEntries(req.nextUrl.searchParams));
-      return ok(aiAnswerReport(filters));
+      return ok(await aiAnswerReport(filters));
     }
     if (path === 'admin/ai-usage' && method === 'GET') {
       const filters = z
@@ -301,7 +330,7 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
           limit: z.coerce.number().int().min(1).max(500).optional(),
         })
         .parse(Object.fromEntries(req.nextUrl.searchParams));
-      return ok(aiUsageReport(filters));
+      return ok(await aiUsageReport(filters));
     }
     if (
       p[0] === 'admin' &&
@@ -311,23 +340,23 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
       method === 'POST'
     ) {
       const id = z.enum(['openai', 'jev', 'gemini', 'exa', 'tavily']).parse(p[2]);
-      rateLimit(`provider-test:${clientKey(req)}`, 10, 60000);
+      await rateLimit(`provider-test:${clientKey(req)}`, 10, 60000);
       const check = await checkAiProvider(id);
-      audit('provider.checked', id, check.ok ? '接続確認成功' : '接続未完了');
+      await audit('provider.checked', id, check.ok ? '接続確認成功' : '接続未完了');
       return ok(check);
     }
     if (path === 'admin/audit' && method === 'GET')
-      return ok(list<AuditEvent>('audit_events').toReversed().slice(0, 300));
+      return ok((await list<AuditEvent>('audit_events')).toReversed().slice(0, 300));
     if (p[0] === 'admin' && p[1] === 'products') {
-      if (method === 'GET' && p.length === 2) return ok(list<Product>('products'));
+      if (method === 'GET' && p.length === 2) return ok(await list<Product>('products'));
       if (method === 'POST' || method === 'PUT') {
         const input = productSchema.parse(await body(req));
-        const old = method === 'PUT' ? found<Product>('products', p[2]) : undefined;
-        if (input.sourceId) sourceById(input.sourceId);
+        const old = method === 'PUT' ? await found<Product>('products', p[2]) : undefined;
+        if (input.sourceId) await sourceById(input.sourceId);
         else {
           const id = 'manual-catalog';
-          if (!byId('sources', id))
-            save('sources', {
+          if (!(await byId('sources', id)))
+            await save('sources', {
               id,
               name: '社内商品台帳',
               kind: 'manual',
@@ -344,49 +373,47 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
             });
           input.sourceId = id;
         }
-        if (input.supplierId) found<Supplier>('suppliers', input.supplierId);
+        if (input.supplierId) await found<Supplier>('suppliers', input.supplierId);
         const product: Product = {
           ...input,
           id: old?.id || uid(),
           createdAt: old?.createdAt || now(),
           updatedAt: now(),
         };
-        save('products', product, {
+        await save('products', product, {
           source_id: product.sourceId,
           supplier_id: product.supplierId,
           model_key: productIdentity(product),
         });
-        audit('product.saved', product.id, '商品を保存しました');
+        await audit('product.saved', product.id, '商品を保存しました');
         return ok(product);
       }
       if (method === 'DELETE' && p.length === 3) {
-        found<Product>('products', p[2]);
-        db().prepare('DELETE FROM products WHERE id=?').run(p[2]);
-        audit('product.deleted', p[2], '商品を削除しました');
+        await found<Product>('products', p[2]);
+        await db().prepare('DELETE FROM products WHERE id=?').run(p[2]);
+        await audit('product.deleted', p[2], '商品を削除しました');
         return ok({ deleted: true });
       }
     }
     if (p[0] === 'admin' && p[1] === 'sources') {
-      if (method === 'GET' && p.length === 2) return ok(list<Source>('sources'));
+      if (method === 'GET' && p.length === 2) return ok(await list<Source>('sources'));
       if (p[3] === 'knowledge' && p.length === 4 && method === 'GET') {
-        sourceById(p[2]);
+        await sourceById(p[2]);
         return ok(
-          list<SupplierKnowledge>('supplier_knowledge')
+          (await list<SupplierKnowledge>('supplier_knowledge'))
             .filter((r) => r.sourceId === p[2])
             .map(withSupplierSiteAudit),
         );
       }
       if (p[3] === 'runs' && method === 'GET')
         return ok(
-          list<SourceRun>('source_runs')
-            .filter((x) => x.sourceId === p[2])
-            .toReversed(),
+          (await list<SourceRun>('source_runs')).filter((x) => x.sourceId === p[2]).toReversed(),
         );
       if (p[3] === 'sync' && method === 'POST') return ok(await syncSource(p[2]));
       if ((method === 'POST' && p.length === 2) || (method === 'PUT' && p.length === 3)) {
         const input = sourceSchema.parse(await body(req));
         if (input.url) validateExternalUrl(input.url);
-        const old = method === 'PUT' ? sourceById(p[2]) : undefined;
+        const old = method === 'PUT' ? await sourceById(p[2]) : undefined;
         if (
           old &&
           old.kind !== input.kind &&
@@ -410,14 +437,14 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
           recordCount: old?.recordCount || 0,
           createdAt: old?.createdAt || now(),
         };
-        save('sources', source);
-        audit('source.saved', source.id, '情報源を保存しました');
+        await save('sources', source);
+        await audit('source.saved', source.id, '情報源を保存しました');
         return ok(source);
       }
       if (method === 'DELETE' && p.length === 3) {
-        const s = sourceById(p[2]);
-        save('sources', { ...s, enabled: false });
-        audit('source.disabled', s.id, '情報源を無効にしました');
+        const s = await sourceById(p[2]);
+        await save('sources', { ...s, enabled: false });
+        await audit('source.disabled', s.id, '情報源を無効にしました');
         return ok({ deleted: true });
       }
     }
@@ -441,21 +468,21 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
           approved: z.boolean(),
         })
         .parse(await body(req));
-      return ok(commitPreview(value.previewId, value.mapping, value.approved));
+      return ok(await commitPreview(value.previewId, value.mapping, value.approved));
     }
     if (p[0] === 'admin' && p[1] === 'suppliers') {
-      if (method === 'GET') return ok(list<Supplier>('suppliers'));
+      if (method === 'GET') return ok(await list<Supplier>('suppliers'));
       if (method === 'POST' || method === 'PUT') {
         const input = supplierSchema.parse(await body(req));
         if (input.orderEndpoint) validateExternalUrl(input.orderEndpoint, true);
-        const old = method === 'PUT' ? found<Supplier>('suppliers', p[2]) : undefined;
+        const old = method === 'PUT' ? await found<Supplier>('suppliers', p[2]) : undefined;
         const supplier: Supplier = {
           ...input,
           id: old?.id || uid(),
           createdAt: old?.createdAt || now(),
         };
-        save('suppliers', supplier);
-        audit('supplier.saved', supplier.id, '仕入先を保存しました');
+        await save('suppliers', supplier);
+        await audit('supplier.saved', supplier.id, '仕入先を保存しました');
         return ok(supplier);
       }
     }
@@ -468,8 +495,8 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
       p[7] === 'history'
     ) {
       const context = { kind: 'offer' as const, conversationId: p[2], noteId: p[4], offerId: p[6] };
-      if (method === 'GET') return ok(procurementHistory(context));
-      if (method === 'POST') return ok(recordProcurementOutcome(context, await body(req)));
+      if (method === 'GET') return ok(await procurementHistory(context));
+      if (method === 'POST') return ok(await recordProcurementOutcome(context, await body(req)));
     }
     if (
       p[0] === 'admin' &&
@@ -479,22 +506,22 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
       p[5] === 'offers' &&
       method === 'PUT'
     ) {
-      return ok(updateProcurementOffer(p[2], p[4], p[6], await body(req)));
+      return ok(await updateProcurementOffer(p[2], p[4], p[6], await body(req)));
     }
     if (p[0] === 'admin' && p[1] === 'conversations' && method === 'GET') {
       if (p.length === 2)
-        return ok(withVerificationConversations(list<Conversation>('conversations')));
+        return ok(withVerificationConversations(await list<Conversation>('conversations')));
       const verification = verificationConversation(p[2]);
       if (verification) return ok(verification);
       return ok({
-        conversation: found<Conversation>('conversations', p[2]),
-        messages: conversationMessages(p[2]),
-        research: researchNotes(p[2]),
-        answers: aiAnswerReport({ conversationId: p[2], limit: 500 }).items,
+        conversation: await found<Conversation>('conversations', p[2]),
+        messages: await conversationMessages(p[2]),
+        research: await researchNotes(p[2]),
+        answers: (await aiAnswerReport({ conversationId: p[2], limit: 500 })).items,
       });
     }
     if (p[0] === 'admin' && p[1] === 'inquiries') {
-      if (method === 'GET') return ok(list<Inquiry>('inquiries').toReversed());
+      if (method === 'GET') return ok((await list<Inquiry>('inquiries')).toReversed());
       if (method === 'PUT') {
         const input = z
           .object({
@@ -502,24 +529,25 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
             notes: z.string().max(5000),
           })
           .parse(await body(req));
-        const inquiry = { ...found<Inquiry>('inquiries', p[2]), ...input };
-        save('inquiries', inquiry);
-        audit('inquiry.updated', inquiry.id, '相談の対応状況を更新しました');
+        const inquiry = { ...(await found<Inquiry>('inquiries', p[2])), ...input };
+        await save('inquiries', inquiry);
+        await audit('inquiry.updated', inquiry.id, '相談の対応状況を更新しました');
         return ok(inquiry);
       }
     }
     if (p[0] === 'admin' && p[1] === 'quotes') {
-      if (method === 'GET') return ok(list<Quote>('quotes').toReversed());
-      if (method === 'PUT') return ok(updateQuote(p[2], quoteUpdateSchema.parse(await body(req))));
+      if (method === 'GET') return ok((await list<Quote>('quotes')).toReversed());
+      if (method === 'PUT')
+        return ok(await updateQuote(p[2], quoteUpdateSchema.parse(await body(req))));
     }
     if (p[0] === 'admin' && p[1] === 'orders') {
       if (p.length === 5 && p[3] === 'history' && /^\d+$/.test(p[4])) {
         const context = { kind: 'order' as const, orderId: p[2], line: Number(p[4]) };
-        if (method === 'GET') return ok(procurementHistory(context));
-        if (method === 'POST') return ok(recordProcurementOutcome(context, await body(req)));
+        if (method === 'GET') return ok(await procurementHistory(context));
+        if (method === 'POST') return ok(await recordProcurementOutcome(context, await body(req)));
       }
-      if (method === 'GET') return ok(list<Order>('orders').toReversed());
-      if (method === 'POST' && p[3] === 'approve') return ok(approveOrder(p[2]));
+      if (method === 'GET') return ok((await list<Order>('orders')).toReversed());
+      if (method === 'POST' && p[3] === 'approve') return ok(await approveOrder(p[2]));
       if (method === 'POST' && p[3] === 'dispatch') return ok(await dispatchOrder(p[2]));
     }
     throw new ApiError(404, 'not_found', 'ページが見つかりません');
@@ -542,7 +570,9 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
         },
         { status: 400 },
       );
-    if ((e as { code?: string })?.code?.startsWith('SQLITE_CONSTRAINT'))
+    if (
+      ['23505', '23503', '23514', '40001', '40P01'].includes((e as { code?: string })?.code || '')
+    )
       return NextResponse.json(
         {
           error: {
@@ -552,7 +582,7 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
         },
         { status: 409 },
       );
-    console.error('API error', e instanceof Error ? e.message : 'unknown');
+    console.error('API error', { code: (e as { code?: string })?.code || 'unknown' });
     return NextResponse.json(
       {
         error: {

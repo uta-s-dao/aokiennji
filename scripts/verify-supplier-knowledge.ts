@@ -1,3 +1,4 @@
+import './legacy-sqlite-harness';
 import { strict as assert } from 'node:assert';
 import { readFileSync, mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
@@ -43,20 +44,20 @@ async function main() {
   try {
     process.env.DATA_DIR = temporary;
     process.env.DEMO_MODE = 'true';
-    resetDbForTests();
-    save('sources', makeSource());
-    putSettings({
+    (await resetDbForTests());
+    (await save('sources', makeSource()));
+    (await putSettings({
       ...DEFAULT_SETTINGS,
       decisionProvider: 'local',
       searchProvider: 'none',
       flags: { ...DEFAULT_SETTINGS.flags, webSearch: false },
-    });
+    }));
     const preview = await previewUpload(sourceId, basename(file), buffer);
     assert(preview.supplierRows?.length, '取込対象なし');
     assert.equal(preview.warnings.length, 0, '取込警告を確認してください');
     rows = preview.supplierRows.length;
-    commitPreview(preview.previewId, {}, true);
-    const records = list<SupplierKnowledge>('supplier_knowledge');
+    (await commitPreview(preview.previewId, {}, true));
+    const records = (await list<SupplierKnowledge>('supplier_knowledge'));
     const privateValues = records.flatMap((r) => [
       r.supplierName,
       r.website,
@@ -69,7 +70,7 @@ async function main() {
         '回答に非公開情報が混入しています',
       );
     };
-    const fields = availableFields();
+    const fields = (await availableFields());
     fieldCount = fields.length;
     for (const field of fields) {
       const question = `${field}を扱っていますか？`;
@@ -166,14 +167,14 @@ async function main() {
       passed: true,
     });
     const again = await previewUpload(sourceId, basename(file), buffer);
-    const repeat = commitPreview(again.previewId, {}, true);
+    const repeat = (await commitPreview(again.previewId, {}, true));
     assert.equal(repeat.imported, 0);
     assert.equal(repeat.updated, records.length);
-    resetDbForTests();
-    assert.equal(availableFields().length, fieldCount);
-    save('sources', { ...byId<Source>('sources', sourceId)!, config: { answerEnabled: false } });
-    assert.equal(availableFields().length, 0);
-    const history = currentMessages(first.conversationId).filter((m) => m.role === 'assistant');
+    (await resetDbForTests());
+    assert.equal((await availableFields()).length, fieldCount);
+    (await save('sources', { ...(await byId<Source>('sources', sourceId))!, config: { answerEnabled: false } }));
+    assert.equal((await availableFields()).length, 0);
+    const history = (await currentMessages(first.conversationId)).filter((m) => m.role === 'assistant');
     checkPrivate(history);
     assert(history.every((m) => !m.content.includes('パッキン')));
     results.push({
@@ -183,7 +184,7 @@ async function main() {
       passed: true,
     });
   } finally {
-    resetDbForTests();
+    (await resetDbForTests());
     if (originalDataDir === undefined) delete process.env.DATA_DIR;
     else process.env.DATA_DIR = originalDataDir;
     if (originalDemoMode === undefined) delete process.env.DEMO_MODE;
@@ -192,12 +193,12 @@ async function main() {
   }
   let registered = false;
   if (process.argv.includes('--register')) {
-    const old = byId<Source>('sources', sourceId);
-    save('sources', { ...makeSource(), ...(old ? { createdAt: old.createdAt } : {}) });
+    const old = (await byId<Source>('sources', sourceId));
+    (await save('sources', { ...makeSource(), ...(old ? { createdAt: old.createdAt } : {}) }));
     const preview = await previewUpload(sourceId, basename(file), buffer);
-    commitPreview(preview.previewId, {}, true);
+    (await commitPreview(preview.previewId, {}, true));
     registered = true;
-    resetDbForTests();
+    (await resetDbForTests());
   }
   const reportDir = join(process.cwd(), '.data', 'verification');
   mkdirSync(reportDir, { recursive: true });

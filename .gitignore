@@ -2,6 +2,7 @@ node_modules/
 .next/
 .next-e2e/
 .next-build/
+.next-search-build/
 .next-live-ai/
 next-env.d.ts
 .data/
@@ -14,3 +15,8 @@ playwright-report/
 coverage/
 .DS_Store
 .vercel
+/dist/
+.vinext/
+.wrangler/
+
+.dev.vars*

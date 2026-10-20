@@ -28,14 +28,14 @@ export async function salesModel<T>(input: {
       format: { type: 'json_schema', name: 'sales_stage', strict: true, schema: input.schema },
     },
   });
-  const usage = beginAiCall({
+  const usage = (await beginAiCall({
     provider: 'openai',
     model,
     purpose: input.purpose,
     body,
     context: input.context,
     requestShape: { scope: 'staged_sales', format: 'json_schema' },
-  });
+  }));
   try {
     const response = await safeFetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -67,10 +67,10 @@ export async function salesModel<T>(input: {
       )
       .join('');
     const parsed = input.validator.parse(JSON.parse(output));
-    usage.finish(true);
+    (await usage.finish(true));
     return parsed;
   } catch (error) {
-    usage.finish(false, error);
+    (await usage.finish(false, error));
     throw error;
   }
 }

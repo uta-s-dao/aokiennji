@@ -17,6 +17,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import type { CSSProperties } from 'react';
 import type { ChatMessage, Conversation, PublicConfig } from '@/lib/contracts';
 import Link from 'next/link';
+import { trackConversion } from '@/lib/analytics';
 import { api, datetime, errorMessage, streamChat } from './api';
 import {
   archiveCurrent,
@@ -136,6 +137,9 @@ export default function ChatWidget({
   useEffect(() => {
     if (!enabled) setOpen(false);
   }, [enabled]);
+  useEffect(() => {
+    if (open && enabled) trackConversion('chat_open', 'chat');
+  }, [open, enabled]);
   useEffect(() => {
     if (open) {
       // Focus must not scroll the document underneath the conversation.

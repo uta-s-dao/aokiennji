@@ -7,7 +7,7 @@ import { GET } from '../app/api/[...path]/route';
 import { parseUpload } from '../lib/server/connectors';
 
 // Reproduce the deployment's PDF module failure without requiring Vercel.
-vi.mock('pdf-parse', () => {
+vi.mock('unpdf', () => {
   throw new ReferenceError('DOMMatrix is not defined');
 });
 
@@ -18,7 +18,7 @@ beforeAll(() => {
 });
 afterAll(async () => {
   const { db } = await import('../lib/server/db');
-  db().close();
+  await db().close();
   vi.unstubAllEnvs();
   rmSync(directory, { recursive: true, force: true });
 });

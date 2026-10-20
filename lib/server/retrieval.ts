@@ -4,10 +4,10 @@ import { containsPrivateSupplierIdentity, privateSupplierQuestion } from './supp
 
 // Search bounded passages locally before the network calls. The model receives
 // public excerpts or generic markers, never private filenames or supplier rows.
-export function documentCandidates(
+export async function documentCandidates(
   message: string,
   intent: QueryIntent,
-): { evidence: Evidence; matched: boolean }[] {
+): Promise<{ evidence: Evidence; matched: boolean }[]> {
   const words = [
     ...intent.terms,
     ...(message.match(/[\p{Script=Han}\p{Script=Katakana}ー]{2,}/gu) || []),
@@ -15,15 +15,15 @@ export function documentCandidates(
     .map(normalize)
     .filter((w) => w.length > 1);
   const candidates: { evidence: Evidence; matched: boolean; score: number }[] = [];
-  for (const doc of list<{
+  for (const doc of (await list<{
     id: string;
     sourceId: string;
     title: string;
     content: string;
     url: string;
     createdAt: string;
-  }>('documents').slice(0, 100)) {
-    const source = byId<Source>('sources', doc.sourceId);
+  }>('documents')).slice(0, 100)) {
+    const source = (await byId<Source>('sources', doc.sourceId));
     if (!source?.enabled) continue;
     const text = normalize(doc.content);
     const matchedWords = words.filter((w) => text.includes(w));
@@ -55,8 +55,8 @@ export function documentCandidates(
       }
     }
     if (
-      privateSupplierQuestion([doc.title, best].join(' ')) ||
-      containsPrivateSupplierIdentity(doc.url || '')
+      (await privateSupplierQuestion([doc.title, best].join(' '))) ||
+      (await containsPrivateSupplierIdentity(doc.url || ''))
     )
       continue;
     candidates.push({

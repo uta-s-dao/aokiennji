@@ -28,9 +28,11 @@ import AdminOrders from '@/components/AdminOrders';
 import AdminSettings from '@/components/AdminSettings';
 import AdminAudit from '@/components/AdminAudit';
 import AdminAiUsage from '@/components/AdminAiUsage';
+import AdminSiteContent from '@/components/AdminSiteContent';
 import type { Overview } from '@/lib/contracts';
 const tabs = [
   { id: 'overview', label: '概要', icon: Gauge },
+  { id: 'site-content', label: 'サイト編集', icon: FileText },
   { id: 'products', label: '商品', icon: Package },
   { id: 'sources', label: '情報源・取込', icon: Boxes },
   { id: 'suppliers', label: '仕入先', icon: Truck },
@@ -67,11 +69,13 @@ export default function Admin() {
       });
   }, [router]);
   function select(id: string) {
+    if (!window.dispatchEvent(new Event('aoki:admin-navigate', { cancelable: true }))) return;
     setTab(id);
     setMobile(false);
     history.replaceState(null, '', `/admin?tab=${id}`);
   }
   async function logout() {
+    if (!window.dispatchEvent(new Event('aoki:admin-navigate', { cancelable: true }))) return;
     try {
       await api('/api/auth/logout', { method: 'POST' });
     } finally {
@@ -164,6 +168,7 @@ export default function Admin() {
           ) : (
             <>
               {tab === 'overview' && <AdminOverview navigate={select} />}
+              {tab === 'site-content' && <AdminSiteContent />}
               {tab === 'products' && <AdminProducts />}
               {tab === 'sources' && <AdminSources />}
               {tab === 'suppliers' && <AdminSuppliers />}

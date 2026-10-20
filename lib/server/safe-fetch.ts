@@ -75,7 +75,7 @@ export interface SafeFetchOptions {
   httpsOnly?: boolean;
   allowedDomains?: string[];
   signal?: AbortSignal;
-  onChunk?: (chunk: Uint8Array) => void;
+  onChunk?: (chunk: Uint8Array) => unknown;
   onResponse?: (status: number, headers: Headers) => void;
 }
 
@@ -111,7 +111,7 @@ export async function safeFetch(
     if (!allowedHost(url.hostname.toLowerCase(), options.allowedDomains))
       throw new Error('許可ドメイン外のURLです');
     const hostname = url.hostname.replace(/^\[|\]$/g, '');
-    const addresses = await Promise.race([
+    const resolved = await Promise.race([
       lookup(hostname, { all: true, verbatim: true }),
       new Promise<never>((_, reject) => {
         if (deadline.aborted) reject(new Error('取得がタイムアウトしました'));
@@ -123,26 +123,37 @@ export async function safeFetch(
           );
       }),
     ]);
+    // Workers' DNS adapter can include CNAME answers; only address records
+    // are connection candidates, and every returned IP still must be public.
+    const addresses =
+      globalThis.navigator?.userAgent === 'Cloudflare-Workers'
+        ? resolved.filter((item) => isIP(item.address) !== 0)
+        : resolved;
     if (!addresses.length || addresses.some((item) => !publicIP(item.address)))
       throw new Error('公開IP以外への接続はできません');
     const pinned = addresses[0];
-    const dispatcher = new Agent({
-      connect: {
-        lookup: (_host, _opts, callback) =>
-          (_opts as { all?: boolean }).all
-            ? callback(null, [pinned] as never)
-            : callback(null, pinned.address, pinned.family),
-      },
-    });
+    const workerRuntime = globalThis.navigator?.userAgent === 'Cloudflare-Workers';
+    // Workers' HTTP egress must use native fetch (raw TCP to HTTP services,
+    // including Cloudflare-fronted sites, is restricted). The Worker is deployed
+    // without private-network/VPC bindings. DNS/IP, redirect, credential and
+    // size checks apply to every hop; Node additionally pins the resolved IP.
+    const dispatcher = workerRuntime
+      ? undefined
+      : new Agent({
+          connect: {
+            lookup: (_host, _opts, callback) =>
+              (_opts as { all?: boolean }).all
+                ? callback(null, [pinned] as never)
+                : callback(null, pinned.address, pinned.family),
+          },
+        });
     try {
-      const response = await undiciFetch(url, {
-        method,
-        headers,
-        body,
-        redirect: 'manual',
-        signal: deadline,
-        dispatcher,
-      });
+      const init = { method, headers, body, redirect: 'manual' as const, signal: deadline };
+      const response = workerRuntime
+        ? ((await globalThis.fetch(url.toString(), init)) as unknown as Awaited<
+            ReturnType<typeof undiciFetch>
+          >)
+        : await undiciFetch(url, { ...init, dispatcher });
       if ([301, 302, 303, 307, 308].includes(response.status)) {
         const location = response.headers.get('location');
         await response.body?.cancel();
@@ -191,7 +202,7 @@ export async function safeFetch(
             throw new Error('取得サイズが上限を超えています');
           }
           chunks.push(chunk);
-          options.onChunk?.(chunk);
+          await options.onChunk?.(chunk);
         }
       return {
         status: response.status,
@@ -200,7 +211,7 @@ export async function safeFetch(
         url: url.toString(),
       };
     } finally {
-      await dispatcher.close();
+      await dispatcher?.close();
     }
   }
   throw new Error('リダイレクトが多すぎます');

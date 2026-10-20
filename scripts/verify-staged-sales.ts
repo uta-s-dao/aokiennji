@@ -1,3 +1,4 @@
+import './legacy-sqlite-harness';
 import Database from 'better-sqlite3';
 import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -53,11 +54,11 @@ async function main() {
   const { researchNotes } = await import('../lib/server/research');
   const { createSourceTrace, preferredDomains } = await import('../lib/server/preferred-sources');
   const settings = {
-    ...getSettings(),
+    ...(await getSettings()),
     responseProvider: 'openai' as const,
     responseModel: 'gpt-4.1',
     flags: {
-      ...getSettings().flags,
+      ...(await getSettings()).flags,
       webSearch: true,
       quoteRequests: true,
       autoQuote: false,
@@ -65,10 +66,10 @@ async function main() {
       autoOrder: false,
     },
   };
-  putSettings(settings);
+  (await putSettings(settings));
   const report: SourceVerificationReport = {
     testedAt: new Date().toISOString(),
-    initialPreferredDomains: preferredDomains(createSourceTrace()),
+    initialPreferredDomains: preferredDomains((await createSourceTrace())),
     responseModel: 'gpt-4.1',
     scenarios: [],
   };
@@ -127,7 +128,7 @@ async function main() {
           await send(`${index + 1}番の型番をお願いします。`);
         } else if (stage === 'quote_offer') await send('はい、この型番で見積をお願いします。');
         else if (stage === 'contact') {
-          quote = createQuote(
+          quote = (await createQuote(
             {
               name: '検証用のお客様',
               company: '架空の検証会社',
@@ -138,7 +139,7 @@ async function main() {
               conversationId: current!.conversationId,
             },
             owner,
-          );
+          ));
           await send('見積依頼フォームを送信しました。次の流れを教えてください。');
         } else break;
       }
@@ -146,15 +147,15 @@ async function main() {
       errors.push({ round: questions.length, message: e instanceof Error ? e.message : 'failed' });
     }
     if (!current) throw Error('No response');
-    const messages = conversationMessages(current.conversationId) as StoredChatMessage[];
-    const answers = aiAnswerReport({
+    const messages = (await conversationMessages(current.conversationId)) as StoredChatMessage[];
+    const answers = (await aiAnswerReport({
       conversationId: current.conversationId,
       limit: 100,
-    }).items.toReversed();
+    })).items.toReversed();
     const last = answers.at(-1)!;
     const found = messages.find((m) => m.role === 'assistant' && m.selection);
     const sourceTrace = found?.sourceTrace || last.sourceTrace!;
-    const calls = aiUsageReport({ conversationId: current.conversationId, limit: 100 });
+    const calls = (await aiUsageReport({ conversationId: current.conversationId, limit: 100 }));
     const checks = {
       stageOrder:
         JSON.stringify(stageHistory) ===
@@ -172,7 +173,7 @@ async function main() {
       draftCreated: quote?.status === 'requested',
       noQuoteIssued: quote?.status !== 'issued',
       noPrivateSourceInPublicReply: !JSON.stringify(
-        currentMessages(current.conversationId),
+        (await currentMessages(current.conversationId)),
       ).includes('sourceTrace'),
       gpt41Used: calls.items.some((c) => c.model === 'gpt-4.1' && c.outcome === 'accepted'),
       noExecutionErrors: errors.length === 0,
@@ -189,7 +190,7 @@ async function main() {
       sourceTrace,
       aiCalls: calls,
       checks,
-      notes: researchNotes(current.conversationId),
+      notes: (await researchNotes(current.conversationId)),
       messages,
       answers,
       procurementAssessment: [],
@@ -261,7 +262,7 @@ async function main() {
       scenarios: report.scenarios.map((s) => ({ id: s.id, checks: s.checks })),
     }),
   );
-  resetDbForTests();
+  (await resetDbForTests());
 }
 main().catch((e) => {
   console.error(e instanceof Error ? e.message : 'verification_failed');

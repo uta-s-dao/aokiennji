@@ -13,32 +13,52 @@
     "test:e2e": "playwright test",
     "setup": "tsx scripts/setup.ts",
     "sync": "tsx scripts/sync.ts",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:migrate": "tsx scripts/migrate-database.ts",
+    "db:local:migrate": "node scripts/database-local.mjs npm run db:migrate",
+    "test:db": "node scripts/database-local.mjs vitest run",
+    "test:e2e:db": "node scripts/database-local.mjs playwright test",
+    "dev:vinext": "vite dev --port 3001",
+    "build:vinext": "vite build",
+    "start:vinext": "wrangler dev --config dist/server/wrangler.json",
+    "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json"
   },
   "dependencies": {
+    "@cf-wasm/photon": "^0.4.0",
+    "@vinext/cloudflare": "1.1.1",
     "better-sqlite3": "^13.0.3",
     "cheerio": "^1.2.0",
     "csv-parse": "^7.0.3",
     "exceljs": "^4.4.0",
+    "image-size": "^2.0.4",
     "lucide-react": "^0.577.0",
     "mammoth": "^1.11.0",
     "next": "16.3.8",
-    "pdf-parse": "^2.4.5",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "postgres": "^3.4.9",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-server-dom-webpack": "19.3.1",
+    "sharp": "^0.35.5",
     "undici": "^7.16.0",
+    "unpdf": "^1.9.1",
     "zod": "^4.1.0"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "1",
     "@playwright/test": "^1.58.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "@vitejs/plugin-rsc": "0.5.38",
     "prettier": "^3.9.9",
     "tsx": "^4.21.0",
     "typescript": "^5.9.0",
-    "vitest": "^4.0.0"
+    "vinext": "^1.2.1",
+    "vite": "^8.0.0",
+    "vitest": "^4.0.0",
+    "wrangler": "^4.151.1"
   },
   "overrides": {
     "exceljs": {
@@ -48,5 +68,6 @@
   "allowScripts": {
     "better-sqlite3@13.0.3": true,
     "esbuild@0.28.2": true
-  }
+  },
+  "type": "module"
 }

@@ -1,3 +1,4 @@
+import { asyncMap } from '@/lib/async-arrays';
 import { createHash } from 'node:crypto';
 import type { AppSettings, ProviderCheck } from '../contracts';
 import { db, getSettings } from './db';
@@ -28,12 +29,12 @@ function credentialTag(key: string) {
     )
     .digest('hex');
 }
-export function aiProviderStatuses() {
-  const s = getSettings();
-  return providerStatuses().map((p) => {
-    const row = db()
+export async function aiProviderStatuses() {
+  const s = (await getSettings());
+  return (await asyncMap(providerStatuses(), async (p) => {
+    const row = (await db()
       .prepare('SELECT value FROM metadata WHERE key=?')
-      .get(`provider_check:${p.id}`) as { value: string } | undefined;
+      .get(`provider_check:${p.id}`)) as { value: string } | undefined;
     const saved = row ? JSON.parse(row.value) : undefined;
     const check =
       p.configured &&
@@ -42,12 +43,12 @@ export function aiProviderStatuses() {
         ? (saved.check as ProviderCheck)
         : undefined;
     return { ...p, check };
-  });
+  }));
 }
 export async function checkAiProvider(id: string): Promise<ProviderCheck> {
   const p = providerStatuses().find((p) => p.id === id);
   if (!p) throw Error('不明な接続先です');
-  const s = getSettings();
+  const s = (await getSettings());
   const model = modelFor(id, s);
   const start = Date.now();
   let ok = false,
@@ -102,10 +103,10 @@ export async function checkAiProvider(id: string): Promise<ProviderCheck> {
     message,
     durationMs: Date.now() - start,
   };
-  db()
+  (await db()
     .prepare(
       'INSERT INTO metadata(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
     )
-    .run(`provider_check:${id}`, JSON.stringify({ tag: credentialTag(p.envKey), check }));
+    .run(`provider_check:${id}`, JSON.stringify({ tag: credentialTag(p.envKey), check })));
   return check;
 }

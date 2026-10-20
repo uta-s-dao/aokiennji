@@ -93,7 +93,7 @@ test('the chat history keeps all batches of API tests and every turn of the cust
             modal.getByText(`第${finding.turn}回答：${finding.detail}`, { exact: false }),
           ).toBeVisible();
         }
-        const downloadEvent = page.waitForEvent('download');
+        const downloadEvent = (await page.waitForEvent('download'));
         await modal.getByRole('button', { name: 'この会話の全記録をJSON保存' }).click();
         const stream = await (await downloadEvent).createReadStream();
         let text = '';
@@ -117,7 +117,7 @@ test('the chat history keeps all batches of API tests and every turn of the cust
       const failed = history.locator('.ai-call-technical').filter({ hasText: 'invalid_json' });
       await failed.locator('summary').click();
       await expect(failed.getByText('エラーコード：invalid_json')).toBeVisible();
-      const downloadEvent = page.waitForEvent('download');
+      const downloadEvent = (await page.waitForEvent('download'));
       await modal.getByRole('button', { name: 'この質問の全記録をJSON保存' }).click();
       const stream = await (await downloadEvent).createReadStream();
       let text = '';

@@ -16,7 +16,7 @@ describe('source formats and mappings', () => {
         .content,
     ).toContain('耐熱ガラス');
     await expect(
-      parseUpload('scanned.pdf', readFileSync('tests/fixtures/scanned.pdf')),
+      ((parseUpload('scanned.pdf', readFileSync('tests/fixtures/scanned.pdf')))),
     ).rejects.toThrow('OCR');
   });
   it('parses an actual XLSX workbook and ignores formulas', async () => {
@@ -47,7 +47,7 @@ describe('source formats and mappings', () => {
     expect(
       (await parseUpload('catalog.txt', Buffer.from('耐熱ガラス ABC-123'))).documents[0].content,
     ).toContain('ABC-123');
-    await expect(parseUpload('macro.xlsm', Buffer.from('fake'))).rejects.toThrow('形式');
+    await expect(((parseUpload('macro.xlsm', Buffer.from('fake'))))).rejects.toThrow('形式');
   });
 });
 describe('network boundaries and classifier', () => {
@@ -58,7 +58,7 @@ describe('network boundaries and classifier', () => {
     'http://[::1]',
     'http://2130706433',
   ])('blocks internal destinations %s', async (url) => {
-    await expect(safeFetch(url)).rejects.toThrow();
+    await expect(((safeFetch(url)))).rejects.toThrow();
   });
   it('rejects credentials, unapproved protocols and port hopping', () => {
     for (const url of [
@@ -92,7 +92,7 @@ describe('network boundaries and classifier', () => {
   it('never sends orders while demo is enabled', async () => {
     process.env.DEMO_MODE = 'true';
     await expect(
-      dispatchSupplierOrder({ isDemo: true } as Order, {} as Quote, {} as Supplier),
+      ((dispatchSupplierOrder({ isDemo: true } as Order, {} as Quote, {} as Supplier))),
     ).rejects.toThrow('無効');
   });
 });

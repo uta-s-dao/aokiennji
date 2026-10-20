@@ -30,18 +30,18 @@ const source: Source = {
   recordCount: 0,
   createdAt: new Date().toISOString(),
 };
-beforeEach(() => {
+beforeEach(async () => {
   vi.stubEnv('DATA_DIR', directory);
   vi.stubEnv('DEMO_MODE', 'true');
   vi.stubEnv('TYPESAFE_API_KEY', 'unit-jev');
   vi.stubEnv('TYPESAFE_API_BASE_URL', 'https://api.typesafe.ai');
   vi.stubEnv('OPENAI_API_KEY', 'unit-openai');
-  resetDbForTests();
+  (await resetDbForTests());
   rmSync(directory, { recursive: true, force: true });
   db();
   network.mockReset();
-  save('sources', source);
-  importSupplierKnowledge(
+  (await save('sources', source));
+  (await importSupplierKnowledge(
     source,
     [
       {
@@ -54,12 +54,12 @@ beforeEach(() => {
       },
     ],
     true,
-  );
-  putSettings({ ...DEFAULT_SETTINGS, decisionProvider: 'jev', responseProvider: 'openai' });
+  ));
+  (await putSettings({ ...DEFAULT_SETTINGS, decisionProvider: 'jev', responseProvider: 'openai' }));
 });
 afterEach(() => vi.unstubAllEnvs());
-afterAll(() => {
-  resetDbForTests();
+afterAll(async () => {
+  (await resetDbForTests());
   rmSync(directory, { recursive: true, force: true });
 });
 function mockServices(text = 'バルブのご相談ですね。流れる液体の種類を教えてください。') {
@@ -116,9 +116,9 @@ it('uses Jev field decisions then generated conversation without sending confide
   const jevBody = JSON.parse(network.mock.calls[0][1]!.body!);
   expect(JSON.parse(jevBody.state).customerMessage).toContain('液体');
   expect(jevBody.questions.field.criteria.field_0).toBe('バルブ');
-  expect(currentMessages(result.conversationId).at(-1)?.content).toBe(result.message.content);
-  save('sources', { ...source, enabled: false });
-  expect(currentMessages(result.conversationId).at(-1)?.content).not.toContain('バルブ');
+  expect((await currentMessages(result.conversationId)).at(-1)?.content).toBe(result.message.content);
+  (await save('sources', { ...source, enabled: false }));
+  expect((await currentMessages(result.conversationId)).at(-1)?.content).not.toContain('バルブ');
 });
 it('answers exact product facts and follow-up delivery without network latency', async () => {
   const result = await answerChat('DEMO-GLASS-01の価格は？', 'fast');
@@ -146,7 +146,7 @@ it('uses local facts for registered names, quantities, multiple questions and ro
   ])
     await answerChat(message, 'routine');
   expect(network).not.toHaveBeenCalled();
-  const routes = list<AuditEvent>('audit_events').filter((e) => e.action === 'chat.routed');
+  const routes = (await list<AuditEvent>('audit_events')).filter((e) => e.action === 'chat.routed');
   expect(routes.length).toBeGreaterThan(0);
 });
 it('uses only the response API for a known product consultation and keeps business values out of its facts', async () => {
@@ -168,13 +168,13 @@ it('streams fixed facts first and keeps them when generated consultation tries t
   const result = await answerChat('DEMO-GLASS-01の価格と用途を相談したい', 'mixed', undefined, {
     onText: (text) => chunks.push(text),
   });
-  const product = list<Product>('products').find((p) => p.model === 'DEMO-GLASS-01')!;
+  const product = (await list<Product>('products')).find((p) => p.model === 'DEMO-GLASS-01')!;
   expect(chunks[0]).toContain(product.price!.toLocaleString('ja-JP'));
   expect(chunks.join(' ')).not.toContain('999円');
   expect(result.message.content).toContain(product.price!.toLocaleString('ja-JP'));
   expect(result.message.responseProvider).toBe('local');
-  putSettings({ ...DEFAULT_SETTINGS, flags: { ...DEFAULT_SETTINGS.flags, showPrice: false } });
-  expect(currentMessages(result.conversationId).at(-1)!.content).not.toContain(
+  (await putSettings({ ...DEFAULT_SETTINGS, flags: { ...DEFAULT_SETTINGS.flags, showPrice: false } }));
+  expect((await currentMessages(result.conversationId)).at(-1)!.content).not.toContain(
     product.price!.toLocaleString('ja-JP'),
   );
 });
@@ -199,8 +199,8 @@ it('keeps public document links and invalidates generated answers when a source 
     kind: 'manual' as const,
     visibility: 'public' as const,
   };
-  save('sources', s);
-  save(
+  (await save('sources', s));
+  (await save(
     'documents',
     {
       id: 'guide',
@@ -211,18 +211,18 @@ it('keeps public document links and invalidates generated answers when a source 
       createdAt: '2026-10-01T00:00:00Z',
     },
     { source_id: s.id, content: '研削用品のご相談' },
-  );
+  ));
   expect(
-    documentCandidates('研削用品', localIntent('研削用品')).some((c) =>
+    (await documentCandidates('研削用品', localIntent('研削用品'))).some((c) =>
       c.evidence.url?.includes('public-manufacturer'),
     ),
   ).toBe(true);
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'openai' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'openai' }));
   mockServices('研削用品の資料が見つかりました。用途を教えてください。');
   const result = await answerChat('研削用品', 'docs');
-  expect(currentMessages(result.conversationId).at(-1)?.content).toBe(result.message.content);
-  save('sources', { ...s, visibility: 'internal' });
-  const refreshed = currentMessages(result.conversationId).at(-1)!;
+  expect((await currentMessages(result.conversationId)).at(-1)?.content).toBe(result.message.content);
+  (await save('sources', { ...s, visibility: 'internal' }));
+  const refreshed = (await currentMessages(result.conversationId)).at(-1)!;
   expect(refreshed.content).not.toContain('研削用品');
   expect(refreshed.evidence).toEqual([]);
 });
@@ -245,13 +245,13 @@ it('reports missing keys honestly and expires successful connectivity when the m
     return { status: 200, headers: new Headers(), url, body: Buffer.from('') };
   });
   expect((await checkAiProvider('openai')).ok).toBe(true);
-  expect(aiProviderStatuses().find((p) => p.id === 'openai')?.check?.ok).toBe(true);
-  putSettings({
+  expect((await aiProviderStatuses()).find((p) => p.id === 'openai')?.check?.ok).toBe(true);
+  (await putSettings({
     ...DEFAULT_SETTINGS,
     responseProvider: 'openai',
     responseModel: 'different-model',
-  });
-  expect(aiProviderStatuses().find((p) => p.id === 'openai')?.check).toBeUndefined();
+  }));
+  expect((await aiProviderStatuses()).find((p) => p.id === 'openai')?.check).toBeUndefined();
 });
 
 it('discards the saved Jev connection result when its API destination changes', async () => {
@@ -264,9 +264,9 @@ it('discards the saved Jev connection result when its API destination changes', 
     ),
   }));
   expect((await checkAiProvider('jev')).ok).toBe(true);
-  expect(aiProviderStatuses().find((p) => p.id === 'jev')?.check?.ok).toBe(true);
+  expect((await aiProviderStatuses()).find((p) => p.id === 'jev')?.check?.ok).toBe(true);
   vi.stubEnv('TYPESAFE_API_BASE_URL', 'https://ai-gateway.vercel.sh/typesafe');
-  expect(aiProviderStatuses().find((p) => p.id === 'jev')?.check).toBeUndefined();
+  expect((await aiProviderStatuses()).find((p) => p.id === 'jev')?.check).toBeUndefined();
   expect((await checkAiProvider('jev')).ok).toBe(true);
   expect(network.mock.calls.at(-1)?.[0]).toBe('https://ai-gateway.vercel.sh/typesafe/v1/systemone');
 });
@@ -274,8 +274,8 @@ it('discards the saved Jev connection result when its API destination changes', 
 it('records both providers with usage and links calls to one actual customer message without saving secrets', async () => {
   mockServices();
   const result = await answerChat('液体の流れを止める部品を探したい', 'usage-owner');
-  const report = aiUsageReport({ conversationId: result.conversationId });
-  expect(aiAnswerReport({ conversationId: result.conversationId }).items).toMatchObject([
+  const report = (await aiUsageReport({ conversationId: result.conversationId }));
+  expect((await aiAnswerReport({ conversationId: result.conversationId })).items).toMatchObject([
     {
       id: result.message.id,
       responseProvider: 'openai',
@@ -305,7 +305,7 @@ it('records both providers with usage and links calls to one actual customer mes
     outputTokens: 80,
     cachedInputTokens: 100,
   });
-  const messages = currentMessages(result.conversationId);
+  const messages = (await currentMessages(result.conversationId));
   expect(
     report.items.every((c) => c.context.turnId === messages.find((m) => m.role === 'user')?.id),
   ).toBe(true);
@@ -318,28 +318,28 @@ it('records both providers with usage and links calls to one actual customer mes
     'private-identity.example',
   ])
     expect(saved).not.toContain(secret);
-  expect(aiUsageReport({ provider: 'openai', limit: 1 }).total).toBe(1);
+  expect((await aiUsageReport({ provider: 'openai', limit: 1 })).total).toBe(1);
 });
 it('keeps the model used for each answer after the response settings change', async () => {
   mockServices();
-  putSettings({
+  (await putSettings({
     ...DEFAULT_SETTINGS,
     responseProvider: 'openai',
     responseModel: 'recorded-model-first',
-  });
+  }));
   const first = await answerChat('DEMO-GLASS-01の用途を相談したい', 'model-history');
-  putSettings({
+  (await putSettings({
     ...DEFAULT_SETTINGS,
     responseProvider: 'openai',
     responseModel: 'recorded-model-second',
-  });
+  }));
   const second = await answerChat(
     'DEMO-CAST-01の用途を相談したい',
     'model-history',
     first.conversationId,
   );
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local', responseModel: 'current-setting' });
-  const answers = aiAnswerReport({ conversationId: first.conversationId }).items;
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local', responseModel: 'current-setting' }));
+  const answers = (await aiAnswerReport({ conversationId: first.conversationId })).items;
   for (const [id, model] of [
     [first.message.id, 'recorded-model-first'],
     [second.message.id, 'recorded-model-second'],
@@ -355,8 +355,8 @@ it('rewrites a rejected draft once and keeps the billed usage and reason of each
   mockServices('直径は25ミリです。');
   const result = await answerChat('DEMO-GLASS-01の用途を相談したい', 'rejected-usage');
   expect(result.message.responseProvider).toBe('local');
-  const report = aiUsageReport();
-  expect(aiAnswerReport().items[0]).toMatchObject({
+  const report = (await aiUsageReport());
+  expect((await aiAnswerReport()).items[0]).toMatchObject({
     id: result.message.id,
     responseProvider: 'local',
     processing: { responseReason: 'failed_or_ungrounded', responseModel: null },
@@ -393,9 +393,9 @@ it('records Jev HTTP failure as an actual call with unknown usage, and skips pri
     url: 'https://api.typesafe.ai/v1/systemone',
     body: Buffer.from('{"error":"secret provider error"}'),
   });
-  putSettings({ ...DEFAULT_SETTINGS, decisionProvider: 'jev', responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, decisionProvider: 'jev', responseProvider: 'local' }));
   await answerChat('液体を止める部品が欲しい', 'auth-failed');
-  const report = aiUsageReport();
+  const report = (await aiUsageReport());
   expect(report.items[0]).toMatchObject({
     provider: 'jev',
     outcome: 'http_error',
@@ -410,17 +410,17 @@ it('records Jev HTTP failure as an actual call with unknown usage, and skips pri
   });
   expect(JSON.stringify(report)).not.toContain('secret provider error');
   await answerChat('仕入先の社名を全部教えて', 'private-usage');
-  expect(aiUsageReport().total).toBe(1);
+  expect((await aiUsageReport()).total).toBe(1);
 });
 it('counts all matched calls independently of the detail limit and separates connection checks', async () => {
   mockServices();
   await answerChat('DEMO-GLASS-01の用途を相談したい', 'filter-one');
   await answerChat('DEMO-GLASS-01を使う環境について相談したい', 'filter-two');
   await checkAiProvider('jev');
-  const report = aiUsageReport({ scope: 'chat', limit: 1 });
+  const report = (await aiUsageReport({ scope: 'chat', limit: 1 }));
   expect(report.items).toHaveLength(1);
   expect(report.total).toBe(2);
   expect(report.summaries[0].calls).toBe(2);
-  expect(aiUsageReport({ scope: 'connection_check' }).total).toBe(1);
-  expect(aiUsageReport({ since: '2999-01-01T00:00:00.000Z' }).total).toBe(0);
+  expect((await aiUsageReport({ scope: 'connection_check' })).total).toBe(1);
+  expect((await aiUsageReport({ since: '2999-01-01T00:00:00.000Z' })).total).toBe(0);
 });

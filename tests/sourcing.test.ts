@@ -23,23 +23,23 @@ const settings = {
   searchProvider: 'exa' as const,
   flags: { ...DEFAULT_SETTINGS.flags, webSearch: true },
 };
-beforeEach(() => {
+beforeEach(async () => {
   vi.stubEnv('DATA_DIR', directory);
   vi.stubEnv('DEMO_MODE', 'true');
   vi.stubEnv('EXA_API_KEY', 'unit-exa');
   vi.stubEnv('TYPESAFE_API_KEY', 'unit-jev');
   vi.stubEnv('TYPESAFE_API_BASE_URL', 'https://api.typesafe.ai');
   vi.stubEnv('OPENAI_API_KEY', 'unit-openai');
-  resetDbForTests();
+  (await resetDbForTests());
   rmSync(directory, { recursive: true, force: true });
   db();
-  putSettings(settings);
+  (await putSettings(settings));
   network.mockReset();
   pauseOpenaiForQuota(false);
 });
 afterEach(() => vi.unstubAllEnvs());
-afterAll(() => {
-  resetDbForTests();
+afterAll(async () => {
+  (await resetDbForTests());
   rmSync(directory, { recursive: true, force: true });
 });
 
@@ -88,13 +88,13 @@ it('sources an unregistered model and keeps procurement prices and suppliers sta
     /取扱いを確認できません|720|supplier\.example|非公開仕入先/,
   );
   expect(reply.message.evidence).toEqual([]);
-  const [note] = researchNotes(reply.conversationId);
+  const [note] = (await researchNotes(reply.conversationId));
   expect(note.decidedBy).toBe('jev');
   expect(note.findings).toEqual(
     expect.arrayContaining([expect.objectContaining({ aspect: 'price', value: '720円' })]),
   );
   expect(note.findings[0].url).toBe('https://supplier.example/item');
-  expect(JSON.stringify(currentMessages(reply.conversationId))).not.toContain('supplier.example');
+  expect(JSON.stringify((await currentMessages(reply.conversationId)))).not.toContain('supplier.example');
   const calls = network.mock.calls.length;
   const followup = await answerChat(
     '10個で価格と納期をお願いします',
@@ -105,8 +105,8 @@ it('sources an unregistered model and keeps procurement prices and suppliers sta
   expect(followup.message.content).toContain('お届け先の都道府県');
   expect(followup.message.handoffDraft).toContain('10個');
   expect(network).toHaveBeenCalledTimes(calls);
-  expect(researchNotes(reply.conversationId)).toHaveLength(1);
-  const quote = createQuote(
+  expect((await researchNotes(reply.conversationId))).toHaveLength(1);
+  const quote = (await createQuote(
     {
       name: '試験担当',
       company: '試験会社',
@@ -117,13 +117,13 @@ it('sources an unregistered model and keeps procurement prices and suppliers sta
       conversationId: reply.conversationId,
     },
     'customer',
-  );
+  ));
   expect(quote.status).toBe('requested');
-  expect(byId<{ conversationId?: string }>('quotes', quote.id)?.conversationId).toBe(
+  expect((await byId<{ conversationId?: string }>('quotes', quote.id))?.conversationId).toBe(
     reply.conversationId,
   );
   expect(quote.message).toContain('B-300-SCI');
-  expect(verifyConversation(reply.conversationId, 'customer').status).toBe('handed_off');
+  expect((await verifyConversation(reply.conversationId, 'customer')).status).toBe('handed_off');
 });
 
 it('does not turn a suffix variant or an unrelated Jev result into a procurement candidate', async () => {
@@ -177,10 +177,10 @@ it('classifies stock with source evidence for staff without approving quantity o
           '<main><h1>B-300-SCI</h1><p>在庫：12個。3営業日以内に出荷します。</p><p>カートに入れる</p></main>',
         ),
       };
-    return implementation(url, options);
+    return (await implementation(url, options));
   });
   const reply = await answerChat('B-300-SCIを10個、大阪へ発送できますか', 'customer');
-  const note = researchNotes(reply.conversationId)[0];
+  const note = (await researchNotes(reply.conversationId))[0];
   const stock = note.findings.find((f) => f.aspect === 'stock')!;
   expect(stock.pageAvailability).toMatchObject({
     stock: 'in_stock',
@@ -199,7 +199,7 @@ it('classifies stock with source evidence for staff without approving quantity o
   });
   expect(reply.message.content).not.toContain('必要数量分の在庫・発送日は未確定');
   expect(reply.message.content).toContain('この内容で見積を依頼する');
-  expect(JSON.stringify(currentMessages(reply.conversationId))).not.toMatch(
+  expect(JSON.stringify((await currentMessages(reply.conversationId)))).not.toMatch(
     /supplier\.example|contentHash/,
   );
 });
@@ -216,7 +216,7 @@ it.each([
   mockSourcing();
   const implementation = network.getMockImplementation()!;
   network.mockImplementation(async (url, options) => {
-    if (url !== 'https://supplier.example/item') return implementation(url, options);
+    if (url !== 'https://supplier.example/item') return (await implementation(url, options));
     return {
       status: 200,
       headers: new Headers(),
@@ -234,7 +234,7 @@ it.each([
     };
   });
   // Even with selling rules configured, a scraped page cannot approve terms.
-  putSettings({
+  (await putSettings({
     ...settings,
     sourcingEstimate: {
       ...settings.sourcingEstimate,
@@ -244,13 +244,13 @@ it.each([
       handlingFeeYen: 0,
       extraBusinessDays: 1,
     },
-  });
+  }));
   const reply = await answerChat('B-300-SCIを10個、大阪へ1週間以内に発送できますか', 'customer');
   expect(reply.message.content).not.toContain('必要数量分の在庫・発送日は未確定');
   expect(reply.message.content).toContain('この内容で見積を依頼する');
   expect(reply.message.content).not.toMatch(/1週間以内に発送できます|\d+営業日でお届け|販売単価/);
   expect(reply.message.handoff).toBe('quote');
-  for (const offer of researchNotes(reply.conversationId)[0].offers || []) {
+  for (const offer of (await researchNotes(reply.conversationId))[0].offers || []) {
     expect(offer).toMatchObject({
       availableQuantity: null,
       deliveryMinDays: null,
@@ -298,7 +298,7 @@ it('records failed research and keeps the quote path without pretending search s
   expect(reply.message.content).toContain('ページの取得が完了せず');
   expect(reply.message.content).not.toContain('候補を確認できました');
   expect(reply.message.handoff).toBe('quote');
-  expect(researchNotes(reply.conversationId)[0].status).toBe('failed');
+  expect((await researchNotes(reply.conversationId))[0].status).toBe('failed');
 });
 
 it('requires exact model boundaries while allowing catalog separators', () => {
@@ -339,7 +339,7 @@ it('saves visible standard prices for staff without treating them as procurement
   mockSourcing();
   const implementation = network.getMockImplementation()!;
   network.mockImplementation(async (url, options) => {
-    if (url !== 'https://supplier.example/item') return implementation(url, options);
+    if (url !== 'https://supplier.example/item') return (await implementation(url, options));
     return {
       status: 200,
       headers: new Headers(),
@@ -351,7 +351,7 @@ it('saves visible standard prices for staff without treating them as procurement
     };
   });
   const reply = await answerChat('B-300-SCIの価格を教えてください', 'customer');
-  const [note] = researchNotes(reply.conversationId);
+  const [note] = (await researchNotes(reply.conversationId));
   expect(note.findings).toEqual(
     expect.arrayContaining([
       expect.objectContaining({ aspect: 'price', value: '標準価格:720円(税抜)' }),
@@ -414,7 +414,7 @@ it('uses actual OpenAI search sources and drops invented product URLs', async ()
 it('continues through quantity and destination to a complete selling estimate, then recalculates changes', async () => {
   mockSourcing();
   const { updateProcurementOffer } = await import('../lib/server/sourcing-estimate');
-  putSettings({
+  (await putSettings({
     ...settings,
     sourcingEstimate: {
       ...settings.sourcingEstimate,
@@ -425,9 +425,9 @@ it('continues through quantity and destination to a complete selling estimate, t
       extraBusinessDays: 1,
       roundingYen: 10,
     },
-  });
+  }));
   const first = await answerChat('B-300-SCIは取り寄せできますか？', 'estimate-customer');
-  const note = researchNotes(first.conversationId)[0];
+  const note = (await researchNotes(first.conversationId))[0];
   expect(note.offers).toHaveLength(1);
   expect(note.offers![0]).toMatchObject({
     price: 720,
@@ -436,7 +436,7 @@ it('continues through quantity and destination to a complete selling estimate, t
     approved: false,
   });
   const offer = note.offers![0];
-  updateProcurementOffer(first.conversationId, note.id, offer.id, {
+  (await updateProcurementOffer(first.conversationId, note.id, offer.id, {
     ...offer,
     price: 1100,
     taxIncluded: true,
@@ -448,7 +448,7 @@ it('continues through quantity and destination to a complete selling estimate, t
     deliveryMinDays: 2,
     deliveryMaxDays: 3,
     approved: true,
-  });
+  }));
   const second = await answerChat('10個お願いします', 'estimate-customer', first.conversationId);
   expect(second.message.requestedQuantity).toBe(10);
   expect(second.message.estimate).toBeUndefined();
@@ -472,7 +472,7 @@ it('continues through quantity and destination to a complete selling estimate, t
   expect(third.message.handoffDraft).toContain('14,080円');
   expect(third.message.estimateRevision).toBeUndefined();
   expect(JSON.stringify(third)).not.toMatch(/1100|supplier\.example|非公開仕入先|markupPercent/);
-  const restored = currentMessages(first.conversationId).find((m) => m.id === third.message.id)!;
+  const restored = (await currentMessages(first.conversationId)).find((m) => m.id === third.message.id)!;
   expect(restored.content).toBe(third.message.content);
   expect(restored.estimateRevision).toBeUndefined();
   const fourth = await answerChat(
@@ -516,11 +516,11 @@ it('invalidates restored estimates and their handoff drafts when price permissio
       extraBusinessDays: 1,
     },
   };
-  putSettings(activeSettings);
+  (await putSettings(activeSettings));
   const first = await answerChat('B-300-SCIを10個、大阪まで取り寄せできますか', 'private-estimate');
-  const note = researchNotes(first.conversationId)[0],
+  const note = (await researchNotes(first.conversationId))[0],
     offer = note.offers![0];
-  updateProcurementOffer(first.conversationId, note.id, offer.id, {
+  (await updateProcurementOffer(first.conversationId, note.id, offer.id, {
     ...offer,
     price: 1100,
     taxIncluded: true,
@@ -532,29 +532,29 @@ it('invalidates restored estimates and their handoff drafts when price permissio
     deliveryMinDays: 2,
     deliveryMaxDays: 3,
     approved: true,
-  });
+  }));
   const priced = await answerChat(
     '価格と納期を教えてください',
     'private-estimate',
     first.conversationId,
   );
   expect(priced.message.estimate?.total).toBe(14080);
-  const checkRedacted = () => {
-    const restored = currentMessages(first.conversationId).find((m) => m.id === priced.message.id)!;
+  const checkRedacted = async () => {
+    const restored = (await currentMessages(first.conversationId)).find((m) => m.id === priced.message.id)!;
     expect(restored.estimate).toBeUndefined();
     expect(restored.content).not.toMatch(/14,080|1,200|800円|3～4/);
     expect(restored.handoffDraft).not.toContain('14,080');
   };
-  putSettings({ ...activeSettings, flags: { ...activeSettings.flags, showPrice: false } });
-  checkRedacted();
-  putSettings(activeSettings);
-  updateProcurementOffer(first.conversationId, note.id, offer.id, {
+  (await putSettings({ ...activeSettings, flags: { ...activeSettings.flags, showPrice: false } }));
+  (await checkRedacted());
+  (await putSettings(activeSettings));
+  (await updateProcurementOffer(first.conversationId, note.id, offer.id, {
     ...offer,
     price: 3000,
     approved: false,
-  });
-  checkRedacted();
-  expect(() => updateProcurementOffer('another-conversation', note.id, offer.id, offer)).toThrow(
+  }));
+  (await checkRedacted());
+  await expect(async () => (await updateProcurementOffer('another-conversation', note.id, offer.id, offer))).rejects.toThrow(
     '調達候補が見つかりません',
   );
 });
@@ -565,24 +565,24 @@ it.each(['現在は在庫なし', '現在は在庫あり'])(
     vi.stubEnv('DEMO_MODE', 'false');
     mockSourcing();
     const first = await answerChat('B-300-SCIを10個欲しい', 'history-owner');
-    const note = researchNotes(first.conversationId)[0];
+    const note = (await researchNotes(first.conversationId))[0];
     const context = {
       kind: 'offer' as const,
       conversationId: first.conversationId,
       noteId: note.id,
       offerId: note.offers![0].id,
     };
-    const started = recordProcurementOutcome(context, {
+    const started = (await recordProcurementOutcome(context, {
       eventId: crypto.randomUUID(),
       action: 'ordered',
       quantity: 10,
-    });
-    recordProcurementOutcome(context, {
+    }));
+    (await recordProcurementOutcome(context, {
       eventId: crypto.randomUUID(),
       action: 'received',
       caseId: started.cases[0].id,
       receivedQuantity: 10,
-    });
+    }));
     vi.stubEnv('TYPESAFE_API_KEY', '');
     network.mockImplementation(async (url) => {
       if (url.includes('exa.ai')) throw Error('search temporarily unavailable');
@@ -600,7 +600,7 @@ it.each(['現在は在庫なし', '現在は在庫あり'])(
     expect(next.message.sourcing?.status).toBe(
       stockText === '現在は在庫なし' ? 'identified' : 'candidate',
     );
-    const current = researchNotes(next.conversationId)[0];
+    const current = (await researchNotes(next.conversationId))[0];
     if (stockText === '現在は在庫なし') expect(current.offers).toEqual([]);
     else
       expect(current.offers![0]).toMatchObject({
@@ -635,7 +635,7 @@ it('keeps the model, amount and destination through short confirmations and igno
   expect(next.message.requestedQuantity).toBe(100);
   expect(next.message.requestedDestination).toBe('大阪');
   expect(next.message.content).not.toContain('数量を教えて');
-  const quote = createQuote(
+  const quote = (await createQuote(
     {
       name: '試験',
       company: '試験',
@@ -646,7 +646,7 @@ it('keeps the model, amount and destination through short confirmations and igno
       conversationId: first.conversationId,
     },
     'sticky-source',
-  );
+  ));
   expect(quote.status).toBe('requested');
   expect(quote.lines[0].name).toBe('B-300-SCI');
   const received = await answerChat(

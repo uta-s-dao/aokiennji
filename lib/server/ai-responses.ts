@@ -1,3 +1,4 @@
+import { asyncMap } from '@/lib/async-arrays';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import type {
@@ -41,7 +42,7 @@ export interface ReplyContext {
   confirmedProduct: boolean;
   businessFactsOwnedLocally?: boolean;
   settings: AppSettings;
-  privateText: (text: string) => boolean;
+  privateText: (text: string) => boolean | Promise<boolean>;
   // What the customer wrote in this conversation. Their own conditions may be
   // repeated back, which is not an invented value.
   customerNotes?: string[];
@@ -136,7 +137,7 @@ const urgencyClaim =
 const urgencyWords = /急ぎ|急い|至急|今日中|本日中|すぐ|早く|早め|最短|止ま|間に合/;
 const commitment =
   /(?:確約|保証)(?:します|いたします|できます)|(?:発注|注文|見積|予約|発送|手配|送信|受付)(?:が|を)?(?:完了|確定|承認)(?:しました|いたしました|です|となりました)|手配済み?です|必ず(?:届|間に合|ご用意|お届け|入手)|明日(?:届|お届け)|間に合います(?!か)|(?:取り?置き|確保)(?:いたし|し)(?:ます|ました)|で(?:ご用意|対応|手配|販売|お届け|発送)(?:いた)?します/;
-export function validateReplyBlock(value: unknown, context: ReplyContext) {
+export async function validateReplyBlock(value: unknown, context: ReplyContext) {
   const parsed = blockSchema.parse(value);
   const ids = new Set(context.facts.map((f) => f.id));
   // A citation of a missing fact is dropped; the text is judged on its own.
@@ -156,7 +157,8 @@ export function validateReplyBlock(value: unknown, context: ReplyContext) {
       ))
   )
     throw Error('business_fact_owned_locally');
-  if (context.privateText(text) || /https?:\/\/|www\./i.test(text)) throw Error('private_response');
+  if ((await context.privateText(text)) || /https?:\/\/|www\./i.test(text))
+    throw Error('private_response');
   const allowedNumbers = new Set(
     numbers([context.canonical, ...context.facts.map((f) => f.text), said].join('\n')),
   );
@@ -300,7 +302,7 @@ export function completedBlocks(text: string): unknown[] {
 export async function generateGroundedReply(
   context: ReplyContext,
   options: {
-    onText?: (text: string) => void;
+    onText?: (text: string) => unknown;
     signal?: AbortSignal;
     usageContext?: AiUsageContext;
     // A rejected draft is retried only if it can finish before this time.
@@ -344,14 +346,14 @@ export async function generateGroundedReply(
       break;
     }
   }
-  options.onText?.(fallbackText);
+  await options.onText?.(fallbackText);
   return fallback('failed_or_ungrounded');
 }
 
 async function generateOnce(
   context: ReplyContext,
   options: {
-    onText?: (text: string) => void;
+    onText?: (text: string) => unknown;
     signal?: AbortSignal;
     usageContext?: AiUsageContext;
     onGrounding?: (blocks: { text: string; evidenceIds: string[] }[]) => void;
@@ -360,7 +362,7 @@ async function generateOnce(
   key: string,
   rejected?: string,
 ) {
-  let usage: ReturnType<typeof beginAiCall> | undefined;
+  let usage: Awaited<ReturnType<typeof beginAiCall>> | undefined;
   try {
     const model = responseModel(context.settings);
     if (!/^[a-zA-Z0-9._:-]+$/.test(model)) throw Error('invalid_model');
@@ -384,15 +386,18 @@ async function generateOnce(
     let output = '';
     let emitted = 0;
     let validationError: unknown;
-    const emitBlocks = () => {
+    const emitBlocks = async () => {
       if (validationError) return;
       try {
-        const blocks = completedBlocks(output).map((b) => validateReplyBlock(b, context));
+        const blocks = await asyncMap(
+          completedBlocks(output),
+          async (b) => await validateReplyBlock(b, context),
+        );
         if (blocks.length > emitted) {
           if (blocks.length > 4) throw Error('too_many_blocks');
           emitted = blocks.length;
           const shown = added(blocks, context);
-          if (shown.length) options.onText?.(shown.map((b) => b.text).join('\n\n'));
+          if (shown.length) await options.onText?.(shown.map((b) => b.text).join('\n\n'));
         }
       } catch (error) {
         // Keep unvalidated text hidden, but read to completion to collect usage.
@@ -420,7 +425,7 @@ async function generateOnce(
           },
         },
       });
-      usage = beginAiCall({
+      usage = await beginAiCall({
         provider: 'openai',
         endpoint: responseEndpoint(),
         purpose: 'response',
@@ -457,6 +462,8 @@ async function generateOnce(
           },
         },
       });
+      let chunkWork: Promise<void> = Promise.resolve();
+      let chunkError: unknown;
       const response = await fetchOpenaiResponse({
         method: 'POST',
         headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
@@ -468,31 +475,40 @@ async function generateOnce(
         httpsOnly: true,
         onResponse: usage.response,
         onChunk: (chunk) => {
-          buffer += decoder.decode(chunk, { stream: true });
-          let index;
-          while ((index = buffer.indexOf('\n')) >= 0) {
-            const line = buffer.slice(0, index).trimEnd();
-            buffer = buffer.slice(index + 1);
-            if (!line.startsWith('data: ')) continue;
-            const data = line.slice(6);
-            if (data === '[DONE]') continue;
-            const event = JSON.parse(data);
-            if (event.type === 'response.output_text.delta') {
-              output += event.delta;
-              if (output.length > 12000) throw Error('output_limit');
-              emitBlocks();
-            }
-            if (event.type === 'response.completed') {
-              completed = true;
-              usage?.usage(event.response?.usage);
-            }
-            if (['response.failed', 'response.incomplete', 'error'].includes(event.type)) {
-              usage?.usage(event.response?.usage);
-              throw Error(quotaError(data) ? 'insufficient_quota' : 'generation_failed');
-            }
-          }
+          chunkWork = chunkWork
+            .then(async () => {
+              buffer += decoder.decode(chunk, { stream: true });
+              let index;
+              while ((index = buffer.indexOf('\n')) >= 0) {
+                const line = buffer.slice(0, index).trimEnd();
+                buffer = buffer.slice(index + 1);
+                if (!line.startsWith('data: ')) continue;
+                const data = line.slice(6);
+                if (data === '[DONE]') continue;
+                const event = JSON.parse(data);
+                if (event.type === 'response.output_text.delta') {
+                  output += event.delta;
+                  if (output.length > 12000) throw Error('output_limit');
+                  await emitBlocks();
+                }
+                if (event.type === 'response.completed') {
+                  completed = true;
+                  usage?.usage(event.response?.usage);
+                }
+                if (['response.failed', 'response.incomplete', 'error'].includes(event.type)) {
+                  usage?.usage(event.response?.usage);
+                  throw Error(quotaError(data) ? 'insufficient_quota' : 'generation_failed');
+                }
+              }
+            })
+            .catch((error) => {
+              chunkError = error;
+            });
+          return chunkWork;
         },
       });
+      await chunkWork;
+      if (chunkError) throw chunkError;
       usage.response(response.status, response.headers);
       if (response.status !== 200 || !completed)
         throw Error(quotaError(buffer) ? 'insufficient_quota' : 'generation_failed');
@@ -510,7 +526,7 @@ async function generateOnce(
           maxOutputTokens: 900,
         },
       };
-      usage = beginAiCall({
+      usage = await beginAiCall({
         provider: 'gemini',
         purpose: 'response',
         model,
@@ -541,18 +557,18 @@ async function generateOnce(
     }
     const parsed = replySchema.parse(JSON.parse(output));
     const blocks = added(
-      parsed.blocks.map((b) => validateReplyBlock(b, context)),
+      await asyncMap(parsed.blocks, async (b) => await validateReplyBlock(b, context)),
       context,
     );
     if (!blocks.length) throw Error('empty_supplement');
     const content = blocks.map((b) => b.text).join('\n\n');
     if (content.length > (context.mode === 'summary' ? 1000 : 280)) throw Error('output_limit');
-    options.onText?.(content);
-    usage?.finish(true);
+    await options.onText?.(content);
+    await usage?.finish(true);
     options.onGrounding?.(blocks);
     return content;
   } catch (error) {
-    usage?.finish(false, error);
+    await usage?.finish(false, error);
     throw error;
   }
 }

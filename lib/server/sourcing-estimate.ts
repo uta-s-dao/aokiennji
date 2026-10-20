@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { AppSettings, ProcurementOffer, ProductSourcing } from '../contracts';
 import { calculateSourcingEstimate, type EstimateResult } from '../sourcing-estimate';
-import { audit, db, now, save } from './db';
+import { audit, db, lockResource, now, save } from './db';
 import { rememberProcurementConfirmation } from './procurement-memory';
 import { ApiError } from './auth';
 import { researchNotes } from './research';
@@ -12,14 +12,14 @@ const identity = (s: string) =>
     .normalize('NFKC')
     .toUpperCase()
     .replace(/[\s_‐‑–—−-]/g, '');
-export function sourcingEstimate(
+export async function sourcingEstimate(
   conversationId: string,
   source: ProductSourcing,
   quantity: number | undefined,
   destination: string | undefined,
   settings: AppSettings,
-): EstimateResult & { revision: string } {
-  const note = researchNotes(conversationId).find(
+): Promise<EstimateResult & { revision: string }> {
+  const note = (await researchNotes(conversationId)).find(
     (n) =>
       n.sourcing?.checkedAt === source.checkedAt && identity(n.subject) === identity(source.model),
   );
@@ -58,38 +58,41 @@ export function sourcingEstimate(
   };
 }
 
-export function updateProcurementOffer(
+export async function updateProcurementOffer(
   conversationId: string,
   noteId: string,
   offerId: string,
   input: unknown,
-): ProcurementOffer {
-  const note = researchNotes(conversationId).find((n) => n.id === noteId);
-  const offer = note?.offers?.find((o) => o.id === offerId);
-  if (!note || note.conversationId !== conversationId || !note.sourcing || !offer)
-    throw new ApiError(404, 'not_found', '調達候補が見つかりません');
-  const fields = procurementOfferSchema.parse(input);
-  // This is an explicit staff confirmation of the source and all edited facts.
-  const updated = { ...offer, ...fields, confirmedAt: fields.approved ? now() : null };
-  note.offers = note.offers!.map((o) => (o.id === offerId ? updated : o));
-  db().transaction(() => {
-    save('research_notes', note, {
-      conversation_id: note.conversationId,
-      created_at: note.createdAt,
-    });
-    rememberProcurementConfirmation({ kind: 'offer', conversationId, noteId, offerId });
+): Promise<ProcurementOffer> {
+  return await db().transaction(async () => {
+    await lockResource(`research-note:${noteId}`);
+    const note = (await researchNotes(conversationId)).find((n) => n.id === noteId);
+    const offer = note?.offers?.find((o) => o.id === offerId);
+    if (!note || note.conversationId !== conversationId || !note.sourcing || !offer)
+      throw new ApiError(404, 'not_found', '調達候補が見つかりません');
+    const fields = procurementOfferSchema.parse(input);
+    // This is an explicit staff confirmation of the source and all edited facts.
+    const updated = { ...offer, ...fields, confirmedAt: fields.approved ? now() : null };
+    note.offers = note.offers!.map((o) => (o.id === offerId ? updated : o));
+    await db().transaction(async () => {
+      await save('research_notes', note, {
+        conversation_id: note.conversationId,
+        created_at: note.createdAt,
+      });
+      await rememberProcurementConfirmation({ kind: 'offer', conversationId, noteId, offerId });
+    })();
+    await audit(
+      'procurement.confirmed',
+      noteId,
+      `${note.subject}の調達条件を${fields.approved ? '確認' : '更新'}しました`,
+    );
+    return updated;
   })();
-  audit(
-    'procurement.confirmed',
-    noteId,
-    `${note.subject}の調達条件を${fields.approved ? '確認' : '更新'}しました`,
-  );
-  return updated;
 }
 
 // Contextual summaries must also expire when procurement or selling terms change.
-export function sourcingContextRevision(conversationId: string, settings: AppSettings) {
-  const offers = researchNotes(conversationId).flatMap((n) => n.offers || []);
+export async function sourcingContextRevision(conversationId: string, settings: AppSettings) {
+  const offers = (await researchNotes(conversationId)).flatMap((n) => n.offers || []);
   if (!offers.length) return undefined;
   return createHash('sha256')
     .update(

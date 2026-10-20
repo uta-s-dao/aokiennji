@@ -180,18 +180,19 @@ function mockWeb(options: { wanted?: number } = {}) {
     };
   });
 }
-beforeEach(() => {
+beforeEach(async () => {
   vi.stubEnv('DATA_DIR', directory);
   vi.stubEnv('DEMO_MODE', 'true');
   vi.stubEnv('OPENAI_API_KEY', 'unit-openai');
   vi.stubEnv('TYPESAFE_API_KEY', 'unit-jev');
   vi.stubEnv('TYPESAFE_API_BASE_URL', 'https://api.typesafe.ai');
-  resetDbForTests();
+  (await resetDbForTests());
   rmSync(directory, { recursive: true, force: true });
   db();
+  await save('conversations',{id:'c1',status:'open'},{owner_id:'test-owner'});
   network.mockReset();
-  save('sources', source);
-  importSupplierKnowledge(
+  (await save('sources', source));
+  (await importSupplierKnowledge(
     source,
     [
       {
@@ -204,11 +205,11 @@ beforeEach(() => {
       },
     ],
     true,
-  );
+  ));
 });
 afterEach(() => vi.unstubAllEnvs());
-afterAll(() => {
-  resetDbForTests();
+afterAll(async () => {
+  (await resetDbForTests());
   rmSync(directory, { recursive: true, force: true });
 });
 
@@ -229,7 +230,7 @@ it('finds the destination the customer named', () => {
 it('lets Jev decide, searches the web and supplier sites, and checks each value', async () => {
   mockWeb();
   await researchForStaff(request, { scope: 'chat', conversationId: 'c1', turnId: 't1' });
-  const [note] = researchNotes('c1');
+  const [note] = (await researchNotes('c1'));
   expect(note).toMatchObject({ status: 'done', decidedBy: 'jev', aspects: ['price', 'lead_time'] });
   // The invented URL is dropped; the misread stock is kept but unverified.
   expect(note.findings.map((f) => f.url)).not.toContain('https://invented.example/x');
@@ -260,7 +261,7 @@ it('lets Jev decide, searches the web and supplier sites, and checks each value'
     'valve-supplier.example',
   ]);
   expect(JSON.parse(searches[1][1]!.body!).tools[0].filters).toBeUndefined();
-  const report = aiUsageReport({ conversationId: 'c1' });
+  const report = (await aiUsageReport({ conversationId: 'c1' }));
   expect(report.items.filter((c) => c.purpose === 'research')).toHaveLength(2);
   expect(report.items.filter((c) => c.purpose === 'research_decision')).toHaveLength(2);
   expect(JSON.stringify(report)).not.toContain('KITZの青銅');
@@ -269,11 +270,11 @@ it('lets Jev decide, searches the web and supplier sites, and checks each value'
 it('does not research when Jev judges it unnecessary, and does not repeat the same research', async () => {
   mockWeb({ wanted: 0.2 });
   await researchForStaff(request, { scope: 'chat', conversationId: 'c1' });
-  expect(researchNotes('c1')).toHaveLength(0);
+  expect((await researchNotes('c1'))).toHaveLength(0);
   mockWeb();
   await researchForStaff(request, { scope: 'chat', conversationId: 'c1' });
   await researchForStaff(request, { scope: 'chat', conversationId: 'c1' });
-  expect(researchNotes('c1')).toHaveLength(1);
+  expect((await researchNotes('c1'))).toHaveLength(1);
 });
 
 it('schedules research after a reply only when the feature is on and the item is not a demo record', async () => {
@@ -281,7 +282,7 @@ it('schedules research after a reply only when the feature is on and the item is
   const defer = (work: () => Promise<void>) => void deferred.push(work);
   await answerChat('KITZのバルブ25Aを6個、価格と納期を教えてください', 'off', undefined, { defer });
   expect(deferred).toHaveLength(0);
-  putSettings({ ...DEFAULT_SETTINGS, flags: { ...DEFAULT_SETTINGS.flags, aiResearch: true } });
+  (await putSettings({ ...DEFAULT_SETTINGS, flags: { ...DEFAULT_SETTINGS.flags, aiResearch: true } }));
   await answerChat('DEMO-GLASS-01の価格は？', 'demo', undefined, { defer });
   await answerChat('仕入先のHPを教えて', 'private', undefined, { defer });
   expect(deferred).toHaveLength(0);
@@ -296,7 +297,7 @@ it('schedules research after a reply only when the feature is on and the item is
   expect(deferred).toHaveLength(1);
   mockWeb();
   await deferred[0]();
-  const [note] = researchNotes(reply.conversationId);
+  const [note] = (await researchNotes(reply.conversationId));
   expect(note.status).toBe('done');
   // The customer's reply never shows the staff research.
   expect(reply.message.content).not.toContain('18,700');
@@ -314,13 +315,13 @@ it('treats a growing description of the same item as one research topic', async 
     },
     { scope: 'chat', conversationId: 'c1' },
   );
-  expect(researchNotes('c1')).toHaveLength(1);
+  expect((await researchNotes('c1'))).toHaveLength(1);
   // A new destination adds a lookup.
   await researchForStaff(
     { ...request, destination: '大阪', subject: `${request.subject} 大阪の工場へ` },
     { scope: 'chat', conversationId: 'c1' },
   );
-  expect(researchNotes('c1')).toHaveLength(2);
+  expect((await researchNotes('c1'))).toHaveLength(2);
 });
 
 it('takes the destination, not the origin, and quantities as written', () => {

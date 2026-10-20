@@ -1,3 +1,5 @@
+import './legacy-sqlite-harness';
+import { asyncFlatMap, asyncMap } from '@/lib/async-arrays';
 import Database from 'better-sqlite3';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -105,7 +107,7 @@ async function main() {
       before,
       settings,
       testedAt: new Date().toISOString(),
-      preferredDomains: preferredDomains(createSourceTrace()),
+      preferredDomains: preferredDomains((await createSourceTrace())),
       demoMode: process.env.DEMO_MODE !== 'false',
       sessions: [],
     };
@@ -190,11 +192,11 @@ async function main() {
                 }),
               );
             } catch (error) {
-              const row = db()
+              const row = (await db()
                 .prepare(
                   'SELECT id FROM conversations WHERE owner_id=? ORDER BY rowid DESC LIMIT 1',
                 )
-                .get(`customer-simulation-${question.id}`) as { id: string } | undefined;
+                .get(`customer-simulation-${question.id}`)) as { id: string } | undefined;
               session.conversationId ||= row?.id;
               const message = error instanceof Error ? error.message : 'Unknown chat failure';
               session.errors.push({ round, message });
@@ -202,16 +204,16 @@ async function main() {
             }
             session.completedRounds.push(round);
             write(statePath, state);
-            checkpoint();
+            (await checkpoint());
           }
         }),
       );
-      const publicRounds = profiles.map((profile) => {
+      const publicRounds = (await asyncMap(profiles, async (profile) => {
         const session = state.sessions.find((s) => s.id === profile.id)!;
         return {
           id: profile.id,
           history: session.conversationId
-            ? conversationMessages(session.conversationId).map((m) => ({
+            ? (await conversationMessages(session.conversationId)).map((m) => ({
                 role: m.role,
                 content: m.content,
                 suggestions: m.suggestions,
@@ -220,14 +222,14 @@ async function main() {
             : [],
           errors: session.errors,
         };
-      });
+      }));
       write(join(agentDirectory, `public-round-${roundName}.json`), publicRounds);
-      checkpoint();
+      (await checkpoint());
       console.log(
         JSON.stringify({ phase: 'round-complete', round, sessions: state.sessions.length }),
       );
     } else if (command === 'export') {
-      const report = checkpoint();
+      const report = (await checkpoint());
       if (
         report.scenarios.length !== 10 ||
         state.sessions.some((s) => s.completedRounds.length < 5)
@@ -312,19 +314,19 @@ async function main() {
       );
     } else throw Error('Use init, round, or export');
 
-    function checkpoint() {
-      const scenarios: SourceVerificationScenario[] = profiles.flatMap((profile) => {
+    async function checkpoint() {
+      const scenarios: SourceVerificationScenario[] = (await asyncFlatMap(profiles, async (profile) => {
         const session = state.sessions.find((s) => s.id === profile.id);
         if (!session?.conversationId) return [];
-        const messages = conversationMessages(session.conversationId) as StoredChatMessage[];
-        const answers = aiAnswerReport({
+        const messages = (await conversationMessages(session.conversationId)) as StoredChatMessage[];
+        const answers = (await aiAnswerReport({
           conversationId: session.conversationId,
           limit: 500,
-        }).items.toReversed();
+        })).items.toReversed();
         const last = answers.at(-1);
         if (!last?.sourceTrace) return [];
-        const notes = researchNotes(session.conversationId);
-        const api = aiUsageReport({ conversationId: session.conversationId, limit: 500 });
+        const notes = (await researchNotes(session.conversationId));
+        const api = (await aiUsageReport({ conversationId: session.conversationId, limit: 500 }));
         const traces = answers.flatMap((a) => (a.sourceTrace ? [a.sourceTrace] : []));
         const reviewPath = join(agentDirectory, 'review.json');
         const reviews = existsSync(reviewPath)
@@ -387,7 +389,7 @@ async function main() {
                   .every((s) => state.preferredDomains.every((d) => s.domains.includes(d))),
               ),
               privateTraceExcludedFromPublic: !JSON.stringify(
-                currentMessages(session.conversationId),
+                (await currentMessages(session.conversationId)),
               ).includes('sourceTrace'),
               noAutomaticProcurementApproval: notes.every((n) =>
                 (n.offers || []).every((o) => !o.approved && o.confirmedAt === null),
@@ -429,7 +431,7 @@ async function main() {
             },
           },
         ];
-      });
+      }));
       const original = new Database(state.originalFile, { readonly: true });
       const originalUnchanged = JSON.stringify(snapshot(original)) === JSON.stringify(state.before);
       original.close();
@@ -466,7 +468,7 @@ async function main() {
       return report;
     }
   } finally {
-    resetDbForTests();
+    (await resetDbForTests());
   }
 }
 main().catch((error) => {

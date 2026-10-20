@@ -31,17 +31,17 @@ const source: Source = {
   recordCount: 0,
   createdAt: new Date().toISOString(),
 };
-beforeEach(() => {
+beforeEach(async () => {
   vi.stubEnv('DATA_DIR', directory);
   vi.stubEnv('DEMO_MODE', 'true');
   vi.stubEnv('OPENAI_API_KEY', 'unit-openai');
   vi.stubEnv('TYPESAFE_API_KEY', '');
-  resetDbForTests();
+  (await resetDbForTests());
   rmSync(directory, { recursive: true, force: true });
   db();
   network.mockReset();
-  save('sources', source);
-  importSupplierKnowledge(
+  (await save('sources', source));
+  (await importSupplierKnowledge(
     source,
     [
       {
@@ -54,12 +54,12 @@ beforeEach(() => {
       },
     ],
     true,
-  );
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'openai' });
+  ));
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'openai' }));
 });
 afterEach(() => vi.unstubAllEnvs());
-afterAll(() => {
-  resetDbForTests();
+afterAll(async () => {
+  (await resetDbForTests());
   rmSync(directory, { recursive: true, force: true });
 });
 // Each response call returns the next text; the last one repeats.
@@ -118,7 +118,7 @@ it('continues from the stated conditions when a draft invents a value', async ()
 });
 
 it('keeps a whole consultation useful without a response model', async () => {
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' }));
   const replies = [];
   let conversationId: string | undefined;
   for (const message of valve) {
@@ -145,11 +145,11 @@ it('keeps a whole consultation useful without a response model', async () => {
   expect(replies[4].content).toContain('未確認：圧力');
   expect(replies[4].handoffDraft).toContain('25A');
   // A reopened conversation keeps the composed replies.
-  expect(currentMessages(conversationId!).at(-1)?.content).toBe(replies[4].content);
+  expect((await currentMessages(conversationId!)).at(-1)?.content).toBe(replies[4].content);
 });
 
 it('answers the request after thanks instead of only replying to the thanks', async () => {
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' }));
   const first = await answerChat(
     'DEMO-CART-01はすぐ買えますか？在庫とお値段も知りたいです。',
     'cart',
@@ -171,7 +171,7 @@ it('answers the request after thanks instead of only replying to the thanks', as
 });
 
 it('keeps the product through quantity changes and adds tax and shipping answers', async () => {
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' }));
   const first = await answerChat(
     'DEMO-STUD-01についてお伺いします。単価と在庫、通常の納期を教えていただけますか？',
     'stud',
@@ -198,12 +198,12 @@ it('keeps the product through quantity changes and adds tax and shipping answers
   );
   expect(total.message.content).toContain('39,600');
   expect(total.message.content).toContain('送料はお届け先と数量によって変わる');
-  expect(currentMessages(first.conversationId).at(-1)?.content).toBe(total.message.content);
+  expect((await currentMessages(first.conversationId)).at(-1)?.content).toBe(total.message.content);
   expect(network).not.toHaveBeenCalled();
 });
 
 it('answers order, status and reservation questions separately and offers the hand-off', async () => {
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' }));
   const order = await answerChat(
     'ポンプについて相談です。循環水用に1台必要ですが、ここで注文できますか？',
     'pump',
@@ -240,8 +240,8 @@ it('answers order, status and reservation questions separately and offers the ha
 
 it('tells the customer when the conversation was already handed off', async () => {
   const first = await answerChat('パッキンを探しています', 'handed');
-  const conversation = byId<Conversation>('conversations', first.conversationId)!;
-  save('conversations', { ...conversation, status: 'handed_off' }, { owner_id: 'handed' });
+  const conversation = (await byId<Conversation>('conversations', first.conversationId))!;
+  (await save('conversations', { ...conversation, status: 'handed_off' }, { owner_id: 'handed' }));
   const status = await answerChat(
     'もう問い合わせは送られていますか？',
     'handed',
@@ -280,7 +280,7 @@ it('explains how to reach the staff without calling a model', async () => {
 });
 
 it('gives the phone number once per conversation unless the customer asks for it', async () => {
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' }));
   const phone = '093-382-2110';
   const urgent = await answerChat('至急パッキンが必要です。ラインが止まっています。', 'phone');
   expect(urgent.message.content.split(phone)).toHaveLength(2);
@@ -296,7 +296,7 @@ it('gives the phone number once per conversation unless the customer asks for it
 });
 
 it('invites a quote request right after a registered price, once', async () => {
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' }));
   const price = await answerChat('DEMO-GLASS-01の価格は？', 'quote-invite');
   expect(price.message.handoff).toBe('quote');
   expect(price.message.handoffProductId).toBeTruthy();
@@ -341,7 +341,7 @@ it('keeps offering the quote request and names the button that is shown', async 
 });
 
 it('does not answer another item with the previous registered product', async () => {
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' }));
   const first = await answerChat('DEMO-CAST-01を50個、単価はいくらですか？', 'other-item');
   expect(first.message.content).toContain('円');
   const plate = await answerChat(
@@ -355,7 +355,7 @@ it('does not answer another item with the previous registered product', async ()
 });
 
 it('answers whether work is outsourced without the supplier privacy reply', async () => {
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' }));
   const reply = await answerChat(
     '石英の丸切りは社内で加工されるんですか、それとも外注ですか？',
     'outsourcing',
@@ -385,7 +385,7 @@ it('removes a repeated phone sentence as a whole and keeps the rest', async () =
 });
 
 it('does not refuse an unregistered model or ask again for a maker already given', async () => {
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' }));
   const reply = await answerChat('三ツ星ベルトのB60を4本、在庫ありますか？', 'unknown-model');
   expect(reply.message.content).toContain('「B60」は登録商品にはありませんが');
   expect(reply.message.content).not.toContain('取扱いを確認できませんでした');
@@ -394,9 +394,9 @@ it('does not refuse an unregistered model or ask again for a maker already given
 });
 
 it('attaches the chat to a quote request for the staff only', async () => {
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' }));
   const chat = await answerChat('パッキンを30枚、見積お願いします', 'quote-link');
-  const quote = createQuote(
+  const quote = (await createQuote(
     {
       name: '購買',
       company: '',
@@ -407,14 +407,14 @@ it('attaches the chat to a quote request for the staff only', async () => {
       conversationId: chat.conversationId,
     },
     'quote-link',
-  );
+  ));
   expect(quote.conversationId).toBeUndefined();
-  expect(byId<Quote>('quotes', quote.id)!.conversationId).toBe(chat.conversationId);
-  expect(byId<Conversation>('conversations', chat.conversationId)!.status).toBe('handed_off');
+  expect((await byId<Quote>('quotes', quote.id))!.conversationId).toBe(chat.conversationId);
+  expect((await byId<Conversation>('conversations', chat.conversationId))!.status).toBe('handed_off');
 });
 
 it('gives the phone number first when the customer wants to call', async () => {
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' }));
   const first = await answerChat('至急パッキンが必要です。ラインが止まっています。', 'call');
   const call = await answerChat('電話で直接話したいです。', 'call', first.conversationId);
   expect(call.message.content.startsWith('お電話でのご相談は、093-382-2110で承ります。')).toBe(
@@ -433,7 +433,7 @@ it('lists what a quote needs once and passes an answered question to the model',
 });
 
 it('does not repeat the same sentences across a consultation without a response model', async () => {
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' }));
   const seen = new Map<string, number>();
   let conversationId: string | undefined;
   for (const message of valve.slice(0, 4)) {
@@ -479,7 +479,7 @@ it('keeps the newest amount and ignores unit prices and asked choices', () => {
 });
 
 it('uses the newest quantity and leaves an acknowledged topic alone', async () => {
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' }));
   const first = await answerChat('DEMO-CAST-01を40個、単価はいくらですか？', 'newest');
   const changed = await answerChat(
     '値引きの件は承知しました。40個から60個に変更します。60個だと税込でいくらですか？',
@@ -498,7 +498,7 @@ it('uses the newest quantity and leaves an acknowledged topic alone', async () =
 });
 
 it('follows a quoted unit price back to its product and does not ask which item a bolt is', async () => {
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' }));
   const first = await answerChat('DEMO-CAST-01を40個購入したいです。単価と税込合計は？', 'back');
   const bolts = await answerChat(
     'SUS304の六角ボルト M12×40を300本も一緒にお願いしたいです。こちらの価格は？',
@@ -532,7 +532,7 @@ it('speaks for our company even when the model draft deflects to another staff m
 });
 
 it('explains belt circumference correctly and carries the conversation into a quote', async () => {
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' }));
   const first = await answerChat(
     'コンベヤの平ベルトを1本、埼玉県へ。幅200mm、厚み2mm、機械の端から端は1mです。見積希望です。',
     'belt-length',
@@ -550,7 +550,7 @@ it('explains belt circumference correctly and carries the conversation into a qu
 });
 
 it('answers shipment timing questions without treating generic supplier dispatch as a request for private identity', async () => {
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' }));
   const first = await answerChat(
     '仕入先の発送日と、こちらに届く日は分けて教えてもらえますか？',
     'shipping-privacy',
@@ -572,7 +572,7 @@ it('answers shipment timing questions without treating generic supplier dispatch
 });
 
 it('preserves the quantity and destination for a made-to-order quote form and stops asking after agreement', async () => {
-  putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' });
+  (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local' }));
   const first = await answerChat(
     'SUS304のL字金具4個、京都府向けに製作見積をお願いしたいです。',
     'custom-quote-quantity',

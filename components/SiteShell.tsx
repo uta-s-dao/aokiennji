@@ -10,7 +10,8 @@ import { api } from './api';
 import { useEffect } from 'react';
 
 const nav = [
-  { href: '/products', label: '製品・サービス' },
+  { href: '/services', label: '事業・サービス' },
+  { href: '/products', label: '製品検索' },
   { href: '/projects', label: '製作実績' },
   { href: '/profile', label: '会社案内' },
   { href: '/contact', label: 'お問い合わせ' },
@@ -116,6 +117,7 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
                 </Link>
               ))}
               <Link href="/privacy">プライバシー</Link>
+              <Link href="/estimate-system">チャット見積システムの導入相談</Link>
               <Link href="/admin/login">管理画面</Link>
             </div>
           </div>

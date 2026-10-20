@@ -84,6 +84,7 @@ test('admin authorization, private conversation ownership and feature enforcemen
     expect(
       (
         await request.post('/api/quotes', {
+          headers: { 'Idempotency-Key': crypto.randomUUID() },
           data: {
             name: 'テスト',
             company: 'テスト会社',
@@ -173,6 +174,7 @@ test('CSV import to issued quote, accepted order and idempotent demo dispatch', 
       ).ok(),
     ).toBeTruthy();
     const created = await request.post('/api/quotes', {
+      headers: { 'Idempotency-Key': crypto.randomUUID() },
       data: {
         name: '検証担当',
         company: '検証会社',
@@ -263,6 +265,7 @@ test('automatic settings still require Aoki review before issuing a quote', asyn
     };
     expect((await request.put('/api/admin/settings', { data: settings })).ok()).toBeTruthy();
     const created = await request.post('/api/quotes', {
+      headers: { 'Idempotency-Key': crypto.randomUUID() },
       data: {
         name: '自動処理の確認',
         company: '検証会社',
@@ -308,6 +311,7 @@ test('the quote editor requires the Aoki review checkbox before formal issuance'
 }) => {
   await login(page.request);
   const created = await page.request.post('/api/quotes', {
+    headers: { 'Idempotency-Key': crypto.randomUUID() },
     data: {
       name: '青木確認フローの検証',
       company: '',

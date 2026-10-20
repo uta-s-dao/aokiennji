@@ -1,3 +1,4 @@
+import { asyncFilter } from '@/lib/async-arrays';
 import ExcelJS from 'exceljs';
 import { createHash } from 'node:crypto';
 import type {
@@ -12,6 +13,7 @@ import type {
   SupplierKnowledgeRow,
 } from '../contracts';
 import { audit, byId, db, list, normalize, now, save, uid } from './db';
+import { lockResource } from './db';
 import { businessIntents, type BusinessIntent } from '../chat-policy';
 import { checklist, consultationTopic, itemMention } from './consultation';
 
@@ -190,17 +192,20 @@ export async function parseSupplierWorkbook(name: string, buffer: Buffer): Promi
   return { headers: [], rows: [], documents: [], supplierRows, warnings };
 }
 
-export function importSupplierKnowledge(
+export async function importSupplierKnowledge(
   source: Source,
   rows: SupplierKnowledgeRow[],
   approved: boolean,
-): ImportResult {
+): Promise<ImportResult> {
   if (source.kind !== 'supplier_catalog') throw Error('仕入先一覧の情報源を指定してください');
   const importedAt = now();
-  const old = list<SupplierKnowledge>('supplier_knowledge').filter((r) => r.sourceId === source.id);
+  const old = (await list<SupplierKnowledge>('supplier_knowledge')).filter(
+    (r) => r.sourceId === source.id,
+  );
   const result: ImportResult = { imported: 0, updated: 0, documents: 0, errors: [], warnings: [] };
-  db().transaction(() => {
-    db().prepare('DELETE FROM supplier_knowledge WHERE source_id=?').run(source.id);
+  await db().transaction(async () => {
+    await lockResource(`source:${source.id}`);
+    await db().prepare('DELETE FROM supplier_knowledge WHERE source_id=?').run(source.id);
     const seen = new Set<string>();
     for (const row of rows) {
       const key = createHash('sha256')
@@ -216,11 +221,11 @@ export function importSupplierKnowledge(
         approved,
         importedAt,
       };
-      save('supplier_knowledge', record, { source_id: source.id });
+      await save('supplier_knowledge', record, { source_id: source.id });
       if (old.some((r) => r.id === key)) result.updated++;
       else result.imported++;
     }
-    save('sources', {
+    await save('sources', {
       ...source,
       visibility: 'internal',
       lastSyncedAt: importedAt,
@@ -228,7 +233,7 @@ export function importSupplierKnowledge(
       recordCount: seen.size,
     });
     const summary = `仕入先情報 ${seen.size}件 / 分野の回答利用 ${approved ? '承認済み' : '未承認'}`;
-    save(
+    await save(
       'source_runs',
       {
         id: uid(),
@@ -240,15 +245,15 @@ export function importSupplierKnowledge(
       },
       { source_id: source.id },
     );
-    audit('source.imported', source.id, summary);
+    await audit('source.imported', source.id, summary);
   })();
   return result;
 }
 
-export function availableFields(): string[] {
+export async function availableFields(): Promise<string[]> {
   const fields = new Set<string>();
-  for (const row of list<SupplierKnowledge>('supplier_knowledge')) {
-    const source = byId<Source>('sources', row.sourceId);
+  for (const row of await list<SupplierKnowledge>('supplier_knowledge')) {
+    const source = await byId<Source>('sources', row.sourceId);
     if (
       !row.approved ||
       source?.kind !== 'supplier_catalog' ||
@@ -261,7 +266,7 @@ export function availableFields(): string[] {
   return [...fields];
 }
 
-export function privateSupplierQuestion(message: string): boolean {
+export async function privateSupplierQuestion(message: string): Promise<boolean> {
   // "外注先の名前を知りたいわけではない" withdraws the question; "社内加工か外注か"
   // asks how the work is done, which has a fixed public answer.
   const text = message
@@ -277,12 +282,12 @@ export function privateSupplierQuestion(message: string): boolean {
     )
   )
     return true;
-  return containsPrivateSupplierIdentity(message);
+  return await containsPrivateSupplierIdentity(message);
 }
 
-export function containsPrivateSupplierIdentity(message: string): boolean {
+export async function containsPrivateSupplierIdentity(message: string): Promise<boolean> {
   const query = normalize(message);
-  return list<SupplierKnowledge>('supplier_knowledge').some((r) => {
+  return (await list<SupplierKnowledge>('supplier_knowledge')).some((r) => {
     const fullName = normalize(r.supplierName);
     const legalForm = /株式会社|有限会社|\(株\)|\(有\)/g;
     const company = fullName.replace(legalForm, '');
@@ -300,16 +305,16 @@ export function containsPrivateSupplierIdentity(message: string): boolean {
   });
 }
 
-export function knowledgeTopic(
+export async function knowledgeTopic(
   message: string,
   intent: QueryIntent,
   previous?: ChatMessage,
-): KnowledgeTopic | undefined {
+): Promise<KnowledgeTopic | undefined> {
   if (/一覧|リスト|掲載/.test(message) && /ない|全て|すべて|全部|全取引|網羅/.test(message))
     return { mode: 'scope', fields: [] };
-  if (privateSupplierQuestion(message)) return { mode: 'privacy', fields: [] };
+  if (await privateSupplierQuestion(message)) return { mode: 'privacy', fields: [] };
   if (intent.model) return;
-  const available = availableFields();
+  const available = await availableFields();
   const matching = itemFieldsFromText(message).filter((f) => available.includes(f));
   if (matching.length) return { mode: 'fields', fields: matching };
   if (intent.topicField && available.includes(intent.topicField))
@@ -339,16 +344,18 @@ export function knowledgeTopic(
 // How an unregistered price, stock or delivery is answered. Said once per
 // conversation; later turns answer in conversation.
 export const CONFIRM_PHRASE = '仕様と数量をもとに確認してご案内します。';
-export function knowledgeReply(
+export async function knowledgeReply(
   topic: KnowledgeTopic,
   settings: AppSettings,
   facts: BusinessIntent[] = [],
-): string {
+): Promise<string> {
   if (topic.mode === 'scope')
     return 'ご案内している情報は取扱分野の一部です。掲載の有無から取引の有無や対応可否は判断できません。お探しの製品や用途をお知らせいただければ、当社で確認します。';
   if (topic.mode === 'privacy')
     return '仕入・外注先の社名、ホームページ、取引の有無や取引条件は公開していません。お探しの製品や用途をお知らせください。取扱分野をご案内し、具体的な対応は当社で確認します。';
-  const fields = topic.fields.filter((f) => availableFields().includes(f));
+  const fields = await asyncFilter(topic.fields, async (f) =>
+    (await availableFields()).includes(f),
+  );
   if (!fields.length)
     return '以前ご案内した分野は、現在の登録情報では確認できません。ご希望の製品や用途をお知らせください。当社で確認します。';
   if (facts.includes('order') && !settings.flags.orders)
