@@ -1,0 +1,51 @@
+# Local verification only. Never link this checkout to the production project.
+# Supabase CLI 2.121.0; experimental native runtime (no Docker required).
+project_id = "aoki_enji_local"
+
+[api]
+enabled = true
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+auto_expose_new_tables = false
+
+[db]
+major_version = 17
+health_timeout = "3m"
+
+[db.pooler]
+enabled = false
+
+[db.seed]
+enabled = false
+
+[studio]
+enabled = true
+api_url = "http://127.0.0.1"
+
+[local_smtp]
+enabled = true
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = []
+enable_signup = false
+enable_anonymous_sign_ins = false
+minimum_password_length = 12
+
+[storage]
+enabled = true
+file_size_limit = "10MiB"
+
+[realtime]
+enabled = false
+
+[edge_runtime]
+enabled = false
+
+[analytics]
+enabled = false
+
+[experimental]
+stack = true

@@ -2,6 +2,7 @@ node_modules/
 .next/
 .next-e2e/
 .next-build/
+.next-search-build/
 .next-live-ai/
 next-env.d.ts
 .data/

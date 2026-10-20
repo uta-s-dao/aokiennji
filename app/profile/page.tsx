@@ -1,7 +1,15 @@
+import { pageMetadata } from '@/lib/seo';
 import Link from 'next/link';
 import { ArrowUpRight, MapPin, Phone } from 'lucide-react';
 import SiteShell from '@/components/SiteShell';
 import { company, services } from '@/lib/company';
+import StructuredData from '@/components/StructuredData';
+import { organizationSchema } from '@/lib/seo';
+export const metadata = pageMetadata(
+  '北九州市門司区の会社案内',
+  '福岡県北九州市門司区のアオキエンジ株式会社。所在地・電話番号・会社概要と、鋼構造物・機械装置、耐火材、設備工事の事業内容をご案内します。',
+  '/profile',
+);
 export default function Profile() {
   const rows = [
     ['社名', company.name],
@@ -14,6 +22,7 @@ export default function Profile() {
   ];
   return (
     <SiteShell>
+      <StructuredData data={organizationSchema()} />
       <div className="page-hero">
         <div className="container">
           <p className="eyebrow">COMPANY</p>
@@ -44,7 +53,9 @@ export default function Profile() {
             {services.map((s, i) => (
               <div key={s.id}>
                 <span>0{i + 1}</span>
-                <h3>{s.name}</h3>
+                <h3>
+                  <Link href={`/services/${s.id}`}>{s.name}</Link>
+                </h3>
                 <p>{s.description}</p>
               </div>
             ))}

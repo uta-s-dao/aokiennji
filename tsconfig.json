@@ -39,7 +39,9 @@
     ".next-build/types/**/*.ts",
     ".next-build/dev/types/**/*.ts",
     ".next-live-ai/types/**/*.ts",
-    ".next-live-ai/dev/types/**/*.ts"
+    ".next-live-ai/dev/types/**/*.ts",
+    ".next-search-build/types/**/*.ts",
+    ".next-search-build/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
