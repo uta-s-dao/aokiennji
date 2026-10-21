@@ -7,7 +7,7 @@
 最新のUTA-8統合済みmainへ利用枠機能を移植し、本番Supabaseに `202610210001` を適用、本番Workersへ配置した。5つの追加テーブルのRLS有効化を確認。初期API原価上限は3,000円、Stripe課金と実メール通知はUTA-15で保留。本書の「未配置」「未適用」は下記の過去時点の検証記録であり、現在の状態はこの節を優先する。
 
 - 管理画面： https://aoki-enji.official-b.workers.dev/admin?tab=billing
-- 配置版： `da027e37-ec0f-4ae4-8365-fab01f700670`
+- 配置版： `d343d8b9-349d-4c43-9a66-1b204b920efb`
 - 移植時の全体試験：398件中397件成功。旧モデル名を使う履歴試験を登録済みモデルへ更新し、利用枠枯渇時の登録情報案内の試験も含め該当ファイル16件成功。他の28ファイルは再実行していない。
 - 型チェック、Workers用ビルド、Wrangler dry-run成功。
 - 本番APIの未ログイン拒否・別Origin拒否・未設定決済の503・未認証通知起動の401・ログアウト失効を確認。1440px／390pxの管理画面、申込ボタンの無効化、横はみ出しなし、ブラウザー例外なしを確認。証跡は `.data/verification/uta9/production-result.json` と `production-desktop.png`／`production-mobile.png`。
