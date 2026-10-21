@@ -325,13 +325,13 @@ it('keeps the model used for each answer after the response settings change', as
   (await putSettings({
     ...DEFAULT_SETTINGS,
     responseProvider: 'openai',
-    responseModel: 'recorded-model-first',
+    responseModel: 'gpt-4.1-mini',
   }));
   const first = await answerChat('DEMO-GLASS-01の用途を相談したい', 'model-history');
   (await putSettings({
     ...DEFAULT_SETTINGS,
     responseProvider: 'openai',
-    responseModel: 'recorded-model-second',
+    responseModel: 'gpt-6-luna',
   }));
   const second = await answerChat(
     'DEMO-CAST-01の用途を相談したい',
@@ -341,8 +341,8 @@ it('keeps the model used for each answer after the response settings change', as
   (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'local', responseModel: 'current-setting' }));
   const answers = (await aiAnswerReport({ conversationId: first.conversationId })).items;
   for (const [id, model] of [
-    [first.message.id, 'recorded-model-first'],
-    [second.message.id, 'recorded-model-second'],
+    [first.message.id, 'gpt-4.1-mini'],
+    [second.message.id, 'gpt-6-luna'],
   ]) {
     expect(answers.find((a) => a.id === id)).toMatchObject({
       responseProvider: 'openai',
@@ -385,6 +385,17 @@ it('rewrites a rejected draft once and keeps the billed usage and reason of each
   // The fallback continues the consultation about the named product.
   expect(result.message.content).toContain('耐熱ガラス');
   expect(result.message.content).not.toContain('もう少し詳しく');
+});
+
+it('keeps registered guidance and contact intake available when the API budget is exhausted', async () => {
+  const { updateBudget } = await import('../lib/server/ai-budget');
+  await updateBudget(0, false, 0, 'operator');
+  await putSettings({ ...DEFAULT_SETTINGS, decisionProvider: 'jev', responseProvider: 'openai',
+    responseModel: 'gpt-4.1-mini' });
+  const reply = await answerChat('DEMO-GLASS-01の用途を相談したい', 'budget-limited-customer');
+  expect(reply.message.content.length).toBeGreaterThan(0);
+  expect(reply.message.responseProvider).toBe('local');
+  expect(network).not.toHaveBeenCalled();
 });
 it('records Jev HTTP failure as an actual call with unknown usage, and skips private queries entirely', async () => {
   network.mockResolvedValue({

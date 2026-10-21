@@ -86,6 +86,7 @@ export async function checkAiProvider(id: string): Promise<ProviderCheck> {
           '工業用部品',
           { ...s, searchProvider: id as 'exa' | 'tavily', flags: { ...s.flags, webSearch: true } },
           [],
+          { context: { scope: 'connection_check' } },
         );
         ok = true;
       }

@@ -326,6 +326,7 @@ async function search(
     instructions,
     input,
     max_output_tokens: 3000,
+    max_tool_calls: 3,
     text: { format: { type: 'json_schema', name: 'research', strict: true, schema: outputSchema } },
   });
   const usage = await beginAiCall({
@@ -372,6 +373,7 @@ async function search(
     }
     const data = JSON.parse(response.body.toString('utf8'));
     usage.usage(data.usage);
+    usage.tools(data.output);
     const consulted = new Set<string>();
     const consultedUrls = new Set<string>();
     const queries: string[] = [];
