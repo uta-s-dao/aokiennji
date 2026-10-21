@@ -56,9 +56,9 @@ async function call(
 ) {
   const usage = (await beginAiCall({
     provider: purpose === 'classification' ? 'jev' : 'openai',
-    model: `model-${turnId}`,
+    model: purpose === 'classification' ? `model-${turnId}` : 'gpt-4.1-mini',
     purpose,
-    body: 'private-request-body',
+    body: JSON.stringify({ input: 'private-request-body', max_output_tokens: 256 }),
     requestShape: { bodyKeys: ['input'] },
     context: { scope: 'chat', conversationId, turnId },
   }));
@@ -168,6 +168,6 @@ it('labels historical gaps without attributing an ambiguous API call to the wron
   expect(report.items.find((a) => a.id === 'clear-answer')).toMatchObject({
     linkage: 'legacy',
     processing: null,
-    calls: [{ model: 'model-clear-question' }],
+    calls: [{ model: 'gpt-4.1-mini' }],
   });
 });

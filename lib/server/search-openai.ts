@@ -34,6 +34,7 @@ export async function searchOpenai(
   const body = JSON.stringify({
     model,
     store: false,
+    max_tool_calls: 3,
     tools: [
       {
         type: 'web_search',
@@ -114,6 +115,7 @@ export async function searchOpenai(
     if (response.status !== 200) throw Error('generation_failed');
     const data = JSON.parse(raw);
     usage.usage(data.usage);
+    usage.tools(data.output);
     if (data.status && data.status !== 'completed') throw Error('generation_failed');
     const consulted = new Set<string>();
     const queries: string[] = [];

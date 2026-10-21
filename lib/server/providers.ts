@@ -16,6 +16,8 @@ import { safeFetch } from './safe-fetch';
 import { searchOpenai } from './search-openai';
 import { requestedFacts, socialOnly, stripCourtesy, type BusinessIntent } from '../chat-policy';
 import { beginAiCall } from './ai-usage';
+import { startPaidCall, finishPaidCall } from './ai-budget';
+import { randomUUID } from 'node:crypto';
 import { jevEndpoint } from './jev-config';
 
 const intents = [
@@ -262,6 +264,7 @@ export async function classifyQuery(
           },
         ],
         generationConfig: {
+          maxOutputTokens: 4096,
           responseMimeType: 'application/json',
           responseSchema: {
             type: 'OBJECT',
@@ -372,33 +375,36 @@ export async function searchWeb(
     return (await searchOpenai(query, domains, options.context, options.signal, options.onSearch));
   const key = process.env[settings.searchProvider === 'exa' ? 'EXA_API_KEY' : 'TAVILY_API_KEY'];
   if (!key) throw Error('Web検索の接続キーが未設定です');
-  const result =
-    settings.searchProvider === 'exa'
-      ? await jsonRequest(
-          'https://api.exa.ai/search',
-          { 'x-api-key': key },
-          {
+  const provider = settings.searchProvider;
+  const requestBody = provider === 'exa' ? {
             query: query.slice(0, 500),
             type: 'auto',
             numResults: 5,
             ...(domains.length ? { includeDomains: domains } : {}),
             contents: { highlights: true },
-          },
-          5000,
-          options.signal,
-        )
-      : await jsonRequest(
-          'https://api.tavily.com/search',
-          { Authorization: `Bearer ${key}` },
-          {
+          } : {
             query: query.slice(0, 500),
+            search_depth: 'basic',
+            auto_parameters: false,
             max_results: 5,
             include_answer: false,
             ...(domains.length ? { include_domains: domains } : {}),
-          },
-          5000,
-          options.signal,
-        );
+          };
+  const costId = randomUUID();
+  const quote = await startPaidCall(costId, provider, provider === 'exa' ? 'auto' : 'basic',
+    JSON.stringify(requestBody));
+  let result: any;
+  try {
+    result = await jsonRequest(
+      provider === 'exa' ? 'https://api.exa.ai/search' : 'https://api.tavily.com/search',
+      provider === 'exa' ? { 'x-api-key': key } : { Authorization: `Bearer ${key}` },
+      requestBody, 5000, options.signal,
+    );
+    await finishPaidCall(costId, quote, null, null, true);
+  } catch (error) {
+    await finishPaidCall(costId, quote, null, null, false, true);
+    throw error;
+  }
   const evidence: Evidence[] = [];
   const consultedUrls: string[] = (Array.isArray(result.results) ? result.results : []).flatMap(
     (item: { url?: unknown }) => (typeof item.url === 'string' ? [item.url] : []),
