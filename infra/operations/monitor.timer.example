@@ -1,0 +1,12 @@
+# Frequency is a proposal pending Q018; each run is serialized by a local OS-released DB lock.
+[Unit]
+Description=Check AOKI after boot and 60 seconds after each completed monitor run
+
+[Timer]
+OnBootSec=60s
+OnUnitInactiveSec=60s
+AccuracySec=1s
+Unit=aoki-monitor.service
+
+[Install]
+WantedBy=timers.target

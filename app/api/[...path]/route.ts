@@ -115,7 +115,7 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
     const path = p.join('/');
     const method = req.method;
     if (method !== 'GET') checkOrigin(req);
-    if (p[0] === 'admin') await requireAdmin(req);
+    const adminActor = p[0] === 'admin' ? await requireAdmin(req) : undefined;
     if (path === 'config' && method === 'GET') {
       const s = await getSettings();
       return ok({ flags: s.flags, demoMode: demoMode(), welcomeMessage: s.welcomeMessage });
@@ -302,8 +302,10 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
       if (method === 'PUT') {
         const value = settingsSchema.parse(await body(req));
         validateSettings(value);
-        await putSettings(value);
-        await audit('settings.updated', 'settings', '機能設定を更新しました');
+        await db().transaction(async () => {
+          await putSettings(value);
+          await audit('settings.updated', 'settings', '機能設定を更新しました', adminActor);
+        })();
         return ok(value);
       }
     }
@@ -343,8 +345,9 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
     ) {
       const id = z.enum(['openai', 'jev', 'gemini', 'exa', 'tavily']).parse(p[2]);
       await rateLimit(`provider-test:${clientKey(req)}`, 10, 60000);
+      await audit('provider.check_requested', id, '管理者が接続確認を起動しました', adminActor);
       const check = await checkAiProvider(id);
-      await audit('provider.checked', id, check.ok ? '接続確認成功' : '接続未完了');
+      await audit('provider.checked', id, check.ok ? '接続確認成功' : '接続未完了', adminActor);
       return ok(check);
     }
     if (path === 'admin/audit' && method === 'GET')

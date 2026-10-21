@@ -522,6 +522,7 @@ export interface AuditEvent {
   entityId: string;
   summary: string;
   createdAt: string;
+  actorId?: string;
 }
 export interface AiUsageContext {
   scope: 'chat' | 'connection_check' | 'standalone';

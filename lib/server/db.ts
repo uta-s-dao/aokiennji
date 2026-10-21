@@ -233,8 +233,15 @@ export async function save<T extends { id: string }>(
     )
     .run(...vals);
 }
-export async function audit(action: string, entityId: string, summary: string) {
-  const value = { id: uid(), action, entityId, summary, createdAt: now() };
+export async function audit(action: string, entityId: string, summary: string, actorId?: string) {
+  const value = {
+    id: uid(),
+    action,
+    entityId,
+    summary,
+    createdAt: now(),
+    ...(actorId ? { actorId } : {}),
+  };
   await save('audit_events', value);
 }
 export async function resetDbForTests() {

@@ -13,6 +13,7 @@
     "test:e2e": "playwright test",
     "setup": "tsx scripts/setup.ts",
     "sync": "tsx scripts/sync.ts",
+    "monitor": "tsx scripts/monitor.ts",
     "format": "prettier --write .",
     "db:migrate": "tsx scripts/migrate-database.ts",
     "db:local:migrate": "node scripts/database-local.mjs npm run db:migrate",
