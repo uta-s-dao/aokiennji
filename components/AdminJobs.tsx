@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import type { JobReport, WebJob } from '@/lib/server/jobs';
-import { api, date, errorMessage } from './api';
+import { api, datetime, errorMessage } from './api';
 import { Empty, Notice, useNotice } from './AdminCommon';
 const jobs: Record<string, string> = {
   sync: '情報同期',
@@ -79,7 +79,9 @@ export default function AdminJobs() {
             <h3>運用の設定</h3>
             <p>
               定期起動：
-              {report.config.schedulerEnabled ? '有効（稼働状況は履歴で確認）' : '無効・配備待ち'}{' '}
+              {report.config.schedulerEnabled
+                ? '有効（稼働状況は履歴で確認）'
+                : '無効・配備待ち'}{' '}
               ／ 起動認証：{report.config.cronConfigured ? '設定あり' : '未設定'}
             </p>
             <p>
@@ -137,9 +139,9 @@ export default function AdminJobs() {
                             <small className="muted">{run.id}</small>
                           </td>
                           <td>
-                            {date(run.started_at)}
+                            {datetime(run.started_at)}
                             <br />
-                            {run.finished_at ? date(run.finished_at) : '未完了'}
+                            {run.finished_at ? datetime(run.finished_at) : '未完了'}
                           </td>
                           <td>{states[run.status]}</td>
                           <td>
