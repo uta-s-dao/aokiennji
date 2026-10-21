@@ -1,5 +1,18 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
+import { createHash } from 'node:crypto';
 import type { AppSettings, Product, Quote, Source } from '../../lib/contracts';
+
+// These independent workflows must not consume the same client's login allowance.
+// The application's rate limits remain enabled and are tested in DB integration tests.
+test.use({
+  extraHTTPHeaders: async ({ extraHTTPHeaders }, use, testInfo) => {
+    const client = createHash('sha256').update(testInfo.testId).digest('hex');
+    await use({
+      ...extraHTTPHeaders,
+      'X-Forwarded-For': `2001:db8:${client.slice(0, 4)}:${client.slice(4, 8)}::1`,
+    });
+  },
+});
 
 async function login(request: APIRequestContext) {
   const response = await request.post('/api/auth/login', {

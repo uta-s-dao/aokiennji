@@ -119,10 +119,11 @@ test('shows streamed text before the result and keeps it clear of the composer',
     };
   });
   await page.goto('/');
-  await page.getByRole('button', { name: '商品相談チャットを開く' }).click();
+  await page.bringToFront();
+  await page.getByRole('button', { name: '商品相談チャットを開く' }).press('Enter');
   const panel = page.getByRole('dialog', { name: '商品相談チャット' });
   await panel.getByRole('textbox', { name: '相談内容' }).fill('バルブを相談したい');
-  await panel.getByRole('button', { name: 'メッセージを送信' }).click();
+  await panel.getByRole('button', { name: 'メッセージを送信' }).press('Enter');
   await expect(panel.locator('.chat-streaming')).toContainText('液体の種類');
   await expect(panel.locator('.chat-message.assistant')).toHaveCount(0);
   await expect(page.locator('.hero-consult')).toBeHidden();
