@@ -3,6 +3,17 @@
   "framework": "nextjs",
   "redirects": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "aokiennji-gamma.vercel.app"
+        }
+      ],
+      "destination": "https://aoki-enji.official-b.workers.dev/",
+      "permanent": false
+    },
+    {
       "source": "/:path*",
       "has": [
         {
