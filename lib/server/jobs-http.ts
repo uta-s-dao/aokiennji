@@ -30,6 +30,13 @@ export async function jobsCron(req: NextRequest) {
       },
     );
   } catch (error) {
+    if (!(error instanceof ApiError)) {
+      const failure = error as { name?: string; code?: string };
+      console.error('Maintenance request failed', {
+        name: failure?.name || 'unknown',
+        code: failure?.code || 'unknown',
+      });
+    }
     return siteError(error);
   }
 }
@@ -52,6 +59,13 @@ export async function jobsAdmin(req: NextRequest) {
       .parse(input);
     return ok({ result: await runWebJob(job), report: await jobReport() });
   } catch (error) {
+    if (!(error instanceof ApiError)) {
+      const failure = error as { name?: string; code?: string };
+      console.error('Maintenance request failed', {
+        name: failure?.name || 'unknown',
+        code: failure?.code || 'unknown',
+      });
+    }
     return siteError(error);
   }
 }

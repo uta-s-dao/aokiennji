@@ -12,7 +12,7 @@
 
 - `npm run build:vinext` が `dist/client` と `dist/server` を生成し、Wranglerで配置する。Worker名は `aoki-enji`、preview URLsは無効。検索公開・デモ・実注文も無効。
 - `worker.ts` はリクエストごとにDBプールを作り、レスポンス本文・SSEと `waitUntil` の後処理が完了してから閉じる。Nodeの開発／Next.js実行はプロセスのプールを使う。
-- 本番DBの専用 `aoki_runtime` をHyperdrive経由で使う。originはSupabaseの直接接続、Supabase Root 2021 CAを指定した `verify-full`、クエリキャッシュ無効、origin接続上限5。管理用DB接続をWebへ配らない。Hyperdrive IDは `wrangler.jsonc` に記録し、秘密は含めない。
+- 本番DBの専用 `aoki_runtime` をHyperdrive経由で使う。originはSupabaseの直接接続、Supabase Root 2021 CAを指定した `verify-full`、クエリキャッシュ無効、origin接続上限10（UTA-11の定期ジョブ受入時に5から調整）。管理用DB接続をWebへ配らない。Hyperdrive IDは `wrangler.jsonc` に記録し、秘密は含めない。
 - Workersからの直接TLS接続は失敗したため、この構成を使用する。Hyperdriveの作成時に資格情報・TLS検証が成功し、実Workerからの読取・書込も確認した。Orcaブラウザで同じ承認済みアカウントのCLI認可を更新し、CA登録と配置権限の不足を解消した。
 - `createDatabaseScope(env.HYPERDRIVE)` は信頼するプラットフォームbindingを使う。Hyperdrive利用時はprepared statementを有効化し、`.unsafe()`にも明示する。直接のtransaction poolerでは無効。
 - 管理パスワードとセッション鍵は新たに生成し、秘密管理へ登録した。開発用のパスワード・DBをコピーしていない。
