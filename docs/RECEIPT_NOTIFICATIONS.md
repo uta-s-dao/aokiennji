@@ -34,7 +34,7 @@
 
 ResendのWebhookには `email.sent`, `email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.complained`, `email.failed`, `email.suppressed` を登録する。他イベントは無視する。DB処理が失敗した場合は5xxを返し、Resend側の再配信対象にする。イベントIDで重複を排除し、API応答より先に届いたWebhookも後からメールIDに結びつける。保存するのはイベントID・メールID・種別・日時で、Webhook原文の個人情報は保存しない。
 
-定期起動の実配備は **UTA-11**。ここでは起動経路のみ実装し、定期送信が稼働したとは扱わない。利用枠の通知はUTA-9の `/api/billing/notifications` で別管理する。
+定期起動は **UTA-11** で既存Workerへ配備済み。5分ごとのCron実行は確認したが、メールは無効のままで、定期メール送信が稼働したとは扱わない。利用枠の通知はUTA-9の `/api/billing/notifications` で別管理する。
 
 ## 再試行・重複防止
 
@@ -58,7 +58,7 @@ DBの受付ID別一意制約と、永続化した通知IDから作るResendの�
 
 環境台帳ではResend接続が保留中で、会社の送信元ドメインと通知先は未指定。会社確認事項は既存のQ009（通知先・担当）、Q014（送信元・DNS）、Q018（障害対応）に集約済み。この実装は会社確認済みの運用条件や有料契約を意味しない。
 
-実際の受信先の到達確認、本番Webhook登録・署名鍵設定、本番マイグレーション、公開Workerでの動作確認は未実施。本番接続後、指定先での受信確認とResendの到達イベントを照合して初めてUTA-10の実到達条件を完了とする。
+実際の受信先の到達確認、本番Webhook登録・署名鍵設定は未実施。本番マイグレーションと公開Workerへの反映はUTA-11で実施し、実際の架空受付と通知保留を確認済み。本番接続後、指定先での受信確認とResendの到達イベントを照合して初めてUTA-10の実到達条件を完了とする。
 
 公式仕様：[冪等キーの24時間保持](https://resend.com/docs/dashboard/emails/idempotency-keys)、[Webhook署名検証](https://resend.com/docs/webhooks/verify-webhooks-requests)、[送信元ドメイン取得](https://resend.com/docs/api-reference/domains/get-domain)、[メール送信](https://resend.com/docs/api-reference/emails/send-email)。導入済みSvix 2では `verify` は署名検証のみ行うため、成功後に本文をJSON解析する。
 
