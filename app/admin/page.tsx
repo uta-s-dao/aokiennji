@@ -28,6 +28,7 @@ import AdminOrders from '@/components/AdminOrders';
 import AdminSettings from '@/components/AdminSettings';
 import AdminAudit from '@/components/AdminAudit';
 import AdminAiUsage from '@/components/AdminAiUsage';
+import AdminBilling from '@/components/AdminBilling';
 import AdminSiteContent from '@/components/AdminSiteContent';
 import type { Overview } from '@/lib/contracts';
 const tabs = [
@@ -41,6 +42,7 @@ const tabs = [
   { id: 'orders', label: '注文', icon: ShoppingCart },
   { id: 'settings', label: '設定', icon: Settings2 },
   { id: 'ai-usage', label: 'AI利用記録', icon: Activity },
+  { id: 'billing', label: '利用枠・お支払い', icon: Gauge },
   { id: 'audit', label: '操作履歴', icon: History },
 ];
 export default function Admin() {
@@ -177,6 +179,7 @@ export default function Admin() {
               {tab === 'orders' && <AdminOrders />}
               {tab === 'settings' && <AdminSettings />}
               {tab === 'ai-usage' && <AdminAiUsage />}
+              {tab === 'billing' && <AdminBilling />}
               {tab === 'audit' && <AdminAudit />}
             </>
           )}

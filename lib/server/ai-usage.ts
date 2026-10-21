@@ -1,6 +1,8 @@
 import type { AiCall, AiUsageContext, AiUsageReport } from '../contracts';
 import { db, now, uid } from './db';
 import { DIRECT_JEV_ENDPOINT } from './jev-config';
+import { startPaidCall, finishPaidCall } from './ai-budget';
+import { localAgentEndpoint } from './response-transport';
 
 const endpoints = {
   openai: 'https://api.openai.com/v1/responses',
@@ -88,6 +90,10 @@ export async function beginAiCall(input: {
     errorCode: null,
     usage: null,
   };
+  const local = input.provider === 'openai' && !!input.endpoint &&
+    input.endpoint.startsWith('http://127.0.0.1:') && input.endpoint === localAgentEndpoint();
+  const quote = local ? null : await startPaidCall(record.id, input.provider, input.model, input.body);
+  let toolCalls: number | null = null;
   async function persist() {
     await db()
       .prepare(
@@ -109,6 +115,9 @@ export async function beginAiCall(input: {
     .run('ai_usage_started_at', record.createdAt);
   await persist();
   return {
+    tools(output: unknown) {
+      if (Array.isArray(output)) toolCalls = output.filter(item => item?.type === 'web_search_call').length;
+    },
     response(status: number, headers?: Headers) {
       record.httpStatus = status;
       const requestId = headers?.get('x-request-id');
@@ -185,6 +194,9 @@ export async function beginAiCall(input: {
       )
         record.outcome = 'network_error';
       await persist();
+      if (quote) await finishPaidCall(record.id, quote, record.usage, toolCalls,
+        record.httpStatus !== null && record.httpStatus >= 200 && record.httpStatus < 300,
+        ['timeout', 'cancelled', 'network_error', 'generation_failed'].includes(record.errorCode || ''));
     },
   };
 }
