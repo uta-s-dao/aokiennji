@@ -1,3 +1,4 @@
+import { queueReceiptNotification } from '@/lib/server/receipt-notifications';
 import { asyncEvery } from '@/lib/async-arrays';
 import { once } from '@/lib/server/idempotency';
 import { NextRequest, NextResponse, after } from 'next/server';
@@ -242,6 +243,7 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
             createdAt: now(),
           };
           await save('inquiries', value);
+          await queueReceiptNotification('inquiry', value.id);
           await audit('inquiry.created', value.id, '担当者への相談を受け付けました');
           return value;
         },

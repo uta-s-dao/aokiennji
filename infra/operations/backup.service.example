@@ -1,0 +1,18 @@
+# Template only. Do not enable until destination, retention, timing and ownership are agreed.
+[Unit]
+Description=AOKI encrypted database and Storage backup
+Wants=network-online.target
+After=network-online.target
+OnFailure=aoki-backup-failure.service
+
+[Service]
+Type=oneshot
+User=aoki-backup
+WorkingDirectory=/opt/aokiennji
+EnvironmentFile=/etc/aoki/backup.env
+ExecStart=/bin/sh /opt/aokiennji/infra/operations/backup.sh
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/aoki-backups

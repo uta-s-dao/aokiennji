@@ -1,8 +1,30 @@
+import { runScheduledJobs } from './lib/server/jobs';
 import handler from 'vinext/server/fetch-handler';
 import { withStaticAssets, type StaticAssetBinding } from './lib/server/runtime-assets';
 import { createDatabaseScope, type HyperdriveBinding } from './lib/server/database';
 
 export default {
+  async scheduled(
+    event: { scheduledTime: number },
+    env: Record<string, unknown> & { HYPERDRIVE?: HyperdriveBinding },
+    context: { waitUntil(p: Promise<unknown>): void },
+  ) {
+    // Only Cloudflare invokes this handler. Public HTTP entry uses a separate bearer secret.
+    if (env.JOBS_ENABLED !== 'true') return;
+    const scope = createDatabaseScope(env.HYPERDRIVE);
+    context.waitUntil(
+      scope.run(async () => {
+        try {
+          const results = await runScheduledJobs(event.scheduledTime);
+          if (results.some((result) => 'status' in result && result.status === 'failed'))
+            throw new Error('Scheduled maintenance failed; see authenticated job history');
+          return results;
+        } finally {
+          await scope.close();
+        }
+      }),
+    );
+  },
   async fetch(
     request: Request,
     env: Record<string, unknown> & { HYPERDRIVE?: HyperdriveBinding; ASSETS?: StaticAssetBinding },

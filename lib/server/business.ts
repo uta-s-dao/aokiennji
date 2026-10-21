@@ -1,3 +1,4 @@
+import { queueReceiptNotification } from './receipt-notifications';
 import { asyncMap, asyncEvery } from '@/lib/async-arrays';
 import type {
   AppSettings,
@@ -222,6 +223,7 @@ export async function createQuote(
       isDemo: demoMode(),
     };
     await save('quotes', q, { token: q.token });
+    await queueReceiptNotification('quote', q.id);
     if (conversation) await handOff(conversation);
     await audit('quote.created', q.id, '見積依頼を受け付けました');
     return customerQuote(q);

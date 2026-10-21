@@ -13,7 +13,11 @@
     "DEMO_MODE": "false",
     "ALLOW_LIVE_ORDERS": "false",
     "SEARCH_INDEXING_ENABLED": "false",
+    "JOBS_ENABLED": "true",
+    "EMAIL_DELIVERY_MODE": "disabled",
   },
+  // UTC: check due sources/notifications every five minutes; cleanup deduplicates daily.
+  "triggers": { "crons": ["*/5 * * * *"] },
   "assets": {
     "directory": "dist/client",
     "html_handling": "none",
