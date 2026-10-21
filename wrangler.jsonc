@@ -14,6 +14,8 @@
     "ALLOW_LIVE_ORDERS": "false",
     "SEARCH_INDEXING_ENABLED": "false",
   },
+  // No active cron until the runtime/migration and mock acceptance checks are approved for deployment.
+  "triggers": { "crons": [] },
   "assets": {
     "directory": "dist/client",
     "html_handling": "none",

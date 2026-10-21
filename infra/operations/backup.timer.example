@@ -1,0 +1,12 @@
+# Inactive proposal: daily at 03:15 JST. Confirm RPO/RTO, costs and disk capacity first.
+[Unit]
+Description=AOKI daily backup proposal
+
+[Timer]
+OnCalendar=*-*-* 18:15:00 UTC
+Persistent=true
+RandomizedDelaySec=300
+Unit=aoki-backup.service
+
+[Install]
+WantedBy=timers.target

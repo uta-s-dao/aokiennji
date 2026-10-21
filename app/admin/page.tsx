@@ -29,6 +29,8 @@ import AdminSettings from '@/components/AdminSettings';
 import AdminAudit from '@/components/AdminAudit';
 import AdminAiUsage from '@/components/AdminAiUsage';
 import AdminBilling from '@/components/AdminBilling';
+import AdminNotifications from '@/components/AdminNotifications';
+import AdminJobs from '@/components/AdminJobs';
 import AdminSiteContent from '@/components/AdminSiteContent';
 import type { Overview } from '@/lib/contracts';
 const tabs = [
@@ -43,6 +45,8 @@ const tabs = [
   { id: 'settings', label: '設定', icon: Settings2 },
   { id: 'ai-usage', label: 'AI利用記録', icon: Activity },
   { id: 'billing', label: '利用枠・お支払い', icon: Gauge },
+  { id: 'notifications', label: '受付通知', icon: MessageSquareText },
+  { id: 'jobs', label: '定期処理・バックアップ', icon: History },
   { id: 'audit', label: '操作履歴', icon: History },
 ];
 export default function Admin() {
@@ -180,6 +184,8 @@ export default function Admin() {
               {tab === 'settings' && <AdminSettings />}
               {tab === 'ai-usage' && <AdminAiUsage />}
               {tab === 'billing' && <AdminBilling />}
+              {tab === 'notifications' && <AdminNotifications />}
+              {tab === 'jobs' && <AdminJobs />}
               {tab === 'audit' && <AdminAudit />}
             </>
           )}

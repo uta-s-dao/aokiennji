@@ -95,6 +95,20 @@ export const database = {
       return connection().begin((tx) => transactions.run(tx, body)) as Promise<T>;
     };
   },
+  // Keep a transaction-level advisory lock on a separate pooled connection.
+  // Work commits independently: provider sends must not roll back their saved payloads.
+  async exclusiveJob<T>(
+    body: () => Promise<T>,
+  ): Promise<{ acquired: false } | { acquired: true; value: T }> {
+    if (transactions.getStore()) throw new Error('Jobs cannot run inside a transaction');
+    return connection().begin(async (guard) => {
+      await guard`SET LOCAL idle_in_transaction_session_timeout = 0`;
+      const [row] =
+        await guard`SELECT pg_try_advisory_xact_lock(hashtextextended('aoki:maintenance',0)) AS locked`;
+      if (!row.locked) return { acquired: false as const };
+      return { acquired: true as const, value: await body() };
+    }) as Promise<{ acquired: false } | { acquired: true; value: T }>;
+  },
   async close() {
     const state = connectionState();
     const old = state.pool;

@@ -7,7 +7,14 @@ if (!command) throw new Error('Usage: node scripts/database-local.mjs <command> 
 const status = JSON.parse(
   readFileSync(`${homedir()}/.config/aokiennji/secrets/supabase-local-status.json`, 'utf8'),
 );
-const url = status.env.DB_URL;
+let url = status.env.DB_URL;
+if (process.env.AOKI_LOCAL_DATABASE) {
+  if (!/^aoki_[a-z0-9_]+$/.test(process.env.AOKI_LOCAL_DATABASE))
+    throw new Error('Invalid local database name');
+  const isolated = new URL(url);
+  isolated.pathname = '/' + process.env.AOKI_LOCAL_DATABASE;
+  url = isolated.href;
+}
 if (!url || !['127.0.0.1', 'localhost', '[::1]'].includes(new URL(url).hostname))
   throw new Error('Expected local Supabase');
 const env = Object.fromEntries(
