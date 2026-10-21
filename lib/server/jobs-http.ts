@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { ApiError, checkOrigin, requireAdmin, rateLimit } from './auth';
 import { limitedBytes, siteError } from './site-content-http';
 import { WEB_JOBS, jobReport, runScheduledJobs, runWebJob } from './jobs';
+import { audit } from './db';
 const ok = (data: unknown) =>
   NextResponse.json({ data }, { headers: { 'Cache-Control': 'private, no-store' } });
 export async function jobsCron(req: NextRequest) {
@@ -57,6 +58,7 @@ export async function jobsAdmin(req: NextRequest) {
       .object({ job: z.enum(WEB_JOBS) })
       .strict()
       .parse(input);
+    await audit('jobs.manual_requested', job, `管理者が定期処理を手動起動：${job}`, actor);
     return ok({ result: await runWebJob(job), report: await jobReport() });
   } catch (error) {
     if (!(error instanceof ApiError)) {

@@ -136,6 +136,8 @@ Vercel用の面談プレビューは架空の商品だけを使い、SQLiteを�
 
 ## 開発・検証
 
+運用画面とサイト停止時の外部監視は [UTA-12の手順](docs/MONITORING.md)、定期処理・暗号化バックアップと復元は [運用手順](docs/OPERATIONS.md) を参照してください。
+
 ```sh
 npm run typecheck
 npm test

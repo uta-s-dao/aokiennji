@@ -70,6 +70,13 @@ export default function AdminOverview({ navigate }: { navigate: (tab: string) =>
           </button>
         ))}
       </div>
+      <section className="admin-card">
+        <h2>サイトの運用</h2>
+        <p>利用枠、接続状態、定期処理と障害通知をまとめて確認できます。</p>
+        <button className="button button-outline" onClick={() => navigate('monitoring')}>
+          運用・外部監視を開く <ArrowRight size={16} />
+        </button>
+      </section>
       <div className="admin-two-col">
         <section className="admin-card">
           <div className="card-title">

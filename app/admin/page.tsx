@@ -31,10 +31,12 @@ import AdminAiUsage from '@/components/AdminAiUsage';
 import AdminBilling from '@/components/AdminBilling';
 import AdminNotifications from '@/components/AdminNotifications';
 import AdminJobs from '@/components/AdminJobs';
+import AdminMonitoring from '@/components/AdminMonitoring';
 import AdminSiteContent from '@/components/AdminSiteContent';
 import type { Overview } from '@/lib/contracts';
 const tabs = [
   { id: 'overview', label: '概要', icon: Gauge },
+  { id: 'monitoring', label: '運用・外部監視', icon: Activity },
   { id: 'site-content', label: 'サイト編集', icon: FileText },
   { id: 'products', label: '商品', icon: Package },
   { id: 'sources', label: '情報源・取込', icon: Boxes },
@@ -186,6 +188,7 @@ export default function Admin() {
               {tab === 'billing' && <AdminBilling />}
               {tab === 'notifications' && <AdminNotifications />}
               {tab === 'jobs' && <AdminJobs />}
+              {tab === 'monitoring' && <AdminMonitoring navigate={select} />}
               {tab === 'audit' && <AdminAudit />}
             </>
           )}

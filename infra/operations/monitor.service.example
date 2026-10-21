@@ -1,0 +1,23 @@
+# Template only: use an independently hosted Node 24 machine, not the site Worker/DB host.
+[Unit]
+Description=AOKI external availability and recovery monitor
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=aoki-monitor
+WorkingDirectory=/opt/aokiennji
+EnvironmentFile=/etc/aoki/monitor.env
+ExecStart=/usr/bin/node /opt/aokiennji/node_modules/tsx/dist/cli.mjs /opt/aokiennji/scripts/monitor.ts
+TimeoutStartSec=240
+StateDirectory=aoki-monitor
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/aoki-monitor
+# Configure the host provider's separate failure/missed-run watchdog after Q018 is agreed.
+# Do not assume this service can notify about its own host being offline.

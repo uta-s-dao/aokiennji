@@ -3,9 +3,9 @@
 - URL：https://aoki-company-questions.sandystork2.chatgpt.site
 - 公開範囲：本人限定（Sitesの認証で保護）
 - Site ID：`appgprj_6ad0c9aacbdc8191a7912199d93da57f`
-- 最終確認済みバージョン：`appgprj_6ad0c9aacbdc8191a7912199d93da57f~appgver_53dee4e07d9c81918762425f040bf651`
-- 掲載処理ID：`appgdep_6ad4cc5053848191b9b475ae7889b439`
-- ソースのコミット：`fb01b29563c49f53262f5673f4a26099f2295cbd`
+- 最終確認済みバージョン：`appgprj_6ad0c9aacbdc8191a7912199d93da57f~appgver_5d7003c3259c819195b344ff578076e3`
+- 掲載処理ID：`appgdep_6ad8964aa868819185f0bdb2f011e22f`
+- ソースのコミット：`8b00753259ba4304c2b2db0fe7f316e5033590da`
 
 ## 回答・メモの入力
 
@@ -39,6 +39,8 @@ HTTPS版はこのSiteを更新する。別のSiteやURLを作り直さない。�
    .openai/hosting.json の `project_id` は上記Site IDを維持し、静的ファイルの出力先は `dist` とする。
 
 ## 今回の確認
+
+- 2026-10-21・UTA-12：既存SiteソースのQ001～Q020を原簿へ復元し、Q018へ独立監視の実行先・判定条件・監視停止時の別連絡経路等を追記。同じURLへの掲載が `succeeded`。本人限定・外部閲覧者0名の既存設定を維持した。PC 1280px／スマートフォン390pxで、更新前Q018の確認済みメモとQ020の未確認メモが更新後も保持されること、未確認から確認済みへ変わらないこと、20問・横はみ出しなし・例外なしを確認。保存キーと入力スクリプトは維持。証跡：`.data/verification/uta12/company-questions-browser.json`。
 
 - 2026-10-18：Q008に、段階ごとの相談・青木さんの確認必須・見積たたき台とメール送信の未決事項を追記。同じURLへの掲載成功、本人限定・外部閲覧者0名を確認。質問番号・ブラウザー保存キーを維持。PC（1280px）・スマートフォン（390px）で既存の回答と確認状況の復元、横はみ出しなし・例外なしを確認（`.data/verification/staged-sales-2026-10-18/questions-browser.json`）。
 

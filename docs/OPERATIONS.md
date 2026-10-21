@@ -39,7 +39,7 @@ PostgreSQLの共通トランザクションadvisory lockにより、Web／schedu
 
 送信は既存のドメイン検証・冪等キー・Webhook・再試行を使う。`EMAIL_DELIVERY_MODE=live` とUTA-10のメール設定に加え、有効な `JOB_ALERT_TO` の明示設定が必要。受付用宛先へ障害通知を自動転用しない。未指定・無効・メール無効ならキューに保留する。送信受付と到達・閲覧を混同しない。
 
-DB／Worker／ジョブそのものの停止時は、このキューも動かない。サイト外部監視はUTA-12の対象。Node実行環境の `OnFailure=` も独立した連絡経路に接続する必要がある。`infra/operations/backup.service.example` の `aoki-backup-failure.service` は参照名だけで未実装・未登録であり、通知済みとは扱わない。主担当・代行者・連絡経路はQ018の確認後に接続する。
+DB／Worker／ジョブそのものの停止時は、このキューも動かない。サイト外部監視は[UTA-12の独立監視手順](MONITORING.md)を参照する（開発実装済み・本番実接続は後日）。Node実行環境の `OnFailure=` も独立した連絡経路に接続する必要がある。`infra/operations/backup.service.example` の `aoki-backup-failure.service` は参照名だけで未実装・未登録であり、通知済みとは扱わない。主担当・代行者・連絡経路はQ018の確認後に接続する。
 
 ## バックアップの範囲
 
