@@ -4573,18 +4573,45 @@ label small {
 }
 
 /* Legacy identity and requested content direction */
-.legacy-brand-logo {
-  display: block;
-  width: 255px;
-  height: 55px;
-  background: url('/images/legacy/header-logo.png') left top / 600px 67px no-repeat;
+/* Independent emblem and live wordmark, shared by header and footer. */
+.brand-identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--navy);
 }
-.brand-light .legacy-brand-logo {
-  width: 225px;
-  height: 50px;
-  border-radius: 4px;
-  background-color: #fff;
-  background-size: 448px 50px;
+.brand-emblem {
+  display: block;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #fff;
+}
+.brand-identity-words {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.brand-identity-name {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.brand-identity-english {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.11em;
+  line-height: 1.4;
+}
+.brand-identity-light {
+  color: #fff;
+}
+.brand-identity-light .brand-identity-english {
+  color: #b9c8d7;
 }
 .hero-slider,
 .hero-slide {
@@ -4738,11 +4765,6 @@ label small {
 }
 
 @media (max-width: 760px) {
-  .legacy-brand-logo {
-    width: 235px;
-    height: 52px;
-    background-size: 565px 63px;
-  }
   .hero-slide {
     background-position: 56% center;
   }
@@ -4807,11 +4829,6 @@ label small {
 @media (min-width: 761px) {
   .site-header {
     height: 96px;
-  }
-  .legacy-brand-logo {
-    width: 286px;
-    height: 62px;
-    background-size: 672px 75px;
   }
   .main-nav {
     gap: 36px;
@@ -4891,11 +4908,6 @@ label small {
 }
 
 @media (max-width: 1280px) and (min-width: 761px) {
-  .legacy-brand-logo {
-    width: 250px;
-    height: 56px;
-    background-size: 615px 69px;
-  }
   .main-nav {
     gap: 22px;
     font-size: 13px;
@@ -5198,4 +5210,17 @@ label small {
   .cms-preview-banner {
     gap: 10px;
   }
+}
+
+@media (max-width: 1280px) and (min-width: 761px) {
+  .site-header .brand-identity { gap: 9px; }
+  .site-header .brand-emblem { width: 38px; height: 38px; flex-basis: 38px; }
+  .site-header .brand-identity-name { font-size: 19px; }
+  .site-header .brand-identity-english { font-size: 9px; }
+}
+@media (max-width: 760px) {
+  .brand-identity { gap: 10px; }
+  .brand-emblem { width: 38px; height: 38px; flex-basis: 38px; }
+  .brand-identity-name { font-size: 20px; }
+  .brand-identity-english { font-size: 9px; }
 }

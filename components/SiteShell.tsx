@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { company } from '@/lib/company';
 import ChatWidget, { type ChatViewState } from './ChatWidget';
 import type { PublicConfig } from '@/lib/contracts';
+import BrandLogo from './BrandLogo';
 import { api } from './api';
 import { useEffect } from 'react';
 
@@ -43,8 +44,7 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
               onClick={() => setMenu(false)}
               aria-label="アオキエンジ ホーム"
             >
-              <span className="legacy-brand-logo" aria-hidden="true" />
-              <span className="sr-only">アオキエンジ株式会社</span>
+              <BrandLogo />
             </Link>
             <nav className={`main-nav ${menu ? 'is-open' : ''}`} aria-label="メインナビゲーション">
               {nav.map((n) => (
@@ -88,8 +88,7 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
           <div className="container footer-grid">
             <div>
               <Link className="brand brand-light" href="/">
-                <span className="legacy-brand-logo" aria-hidden="true" />
-                <span className="sr-only">アオキエンジ株式会社</span>
+                <BrandLogo tone="light" />
               </Link>
               <p>
                 鋼構造物及び機械装置の設計・製作・据付。
