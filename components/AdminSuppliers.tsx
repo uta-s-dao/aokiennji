@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { Plus } from 'lucide-react';
 import type { Supplier, SupplierInput } from '@/lib/contracts';
 import { api, errorMessage } from './api';
 import { Empty, Modal, Notice, useNotice } from './AdminCommon';
@@ -56,7 +57,7 @@ export default function AdminSuppliers() {
             setEdit(null);
           }}
         >
-          仕入先を追加
+          <Plus size={18} aria-hidden="true" /> 仕入先を追加
         </button>
       </div>
       <Notice message={n.error || n.message} type={n.error ? 'error' : 'success'} />

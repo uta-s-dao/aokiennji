@@ -1,5 +1,13 @@
 'use client';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { Modal } from './AdminCommon';
+import SiteContentPreview from './SiteContentPreview';
+import {
+  contentChanges,
+  contentIssues,
+  sectionLabels,
+  type ContentIssue,
+} from '@/lib/site-content-editor';
 import type { SiteContent, SiteEditorState } from '@/lib/site-content';
 import { api, errorMessage } from './api';
 import { prepareSiteImageUpload } from '@/lib/site-image-upload';
@@ -11,6 +19,8 @@ function Field({
   maxLength,
   multiline = false,
   type = 'text',
+  path,
+  hint,
 }: {
   label: string;
   value: string;
@@ -18,12 +28,19 @@ function Field({
   maxLength?: number;
   multiline?: boolean;
   type?: string;
+  path?: string;
+  hint?: string;
 }) {
+  const hintId = useId();
   return (
     <label className="cms-field">
       <span>{label}</span>
+      {hint && <small id={hintId}>{hint}</small>}
       {multiline ? (
         <textarea
+          aria-label={label}
+          aria-describedby={hint ? hintId : undefined}
+          data-content-path={path}
           value={value}
           maxLength={maxLength}
           rows={4}
@@ -32,6 +49,9 @@ function Field({
         />
       ) : (
         <input
+          aria-label={label}
+          aria-describedby={hint ? hintId : undefined}
+          data-content-path={path}
           type={type}
           value={value}
           maxLength={maxLength}
@@ -58,7 +78,8 @@ function Photo({
   onBusy: (busy: boolean) => void;
   onError: (message: string) => void;
 }) {
-  const hintId = useId();
+  const inputId = useId();
+  const [uploadError, setUploadError] = useState('');
   return (
     <div className="cms-photo">
       {/* Uploaded draft images require the administrator's cookie. */}
@@ -67,12 +88,16 @@ function Photo({
         src={value.replace('/api/site-content/images/', '/api/admin/site-content/images/')}
         alt={label}
       />
-      <label className="cms-field">
-        <span>{label}を選ぶ</span>
+      <div className="cms-photo-control">
+        <strong>現在の写真：{label}</strong>
+        <label className="button secondary small" htmlFor={inputId}>
+          写真を差し替える
+        </label>
         <input
           type="file"
           aria-label={`${label}を選ぶ`}
-          aria-describedby={hintId}
+          id={inputId}
+          className="cms-file-input"
           accept="image/jpeg,image/png,image/webp"
           disabled={disabled}
           onChange={async (e) => {
@@ -80,10 +105,12 @@ function Photo({
             const file = input.files?.[0];
             if (!file) return;
             if (file.size > 5 * 1024 * 1024) {
+              setUploadError('写真は5MB以下にしてください。');
               onError('写真は5MB以下にしてください。');
               input.value = '';
               return;
             }
+            setUploadError('');
             onBusy(true);
             try {
               const upload = await prepareSiteImageUpload(file);
@@ -98,6 +125,7 @@ function Photo({
                 throw new Error(result.error?.message || '写真を登録できませんでした。');
               onChange(result.data.url);
             } catch (error) {
+              setUploadError(errorMessage(error));
               onError(errorMessage(error));
             } finally {
               onBusy(false);
@@ -105,10 +133,12 @@ function Photo({
             }
           }}
         />
-        <small id={hintId}>
-          JPEG・PNG・WebP／5MB・2,500万画素以下。写真は自動で圧縮します。公開してよい写真を選んでください。
-        </small>
-      </label>
+        {uploadError && (
+          <p className="form-error" role="alert">
+            {uploadError}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -121,7 +151,11 @@ export default function AdminSiteContent() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [preview, setPreview] = useState(false);
-  const [mobilePreview, setMobilePreview] = useState(false);
+  const [previewAnchor, setPreviewAnchor] = useState('site-home');
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [issues, setIssues] = useState<ContentIssue[]>([]);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const [confirmPublish, setConfirmPublish] = useState(false);
   const dirty = !!saved && JSON.stringify(form) !== JSON.stringify(saved.draft);
 
@@ -160,15 +194,71 @@ export default function AdminSiteContent() {
     };
   }, [dirty]);
 
+  useEffect(() => {
+    if (!pendingPath) return;
+    const node = [
+      ...(editorRef.current?.querySelectorAll<HTMLElement>('[data-content-path]') || []),
+    ].find((element) => element.dataset.contentPath === pendingPath);
+    if (node) {
+      node.focus();
+      node.scrollIntoView({ block: 'center' });
+      setPendingPath(null);
+    }
+  }, [pendingPath, section, selectedProject]);
+  useEffect(() => {
+    const nodes = editorRef.current?.querySelectorAll<HTMLElement>('[data-content-path]');
+    nodes?.forEach((node) => {
+      const invalid = issues.some((issue) => issue.path === node.dataset.contentPath);
+      node.setAttribute('aria-invalid', String(invalid));
+    });
+  }, [issues, section, selectedProject]);
+  useEffect(() => {
+    if (!preview && !confirmPublish) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [preview, confirmPublish]);
+  function openIssue(issue: ContentIssue) {
+    setSection(issue.section);
+    if (issue.section === 'projects') setSelectedProject(issue.itemId || null);
+    setPendingPath(issue.path);
+  }
+  function moveProject(index: number, delta: number) {
+    if (!form) return;
+    const projects = [...form.projects];
+    [projects[index], projects[index + delta]] = [projects[index + delta], projects[index]];
+    update({ ...form, projects });
+  }
+  function openPreview(anchor?: string) {
+    setPreviewAnchor(
+      anchor ||
+        (section === 'news'
+          ? 'site-news'
+          : section === 'projects'
+            ? `site-project-${selectedProject || form?.projects.find((p) => p.published)?.id || ''}`
+            : 'site-home'),
+    );
+    setPreview(true);
+  }
   function update(next: SiteContent) {
     setForm(next);
+    if (issues.length) setIssues(contentIssues(next));
     setMessage('');
+    setError('');
     setPreview(false);
     setConfirmPublish(false);
   }
   async function save(event: React.FormEvent) {
     event.preventDefault();
     if (!form || !saved) return;
+    const invalid = contentIssues(form);
+    setIssues(invalid);
+    if (invalid.length) {
+      openIssue(invalid[0]);
+      return;
+    }
     setBusy(true);
     setError('');
     setMessage('');
@@ -213,15 +303,13 @@ export default function AdminSiteContent() {
         {error || '編集内容を読み込んでいます…'}
       </div>
     );
+  const changes = contentChanges(saved.published, form);
+  const savedChanges = contentChanges(saved.published, saved.draft);
   const photoProps = { disabled: busy, onBusy: setBusy, onError: setError };
   return (
-    <div className="cms-editor">
+    <div className="cms-editor" ref={editorRef}>
       <section className="admin-card cms-guide">
-        <h2>文章と写真を、自分たちで更新できます</h2>
-        <p>① 編集 → ② 下書き保存 → ③ プレビューで確認 → ④ 公開</p>
-        <p className="muted">
-          下書きはお客様には表示されません。「公開」すると、すべての編集項目がまとめて反映されます。
-        </p>
+        <h2>保存・公開の状態</h2>{' '}
         <p>
           <strong>
             {dirty
@@ -234,6 +322,29 @@ export default function AdminSiteContent() {
           {saved.publishedAt ? new Date(saved.publishedAt).toLocaleString('ja-JP') : '初期内容'}
         </p>
       </section>
+      <details className="cms-help">
+        <summary>編集方法・写真の条件</summary>
+        <p>
+          編集 → 下書き保存 → プレビュー → 公開の順に進めます。保存だけではサイトに反映されません。
+        </p>
+        <p>公開すると、全タブの保存済み変更がまとめて反映されます。</p>
+        <p>写真はJPEG・PNG・WebP、5MB以下。自動で圧縮します。公開してよい写真をご用意ください。</p>
+      </details>
+      {issues.length > 0 && (
+        <div className="admin-notice error cms-issues" role="alert">
+          <strong>入力が必要な項目があります</strong>
+          {issues.map((issue) => (
+            <button
+              type="button"
+              className="link-button"
+              key={issue.path}
+              onClick={() => openIssue(issue)}
+            >
+              {issue.message}
+            </button>
+          ))}
+        </div>
+      )}
       {error && (
         <div className="admin-notice error" role="alert">
           {error}
@@ -255,6 +366,7 @@ export default function AdminSiteContent() {
           <button
             type="button"
             className={`button ${section === key ? 'primary' : 'secondary'} small`}
+            aria-label={label}
             aria-pressed={section === key}
             key={key}
             onClick={() => {
@@ -263,28 +375,55 @@ export default function AdminSiteContent() {
             }}
           >
             {label}
+            {(changes.some((change) => change.section === key) ||
+              JSON.stringify(form[key]) !== JSON.stringify(saved.draft[key])) && (
+              <span className="cms-change-mark">
+                {JSON.stringify(form[key]) !== JSON.stringify(saved.draft[key])
+                  ? '未保存'
+                  : '未公開'}
+              </span>
+            )}
+            {issues.some((issue) => issue.section === key) && (
+              <span>要入力 {issues.filter((issue) => issue.section === key).length}</span>
+            )}
           </button>
         ))}
       </div>
-      <form onSubmit={save} className="admin-form">
+      <form onSubmit={save} className="admin-form" noValidate>
         <fieldset disabled={busy} className="cms-fieldset">
           {section === 'home' && (
             <section className="admin-card">
-              <h2>トップページの文章</h2>
+              <div className="card-title">
+                <h2>トップページの文章</h2>
+                <button
+                  type="button"
+                  className="button secondary small"
+                  disabled={dirty}
+                  onClick={() => openPreview('site-home')}
+                >
+                  掲載位置を確認
+                </button>
+              </div>
               <Field
                 label="メイン見出し"
+                path="home.title"
+                hint="トップ最上部の写真に重なる見出しの1行目です。"
                 value={form.home.title}
                 maxLength={100}
                 onChange={(title) => update({ ...form, home: { ...form.home, title } })}
               />
               <Field
                 label="見出しの強調部分"
+                path="home.subtitle"
+                hint="メイン見出しの下に表示する強調行です。"
                 value={form.home.subtitle}
                 maxLength={100}
                 onChange={(subtitle) => update({ ...form, home: { ...form.home, subtitle } })}
               />
               <Field
                 label="冒頭の紹介文"
+                path="home.lead"
+                hint="トップ最上部の見出しの下に表示します。"
                 value={form.home.lead}
                 maxLength={600}
                 multiline
@@ -292,6 +431,8 @@ export default function AdminSiteContent() {
               />
               <Field
                 label="事業の紹介文"
+                path="home.introduction"
+                hint="トップの写真より下にある「OUR BUSINESS」の大きな文章です。"
                 value={form.home.introduction}
                 maxLength={1000}
                 multiline
@@ -299,7 +440,18 @@ export default function AdminSiteContent() {
                   update({ ...form, home: { ...form.home, introduction } })
                 }
               />
+              <button
+                type="button"
+                className="link-button"
+                disabled={dirty}
+                onClick={() => openPreview('strength')}
+              >
+                事業の紹介文の掲載位置を確認
+              </button>
               <h2>メイン写真（3枚）</h2>
+              <p className="help">
+                トップ最上部で切り替わる写真です。写真の条件は「編集方法・写真の条件」で確認できます。
+              </p>
               {form.home.slides.map((slide, i) => (
                 <div className="cms-item" key={i}>
                   <Photo
@@ -318,6 +470,8 @@ export default function AdminSiteContent() {
                   />
                   <Field
                     label={`写真${i + 1}の説明`}
+                    path={`home.slides.${i}.label`}
+                    hint="写真の内容を短く説明します。"
                     value={slide.label}
                     maxLength={100}
                     onChange={(label) =>
@@ -368,6 +522,7 @@ export default function AdminSiteContent() {
                   <h3>お知らせ {i + 1}</h3>
                   <Field
                     label="お知らせのタイトル"
+                    path={`news.${i}.title`}
                     value={item.title}
                     maxLength={120}
                     onChange={(title) =>
@@ -379,6 +534,7 @@ export default function AdminSiteContent() {
                   />
                   <Field
                     label="掲載日"
+                    path={`news.${i}.date`}
                     type="date"
                     value={item.date}
                     onChange={(date) =>
@@ -390,6 +546,7 @@ export default function AdminSiteContent() {
                   />
                   <Field
                     label="お知らせの本文"
+                    path={`news.${i}.body`}
                     value={item.body}
                     multiline
                     maxLength={3000}
@@ -436,19 +593,20 @@ export default function AdminSiteContent() {
           {section === 'projects' && (
             <section className="admin-card">
               <h2>製作実績</h2>
-              <p className="muted">
-                公開対象の実績を一覧へ表示し、先頭3件をトップページへ掲載します。
+              <p className="help">
+                公開対象の先頭3件がトップページにも表示されます。編集する実績を選んでください。
               </p>
               <button
                 type="button"
                 className="button secondary small"
                 disabled={form.projects.length >= 100}
-                onClick={() =>
+                onClick={() => {
+                  const id = crypto.randomUUID();
                   update({
                     ...form,
                     projects: [
                       {
-                        id: crypto.randomUUID(),
+                        id,
                         name: '',
                         category: '',
                         description: '',
@@ -457,125 +615,181 @@ export default function AdminSiteContent() {
                       },
                       ...form.projects,
                     ],
-                  })
-                }
+                  });
+                  setSelectedProject(id);
+                  setPendingPath('projects.0.name');
+                }}
               >
-                実績を追加
+                ＋ 実績を追加
               </button>
-              {form.projects.map((item, i) => (
-                <div className="cms-item" key={item.id}>
-                  <h3>実績 {i + 1}</h3>
-                  <Field
-                    label="実績名"
-                    value={item.name}
-                    maxLength={120}
-                    onChange={(name) =>
-                      update({
-                        ...form,
-                        projects: form.projects.map((p) => (p.id === item.id ? { ...p, name } : p)),
-                      })
-                    }
-                  />
-                  <Field
-                    label="カテゴリ"
-                    value={item.category}
-                    maxLength={60}
-                    onChange={(category) =>
-                      update({
-                        ...form,
-                        projects: form.projects.map((p) =>
-                          p.id === item.id ? { ...p, category } : p,
-                        ),
-                      })
-                    }
-                  />
-                  <Field
-                    label="実績の説明"
-                    value={item.description}
-                    maxLength={1500}
-                    multiline
-                    onChange={(description) =>
-                      update({
-                        ...form,
-                        projects: form.projects.map((p) =>
-                          p.id === item.id ? { ...p, description } : p,
-                        ),
-                      })
-                    }
-                  />
-                  <Photo
-                    {...photoProps}
-                    label={`実績写真${i + 1}`}
-                    value={item.image}
-                    onChange={(image) =>
-                      update({
-                        ...form,
-                        projects: form.projects.map((p) =>
-                          p.id === item.id ? { ...p, image } : p,
-                        ),
-                      })
-                    }
-                  />
-                  <label className="cms-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={item.published}
-                      onChange={(e) =>
-                        update({
-                          ...form,
-                          projects: form.projects.map((p) =>
-                            p.id === item.id ? { ...p, published: e.target.checked } : p,
-                          ),
-                        })
-                      }
-                    />
-                    公開対象にする
-                  </label>
-                  <div className="cms-actions">
+              <div className="cms-project-list" aria-label="実績の一覧">
+                {form.projects.map((item, i) => (
+                  <div className="cms-project-row" key={item.id}>
                     <button
                       type="button"
-                      className="button secondary small"
-                      disabled={i === 0}
+                      className="cms-project-select"
+                      aria-expanded={selectedProject === item.id}
                       onClick={() => {
-                        const projects = [...form.projects];
-                        [projects[i - 1], projects[i]] = [projects[i], projects[i - 1]];
-                        update({ ...form, projects });
+                        setSelectedProject(item.id);
+                        setPendingPath(`projects.${i}.name`);
                       }}
                     >
-                      上へ
+                      <img
+                        src={item.image.replace(
+                          '/api/site-content/images/',
+                          '/api/admin/site-content/images/',
+                        )}
+                        alt=""
+                      />
+                      <span>
+                        <strong>{item.name || '新しい実績（名称未入力）'}</strong>
+                        <small>
+                          {item.published ? '公開対象' : '非公開'}
+                          {issues.some((issue) => issue.itemId === item.id) ? ' ・要入力' : ''}
+                        </small>
+                      </span>
                     </button>
-                    <button
-                      type="button"
-                      className="button secondary small"
-                      disabled={i === form.projects.length - 1}
-                      onClick={() => {
-                        const projects = [...form.projects];
-                        [projects[i], projects[i + 1]] = [projects[i + 1], projects[i]];
-                        update({ ...form, projects });
-                      }}
-                    >
-                      下へ
-                    </button>
-                    <button
-                      type="button"
-                      className="button secondary small"
-                      onClick={() => {
-                        if (
-                          confirm(
-                            'この実績を下書きから削除しますか？公開サイトへの反映には「公開」が必要です。',
-                          )
-                        )
+                    <div className="cms-order-buttons">
+                      <button
+                        type="button"
+                        className="button secondary small"
+                        aria-label={`${item.name || '新しい実績'}を上へ`}
+                        disabled={i === 0}
+                        onClick={() => moveProject(i, -1)}
+                      >
+                        上へ
+                      </button>
+                      <button
+                        type="button"
+                        className="button secondary small"
+                        aria-label={`${item.name || '新しい実績'}を下へ`}
+                        disabled={i === form.projects.length - 1}
+                        onClick={() => moveProject(i, 1)}
+                      >
+                        下へ
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {form.projects.map(
+                (item, i) =>
+                  selectedProject === item.id && (
+                    <div className="cms-item" key={item.id} aria-label="実績の編集">
+                      <div className="card-title">
+                        <h3>{item.name || '新しい実績'}を編集</h3>
+                        <button
+                          type="button"
+                          className="button secondary small"
+                          onClick={() => setSelectedProject(null)}
+                        >
+                          編集を閉じる
+                        </button>
+                      </div>
+                      <Field
+                        label="実績名"
+                        path={`projects.${i}.name`}
+                        value={item.name}
+                        maxLength={120}
+                        onChange={(name) =>
                           update({
                             ...form,
-                            projects: form.projects.filter((p) => p.id !== item.id),
-                          });
-                      }}
-                    >
-                      この実績を削除
-                    </button>
-                  </div>
-                </div>
-              ))}
+                            projects: form.projects.map((p) =>
+                              p.id === item.id ? { ...p, name } : p,
+                            ),
+                          })
+                        }
+                      />
+                      <Field
+                        label="カテゴリ"
+                        path={`projects.${i}.category`}
+                        value={item.category}
+                        maxLength={60}
+                        onChange={(category) =>
+                          update({
+                            ...form,
+                            projects: form.projects.map((p) =>
+                              p.id === item.id ? { ...p, category } : p,
+                            ),
+                          })
+                        }
+                      />
+                      <Field
+                        label="実績の説明"
+                        path={`projects.${i}.description`}
+                        value={item.description}
+                        maxLength={1500}
+                        multiline
+                        onChange={(description) =>
+                          update({
+                            ...form,
+                            projects: form.projects.map((p) =>
+                              p.id === item.id ? { ...p, description } : p,
+                            ),
+                          })
+                        }
+                      />
+                      <Photo
+                        {...photoProps}
+                        label={`実績写真${i + 1}`}
+                        value={item.image}
+                        onChange={(image) =>
+                          update({
+                            ...form,
+                            projects: form.projects.map((p) =>
+                              p.id === item.id ? { ...p, image } : p,
+                            ),
+                          })
+                        }
+                      />
+                      <label className="cms-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={item.published}
+                          onChange={(e) =>
+                            update({
+                              ...form,
+                              projects: form.projects.map((p) =>
+                                p.id === item.id ? { ...p, published: e.target.checked } : p,
+                              ),
+                            })
+                          }
+                        />
+                        公開対象にする
+                      </label>
+
+                      <div className="cms-actions">
+                        <button
+                          type="button"
+                          className="button secondary small"
+                          disabled={dirty || !item.published}
+                          onClick={() => openPreview(`site-project-${item.id}`)}
+                        >
+                          この実績の掲載位置を確認
+                        </button>
+                        <button
+                          type="button"
+                          className="button secondary small"
+                          onClick={() => {
+                            if (
+                              confirm(
+                                'この実績を下書きから削除しますか？公開するまでサイトには残ります。',
+                              )
+                            ) {
+                              update({
+                                ...form,
+                                projects: form.projects.filter((p) => p.id !== item.id),
+                              });
+                              setSelectedProject(null);
+                            }
+                          }}
+                        >
+                          この実績を削除
+                        </button>
+                      </div>
+                    </div>
+                  ),
+              )}
             </section>
           )}
         </fieldset>
@@ -588,7 +802,7 @@ export default function AdminSiteContent() {
             className="button secondary"
             disabled={busy || dirty}
             onClick={() => {
-              setPreview(!preview);
+              openPreview();
               setConfirmPublish(false);
             }}
           >
@@ -600,20 +814,76 @@ export default function AdminSiteContent() {
             disabled={busy || dirty || !saved.hasUnpublishedChanges}
             onClick={() => setConfirmPublish(true)}
           >
-            公開する
+            変更をまとめて公開
           </button>
           {dirty && <small>プレビュー・公開の前に下書きを保存してください。</small>}
         </div>
       </form>
       {confirmPublish && (
-        <section className="admin-card cms-confirm" aria-label="公開の確認">
-          <h2>保存した下書きを公開しますか？</h2>
-          <p>
-            トップページ・お知らせ・製作実績の変更をまとめて公開します。公開対象のチェックを外した項目は表示されません。
-          </p>
+        <Modal
+          title="公開する変更の確認"
+          onClose={() => {
+            if (!busy) setConfirmPublish(false);
+          }}
+          wide
+        >
+          <p>以下の保存済み変更をまとめて公開します。</p>
+          <div className="cms-change-list">
+            {savedChanges.map((change, index) => (
+              <article key={index}>
+                <h3>
+                  {sectionLabels[change.section]}：{change.label}
+                </h3>
+                <dl>
+                  <div>
+                    <dt>現在の内容</dt>
+                    <dd>
+                      {change.image && change.before ? (
+                        <img
+                          src={change.before.replace(
+                            '/api/site-content/images/',
+                            '/api/admin/site-content/images/',
+                          )}
+                          alt="現在の写真"
+                        />
+                      ) : (
+                        change.before || '（空欄）'
+                      )}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>公開後</dt>
+                    <dd>
+                      {change.image ? (
+                        <img
+                          src={change.after.replace(
+                            '/api/site-content/images/',
+                            '/api/admin/site-content/images/',
+                          )}
+                          alt="公開後の写真"
+                        />
+                      ) : (
+                        change.after || '（空欄）'
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+              </article>
+            ))}
+          </div>
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
           <div className="cms-actions">
-            <button type="button" className="button primary" disabled={busy} onClick={publish}>
-              この内容を公開
+            <button
+              type="button"
+              className="button primary"
+              disabled={busy || dirty}
+              onClick={publish}
+            >
+              {busy ? '公開しています…' : 'この内容を公開'}
             </button>
             <button
               type="button"
@@ -624,39 +894,15 @@ export default function AdminSiteContent() {
               戻る
             </button>
           </div>
-        </section>
+        </Modal>
       )}
       {preview && (
-        <section className="admin-card cms-preview" aria-label="下書きプレビュー">
-          <h2>保存した下書きのプレビュー</h2>
-          <p className="muted">
-            公開サイトと同じ表示です。リンクを押すと移動するため、確認後はプレビューを開き直してください。
-          </p>
-          <div className="cms-actions">
-            <button
-              type="button"
-              className="button secondary small"
-              aria-pressed={!mobilePreview}
-              onClick={() => setMobilePreview(false)}
-            >
-              PC表示
-            </button>
-            <button
-              type="button"
-              className="button secondary small"
-              aria-pressed={mobilePreview}
-              onClick={() => setMobilePreview(true)}
-            >
-              スマートフォン表示
-            </button>
-          </div>
-          <iframe
-            key={`${saved.revision}-${section}`}
-            title="保存した下書き"
-            src={`/admin/site-preview?view=${section === 'projects' ? 'projects' : 'home'}`}
-            className={mobilePreview ? 'cms-frame-mobile' : ''}
-          />
-        </section>
+        <SiteContentPreview
+          revision={saved.revision}
+          view={section === 'projects' ? 'projects' : 'home'}
+          anchor={previewAnchor}
+          onClose={() => setPreview(false)}
+        />
       )}
     </div>
   );

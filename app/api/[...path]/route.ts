@@ -46,6 +46,8 @@ import {
   approveOrder,
   conversationMessages,
   createQuote,
+  createAdminQuote,
+  createAdminOrder,
   customerQuote,
   dispatchOrder,
   getPublicProduct,
@@ -73,6 +75,8 @@ import {
   productSchema,
   quoteRequestSchema,
   quoteUpdateSchema,
+  adminDocumentSchema,
+  adminOrderSchema,
   settingsSchema,
   sourceSchema,
   supplierSchema,
@@ -541,11 +545,29 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
       }
     }
     if (p[0] === 'admin' && p[1] === 'quotes') {
+      if (method === 'POST' && p.length === 2) {
+        const input = adminDocumentSchema.parse(await body(req));
+        return ok(
+          await once('admin:quote', req.headers.get('idempotency-key'), input, () =>
+            createAdminQuote(input),
+          ),
+          201,
+        );
+      }
       if (method === 'GET') return ok((await list<Quote>('quotes')).toReversed());
       if (method === 'PUT')
         return ok(await updateQuote(p[2], quoteUpdateSchema.parse(await body(req))));
     }
     if (p[0] === 'admin' && p[1] === 'orders') {
+      if (method === 'POST' && p.length === 2) {
+        const input = adminOrderSchema.parse(await body(req));
+        return ok(
+          await once('admin:order', req.headers.get('idempotency-key'), input, () =>
+            createAdminOrder(input),
+          ),
+          201,
+        );
+      }
       if (p.length === 5 && p[3] === 'history' && /^\d+$/.test(p[4])) {
         const context = { kind: 'order' as const, orderId: p[2], line: Number(p[4]) };
         if (method === 'GET') return ok(await procurementHistory(context));

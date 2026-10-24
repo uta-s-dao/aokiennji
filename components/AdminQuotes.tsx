@@ -1,5 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { Plus } from 'lucide-react';
+import AdminCreateDocument from './AdminCreateDocument';
 import type { Quote, QuoteLine } from '@/lib/contracts';
 import { api, date, errorMessage, yen } from './api';
 import { Empty, Modal, Notice, useNotice } from './AdminCommon';
@@ -12,6 +14,7 @@ const labels: Record<Quote['status'], string> = {
   cancelled: '取消済み',
 };
 export default function AdminQuotes() {
+  const [creating, setCreating] = useState(false);
   const [aokiReviewed, setAokiReviewed] = useState(false);
   const [items, setItems] = useState<Quote[]>([]),
     [edit, setEdit] = useState<Quote | null>(null),
@@ -55,7 +58,7 @@ export default function AdminQuotes() {
       setAokiReviewed(false);
       n.success(
         status === 'issued'
-          ? '見積を発行しました。専用リンクから確認できます。'
+          ? '見積を発行しました。お客様へのメールは未送信です。専用リンクを手動でご案内ください。'
           : '見積を保存しました',
       );
       await load();
@@ -71,7 +74,20 @@ export default function AdminQuotes() {
     : 0;
   return (
     <>
-      <p className="muted">相談内容を確認し、明細を作成して専用リンクでご案内します。</p>
+      <div className="admin-toolbar">
+        <p className="muted">
+          正式見積は青木さんの確認後に発行します。発行時にお客様へメールは送信されません。専用リンクを手動でご案内ください。
+        </p>
+        <button
+          className="button primary"
+          onClick={() => {
+            n.clear();
+            setCreating(true);
+          }}
+        >
+          <Plus size={18} aria-hidden="true" /> 見積を新規作成
+        </button>
+      </div>
       <Notice message={n.error || n.message} type={n.error ? 'error' : 'success'} />
       {items.length ? (
         <div className="admin-card table-scroll">
@@ -152,7 +168,7 @@ export default function AdminQuotes() {
       ) : (
         <Empty
           title="見積依頼はまだありません"
-          detail="公開サイトの製品詳細から見積を依頼できます。"
+          detail="「見積を新規作成」から直接作成するか、お客様の見積依頼を受け付けられます。"
         />
       )}
       {edit && (
@@ -305,6 +321,17 @@ export default function AdminQuotes() {
             </div>
           </div>
         </Modal>
+      )}
+      {creating && (
+        <AdminCreateDocument
+          kind="quote"
+          onClose={() => setCreating(false)}
+          onCreated={() => {
+            setCreating(false);
+            n.success('見積を下書き保存しました');
+            void load();
+          }}
+        />
       )}
       {viewing && <ConversationDetail id={viewing} onClose={() => setViewing(null)} />}
     </>

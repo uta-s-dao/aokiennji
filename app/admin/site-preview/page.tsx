@@ -7,26 +7,28 @@ import { getSiteEditor } from '@/lib/server/site-content';
 import { previewSiteContent } from '@/lib/site-content';
 import HomePageView from '@/components/HomePageView';
 import ProjectsPage from '@/components/ProjectsPage';
+import SitePreviewPosition from '@/components/SitePreviewPosition';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export default async function SitePreview({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{ view?: string; anchor?: string }>;
 }) {
   try {
-    (await requireAdmin(
+    await requireAdmin(
       new NextRequest('http://localhost/admin/site-preview', { headers: await headers() }),
-    ));
+    );
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) redirect('/admin/login');
     throw error;
   }
   const content = previewSiteContent((await getSiteEditor()).draft);
-  const view = (await searchParams).view;
+  const { view, anchor = 'site-home' } = await searchParams;
   return (
     <>
+      <SitePreviewPosition anchor={anchor} />
       <div className="cms-preview-banner">
         下書きプレビュー（管理者のみ）
         <Link href="/admin/site-preview?view=home">トップページ</Link>

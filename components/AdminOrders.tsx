@@ -1,5 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { Plus } from 'lucide-react';
+import AdminCreateDocument from './AdminCreateDocument';
 import type { Order, Quote } from '@/lib/contracts';
 import { api, datetime, errorMessage, yen } from './api';
 import { Empty, Notice, useNotice } from './AdminCommon';
@@ -13,6 +15,7 @@ const labels: Record<Order['status'], string> = {
   needs_reconciliation: '送信結果の確認が必要',
 };
 export default function AdminOrders() {
+  const [creating, setCreating] = useState(false);
   const [items, setItems] = useState<Order[]>([]),
     [quotes, setQuotes] = useState<Quote[]>([]),
     [busy, setBusy] = useState('');
@@ -56,7 +59,18 @@ export default function AdminOrders() {
   }
   return (
     <>
-      <p className="muted">お客様が確認した見積から作成された注文依頼です。</p>
+      <div className="admin-toolbar">
+        <p className="muted">お客様からの注文依頼と、管理画面から作成した注文を管理します。</p>
+        <button
+          className="button primary"
+          onClick={() => {
+            n.clear();
+            setCreating(true);
+          }}
+        >
+          <Plus size={18} aria-hidden="true" /> 注文を新規作成
+        </button>
+      </div>
       <Notice message={n.error || n.message} type={n.error ? 'error' : 'success'} />
       {items.length ? (
         <div className="admin-card table-scroll">
@@ -75,6 +89,10 @@ export default function AdminOrders() {
                 <tr key={o.id}>
                   <td>
                     <strong>{o.id.slice(0, 8)}</strong>
+                    <small>
+                      {quotes.find((q) => q.id === o.quoteId)?.company}{' '}
+                      {quotes.find((q) => q.id === o.quoteId)?.name}
+                    </small>
                     <small>見積 {o.quoteId.slice(0, 8)}</small>
                     {o.isDemo && <small>デモ注文</small>}
                   </td>
@@ -128,7 +146,18 @@ export default function AdminOrders() {
       ) : (
         <Empty
           title="注文依頼はまだありません"
-          detail="注文機能を有効にすると、発行済みの見積ページからお客様が注文を依頼できます。"
+          detail="「注文を新規作成」から直接作成できます。注文機能を有効にすると、お客様の見積ページからも依頼できます。"
+        />
+      )}
+      {creating && (
+        <AdminCreateDocument
+          kind="order"
+          onClose={() => setCreating(false)}
+          onCreated={() => {
+            setCreating(false);
+            n.success('承認待ちの注文を作成しました');
+            void load();
+          }}
         />
       )}
     </>

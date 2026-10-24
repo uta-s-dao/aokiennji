@@ -474,6 +474,17 @@ export interface QuoteLine {
   quantity: number;
   unitPrice: number;
 }
+export interface AdminDocumentInput {
+  name: string;
+  company: string;
+  email: string;
+  message: string;
+  lines: QuoteLine[];
+  shipping: number;
+  taxRate: number;
+  expiresAt: string;
+  notes: string;
+}
 export interface Quote {
   id: string;
   token: string;

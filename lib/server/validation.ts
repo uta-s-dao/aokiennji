@@ -194,3 +194,15 @@ export const quoteUpdateSchema = z.object({
   notes: text(5000),
   status: z.enum(['requested', 'draft', 'issued', 'cancelled']),
 });
+export const adminDocumentSchema = quoteUpdateSchema
+  .omit({ status: true, aokiReviewed: true })
+  .extend({
+    name: text(100).min(1),
+    company: text(200),
+    email: z.string().email().max(200),
+    message: text(5000),
+  });
+export const adminOrderSchema = adminDocumentSchema.extend({
+  aokiReviewed: z.literal(true),
+  customerConfirmed: z.literal(true),
+});

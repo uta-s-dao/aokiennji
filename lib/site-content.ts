@@ -22,6 +22,7 @@ export type SiteContent = {
 export type SiteEditorState = {
   revision: number;
   draft: SiteContent;
+  published: SiteContent;
   publishedAt: string | null;
   hasUnpublishedChanges: boolean;
 };
