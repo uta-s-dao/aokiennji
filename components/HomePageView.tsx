@@ -21,7 +21,7 @@ export default function HomePageView({ content }: { content: SiteContent }) {
   return (
     <SiteShell>
       <StructuredData data={organizationSchema()} />
-      <section className="hero">
+      <section className="hero" id="site-home">
         <HeroSlider slides={home.slides} />
         <div className="container hero-inner">
           <div className="hero-copy">
@@ -59,7 +59,7 @@ export default function HomePageView({ content }: { content: SiteContent }) {
         </div>
       </section>
       {news.length > 0 && (
-        <section className="section cms-news" aria-label="お知らせ">
+        <section id="site-news" className="section cms-news" aria-label="お知らせ">
           <div className="container">
             <p className="eyebrow">NEWS</p>
             <h2 className="section-title">お知らせ</h2>

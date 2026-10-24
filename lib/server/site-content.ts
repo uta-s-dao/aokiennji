@@ -1,5 +1,4 @@
 import { prepareSiteImage } from './site-image';
-import { z } from 'zod';
 import { staticImageExists } from './runtime-assets';
 import {
   DEFAULT_SITE_CONTENT,
@@ -12,66 +11,8 @@ import { db, lockResource, audit, now, uid } from './db';
 import { ApiError } from './auth';
 
 const assetPrefix = '/api/site-content/images/';
-const localImage = z
-  .string()
-  .max(220)
-  .regex(
-    /^\/(?:images\/[a-zA-Z0-9_/-]+\.(?:jpg|jpeg|png|webp)|api\/site-content\/images\/[a-f0-9-]{36})$/,
-  );
-const text = (max: number) => z.string().trim().min(1).max(max);
-const date = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/)
-  .refine((s) => {
-    const d = new Date(`${s}T00:00:00Z`);
-    return !Number.isNaN(d.valueOf()) && d.toISOString().slice(0, 10) === s;
-  }, '日付を確認してください');
-export const siteContentSchema = z
-  .object({
-    home: z
-      .object({
-        title: text(100),
-        subtitle: text(100),
-        lead: text(600),
-        introduction: text(1000),
-        slides: z.array(z.object({ image: localImage, label: text(100) }).strict()).length(3),
-      })
-      .strict(),
-    news: z
-      .array(
-        z
-          .object({
-            id: z.string().uuid(),
-            title: text(120),
-            date,
-            body: text(3000),
-            published: z.boolean(),
-          })
-          .strict(),
-      )
-      .max(100),
-    projects: z
-      .array(
-        z
-          .object({
-            id: text(100).regex(/^[a-zA-Z0-9-]+$/),
-            name: text(120),
-            category: text(60),
-            image: localImage,
-            description: text(1500),
-            published: z.boolean(),
-          })
-          .strict(),
-      )
-      .max(100),
-  })
-  .strict()
-  .superRefine((c, ctx) => {
-    for (const key of ['news', 'projects'] as const) {
-      if (new Set(c[key].map((p) => p.id)).size !== c[key].length)
-        ctx.addIssue({ code: 'custom', path: [key], message: '重複した項目があります' });
-    }
-  });
+export { siteContentSchema } from '../site-content-editor';
+import { siteContentSchema } from '../site-content-editor';
 
 function connection() {
   return db();
@@ -84,6 +25,7 @@ function editor(r: Row): SiteEditorState {
   return {
     revision: r.revision,
     draft: JSON.parse(r.draft),
+    published: JSON.parse(r.published),
     publishedAt: r.published_at,
     hasUnpublishedChanges: r.draft !== r.published,
   };

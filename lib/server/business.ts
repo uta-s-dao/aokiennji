@@ -13,6 +13,7 @@ import type {
   ChatMessage,
   AuditEvent,
   Overview,
+  AdminDocumentInput,
 } from '../contracts';
 import {
   db,
@@ -229,6 +230,50 @@ export async function createQuote(
     return customerQuote(q);
   })();
 }
+// Staff entry is independent of the public request form and never sends a notification.
+export async function createAdminQuote(input: AdminDocumentInput): Promise<Quote> {
+  return await db().transaction(async () => {
+    const calc = amount(input.lines, input.shipping, input.taxRate);
+    if (!Number.isFinite(Date.parse(input.expiresAt)))
+      throw new ApiError(400, 'invalid_date', '期限が不正です。');
+    for (const line of input.lines) {
+      if (line.productId && !(await byId<Product>('products', line.productId)))
+        throw new ApiError(400, 'invalid_product', '選択した商品が見つかりません。');
+    }
+    const t = now();
+    const quote: Quote = {
+      ...input,
+      ...calc,
+      id: uid(),
+      token: crypto.randomUUID() + crypto.randomUUID().replaceAll('-', ''),
+      status: 'draft',
+      createdAt: t,
+      updatedAt: t,
+      isDemo: demoMode(),
+    };
+    await save('quotes', quote, { token: quote.token });
+    await audit('quote.staff_created', quote.id, '管理画面から見積の下書きを作成しました');
+    return quote;
+  })();
+}
+
+export async function createAdminOrder(
+  input: AdminDocumentInput & { aokiReviewed: boolean; customerConfirmed: boolean },
+): Promise<Order> {
+  return await db().transaction(async () => {
+    await requireFlag('orders');
+    if (!input.aokiReviewed || !input.customerConfirmed)
+      throw new ApiError(400, 'review_required', '見積内容とお客様の注文意思を確認してください。');
+    // Keep the existing reviewed quote and order invariants in one atomic operation.
+    const { aokiReviewed, customerConfirmed: _confirmed, ...document } = input;
+    const quote = await createAdminQuote(document);
+    await updateQuote(quote.id, { status: 'issued', aokiReviewed });
+    const order = await acceptQuote(quote.token, true, `staff:${quote.id}`);
+    await audit('order.staff_created', order.id, '管理画面から承認待ちの注文を作成しました');
+    return order;
+  })();
+}
+
 export async function getQuoteByToken(token: string) {
   const row = (await db().prepare('SELECT json FROM quotes WHERE token=?').get(token)) as
     { json: string } | undefined;

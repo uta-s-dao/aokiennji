@@ -67,7 +67,7 @@ export function Modal({
       if (e.key === 'Tab') {
         const nodes = Array.from(
           panel.current?.querySelectorAll<HTMLElement>(
-            'button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),a[href]',
+            'button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),a[href],iframe',
           ) || [],
         );
         const first = nodes[0],

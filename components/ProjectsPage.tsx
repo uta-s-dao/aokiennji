@@ -36,7 +36,7 @@ export default function Projects({ projects }: { projects: SiteProject[] }) {
             {projects
               .filter((p) => category === 'すべて' || p.category === category)
               .map((p) => (
-                <article className="project-card" key={p.id}>
+                <article className="project-card" id={`site-project-${p.id}`} key={p.id}>
                   <div className="project-image">
                     <Image
                       src={p.image}

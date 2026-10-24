@@ -143,8 +143,12 @@ export default function ChatWidget({
   useEffect(() => {
     if (open) {
       // Focus must not scroll the document underneath the conversation.
-      input.current?.focus({ preventScroll: true });
-      if (scroller.current) scroller.current.scrollTop = scroller.current.scrollHeight;
+      if (window.matchMedia('(min-width: 761px)').matches) {
+        input.current?.focus({ preventScroll: true });
+      } else {
+        panel.current?.focus({ preventScroll: true });
+      }
+      if (scroller.current && !messages.length) scroller.current.scrollTop = 0;
     } else if (previousFocus.current) {
       // Wait for the parent to reveal the consultation form again.
       const frame = requestAnimationFrame(() => {
@@ -204,7 +208,8 @@ export default function ChatWidget({
     const el = scroller.current;
     if (!open || !el) return;
     const latest = el.querySelector<HTMLElement>('.chat-message:last-of-type');
-    if (lastMessage?.role === 'assistant' && latest) {
+    if (!messages.length) el.scrollTop = 0;
+    else if (lastMessage?.role === 'assistant' && latest) {
       el.scrollTop += latest.getBoundingClientRect().top - el.getBoundingClientRect().top - 18;
     } else el.scrollTop = el.scrollHeight;
     setAtBottom(el.scrollHeight - el.clientHeight - el.scrollTop < 32);
@@ -293,6 +298,7 @@ export default function ChatWidget({
             ref={panel}
             id="product-chat"
             className="chat-panel"
+            tabIndex={-1}
             role="dialog"
             aria-modal={!docked}
             aria-label="商品相談チャット"
@@ -627,7 +633,7 @@ export default function ChatWidget({
                   )
                 )}
               </div>
-              {!atBottom && (
+              {messages.length > 0 && !atBottom && (
                 <button
                   className="chat-jump"
                   type="button"
