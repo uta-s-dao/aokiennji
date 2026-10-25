@@ -1,3 +1,4 @@
+import { requestPatterns } from '../chat-policy';
 import { z } from 'zod';
 import type { AiUsageContext, AppSettings, ChatMessage } from '../contracts';
 import { CONSULTATION_POLICY } from '../consultation-policy';
@@ -53,7 +54,9 @@ export async function understandInquiry(input: {
         },
       }),
     );
-    if (!/\d/.test(result.dimensions.normalize('NFKC'))) result.dimensions = '';
+    if (!/\d+\s*(?:mm|cm|m|ミリ|センチ|メートル|インチ|寸|尺)/i.test(result.dimensions.normalize('NFKC'))) result.dimensions = '';
+    // Model interpretation alone is not evidence of an explicit handoff request.
+    if (result.handoffPreference === 'requested' && !requestPatterns.handoff.test(input.message)) result.handoffPreference = 'unchanged';
     const customerWords = input.history.filter(m => m.role === 'user').map(m => m.content).concat(input.message);
     if (!result.identityUnavailableEvidence || !customerWords.some(t => t.includes(result.identityUnavailableEvidence)) || !/不明|ない|なく|ありません|わから|分から|知りません/.test(result.identityUnavailableEvidence)) result.identityUnavailable = false;
     if (result.designationKind === 'category') { result.designation = ''; result.model = ''; }

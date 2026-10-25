@@ -144,3 +144,10 @@ it('answers a confirmation of measurement guidance without recording measurement
  expect(next.message.content).toContain('はい、その測定項目');
  expect(next.message.inquiryState?.dimensions).toBeUndefined();
 });
+
+it('does not accept a unitless dimension or inferred handoff permission',async()=>{
+ model.mockResolvedValueOnce(parsed({dimensions:'40',handoffPreference:'requested'}));
+ const result=await understandInquiry({message:'40',history:[],settings:DEFAULT_SETTINGS,context:{scope:'chat'}});
+ expect(result?.dimensions).toBe('');
+ expect(result?.handoffPreference).toBe('unchanged');
+});
