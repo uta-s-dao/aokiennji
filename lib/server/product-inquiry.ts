@@ -26,6 +26,7 @@ import { modelIdentity } from './product-model';
 import { sourceProduct } from './sourcing';
 import { publicSourcing } from './sourcing-reply';
 import { salesModel } from './sales-model';
+import { lookupProductName, productNameLookupReply } from './supplier-catalog';
 
 const candidate = z.object({
   manufacturer: z.string().max(100),
@@ -344,6 +345,12 @@ export async function productInquiry(input: {
       const stockQuestion = /在庫/.test(message);
       const opening = stockQuestion ? `「${state.designation}」の現在庫を確認できる登録値はありません。` : `「${state.designation}」をお探しですね。`;
       const sourceNote = previous?.content.includes(fieldEvidence.trim()) ? '' : fieldEvidence;
+      if (!candidates.length && state.designationKind !== 'unknown') {
+        const lookup = await lookupProductName(state.designation, input);
+        return reply(`${acknowledgement}${productNameLookupReply(state.designation, lookup)}`, {
+          productNameLookup: lookup,
+        });
+      }
       return reply(`${acknowledgement}${opening}${sourceNote}登録商品を照合しましたが、${candidates.length ? 'この名称だけでは対象商品を一つに特定できません。' : 'この名称に一致する商品は見つかりませんでした。'}個別商品の販売・調達可否と現在庫は未確認です。${candidates.length ? '\n候補：' + candidates.map(p => `${p.name}（${p.model}）`).join('、') + '。どの商品でしょうか？' : '\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。'}`, { suggestions: candidates.map(p => `${p.model}について確認したい`) });
     }
   }

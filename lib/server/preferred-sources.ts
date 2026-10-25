@@ -170,9 +170,11 @@ export async function registeredModelRecords(model: string): Promise<SourceObser
     content: string;
     url: string;
     createdAt: string;
+    supplierCatalog?: unknown;
   }>('documents'))) {
     const source = (await byId<Source>('sources', doc.sourceId));
-    if (!source?.enabled || !exactModelOnPage(model, doc.content)) continue;
+    // Listing indexes have their own record-level matching, freshness and access checks.
+    if (doc.supplierCatalog || !source?.enabled || !exactModelOnPage(model, doc.content)) continue;
     const index = doc.content.toUpperCase().indexOf(model.toUpperCase());
     records.push({
       title: `${source.name}：${doc.title}`,

@@ -1,5 +1,6 @@
 import { quoteWanted } from '../consultation-policy';
 import { productInquiry, usesProductInquiry } from './product-inquiry';
+import { lookupProductName, productNameLookupReply } from './supplier-catalog';
 import { chatAttachmentInputs } from './chat-images';
 import { asksOneMissingPoint } from '../chat-policy';
 import { asyncFilter, asyncMap } from '@/lib/async-arrays';
@@ -184,7 +185,7 @@ export async function answerChat(
   if ((!entryTopic || entryTopic.mode === 'fields') && !notice && !privateQuestion && conversation.status !== 'handed_off' && usesProductInquiry(message, previous, imageInputs)) {
     const result = await productInquiry({ message, history: previous, settings, trace: sourceTrace, context: usageContext, images: imageInputs, signal: output.signal });
     let responseReason = 'product_inquiry_local';
-    if (!imageInputs.length && !result.inquiryState.imageCandidates?.length && !result.products?.length && !result.estimate && result.handoff !== 'quote') {
+    if (!result.productNameLookup && !imageInputs.length && !result.inquiryState.imageCandidates?.length && !result.products?.length && !result.estimate && result.handoff !== 'quote') {
       const generated = await generateGroundedReply({
         question: message, history: previous, canonical: result.content,
         facts: [
@@ -201,7 +202,7 @@ export async function answerChat(
       responseReason = generated.reason;
     }
     const { interpretationProvider, ...inquiryReply } = result;
-    const assistant: ChatMessage = { ...inquiryReply, id: assistantId, role: 'assistant', createdAt: now(), route: result.sourcing ? 'sourcing' : 'consultation', groundingHash: groundingHash(result.products || [], result.knowledge, [], settings.flags, await sourcingContextRevision(conversation.id, settings)) };
+    const assistant: ChatMessage = { ...inquiryReply, id: assistantId, role: 'assistant', createdAt: now(), route: result.sourcing || result.productNameLookup ? 'sourcing' : 'consultation', groundingHash: groundingHash(result.products || [], result.knowledge, [], settings.flags, await sourcingContextRevision(conversation.id, settings)) };
     await save('messages', { ...assistant, conversationId: conversation.id, replyToId: usageContext.turnId, sourceTrace, processing: { responseProvider: assistant.responseProvider, responseModel: assistant.responseProvider === 'openai' ? responseModel(settings) : null, responseMode: 'consult', responseReason, classificationProvider: interpretationProvider, webSearch: sourceTrace.stages.some(s => s.scope !== 'registered_data'), durationMs: Date.now() - Date.parse(userCreatedAt) } }, { conversation_id: conversation.id });
     await onText?.(assistant.content);
     const { estimateRevision: _revision, ...publicAssistant } = assistant;
@@ -1554,7 +1555,8 @@ function buttonLabels(content: string, label?: string) {
 }
 export async function currentMessages(id: string): Promise<ChatMessage[]> {
   const settings = await getSettings();
-  const registeredRevision = (await createSourceTrace()).registeredRevision;
+  const restorationTrace = await createSourceTrace();
+  const registeredRevision = restorationTrace.registeredRevision;
   const fields = await availableFields();
   const sourceContext = await sourcingContextRevision(id, settings);
   // Partial replies remain in the staff transcript; only completed replies
@@ -1571,6 +1573,11 @@ export async function currentMessages(id: string): Promise<ChatMessage[]> {
         }) => message,
       ),
     async (original) => {
+      if (original.productNameLookup && original.inquiryState?.designation) {
+        const latest = await lookupProductName(original.inquiryState.designation, { trace: structuredClone(restorationTrace), settings: { ...settings, flags: { ...settings.flags, webSearch: false } }, context: { scope: 'chat' } });
+        const lookup = latest.status === 'identified' || original.productNameLookup.status === 'identified' ? latest : original.productNameLookup;
+        return { ...original, productNameLookup: lookup, content: productNameLookupReply(original.inquiryState.designation, lookup) };
+      }
       if (original.salesState) {
         const selection = original.selection
           ? {

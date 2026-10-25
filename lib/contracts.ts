@@ -252,6 +252,7 @@ export interface ProductInquiryState {
   imageCandidates?: { manufacturer: string; value: string; kind: 'order_model' | 'part_number' | 'drawing_number' | 'unknown'; target: string; readable: boolean }[];
 }
 export interface ChatMessage {
+  productNameLookup?: { checkedAt?: string; status: 'identified' | 'not_found' | 'not_searched' | 'failed'; matches: { name: string; model?: string }[] };
   attachmentIds?: string[];
   inquiryState?: ProductInquiryState;
   id: string;

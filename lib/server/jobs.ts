@@ -1,6 +1,7 @@
 import type { Source } from '../contracts';
 import { db, list, uid } from './db';
 import { syncSource } from './ingestion';
+import { refreshIndexedSupplierCatalog } from './supplier-catalog';
 import { deliverReceiptNotifications } from './receipt-notifications';
 
 export const WEB_JOBS = ['sync', 'notifications', 'cleanup'] as const;
@@ -91,7 +92,7 @@ async function syncDueSource(): Promise<JobOutcome> {
         (attempted.get(a.id) || '').localeCompare(attempted.get(b.id) || '') ||
         a.id.localeCompare(b.id),
     );
-  if (!sources[0]) return { status: 'success', detail: { processed: 0 } };
+  if (!sources[0]) return refreshIndexedSupplierCatalog();
   const result = await syncSource(sources[0].id);
   return {
     status: result.errors.length ? 'failed' : 'success',
