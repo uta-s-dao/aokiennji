@@ -1,3 +1,4 @@
+import { IDENTIFICATION_QUESTION, PHOTO_GUIDE, photoHelpRequested } from '../consultation-policy';
 import { company, projects, services } from '../company';
 import type { CompanyFaq } from '../contracts';
 import { policyKeys, requestPatterns, stripCourtesy, type PolicyKey } from '../chat-policy';
@@ -495,61 +496,42 @@ const bareUnknown =
 // with what is known instead of asking for a product name again.
 export function composeConsultation(input: ComposeInput, part: 'full' | 'next' = 'full') {
   const replies = input.previousReplies || [];
-  const said = replies.join('\n');
-  const current = stripCourtesy(input.customerTexts.at(-1) || '');
-  const unsure = bareUnknown.test(current) ? replies.at(-1)?.match(askedPoint)?.[1] : undefined;
-  const conditions = statedConditions(input.customerTexts);
-  const missing = pointStatus(input.topic, input.customerTexts)
-    .filter((p) => p.state === 'missing' && p.label !== unsure)
-    .map((p) => p.label);
-  // Ask each point once; after that the staff can confirm it.
-  const ask = missing.find((label) => !said.includes(`「${label}」`));
+  const current = input.customerTexts.at(-1) || '';
+  const said = input.customerTexts.join('\n');
+  const previous = replies.at(-1) || '';
   const lines: string[] = [];
-  if (unsure)
-    lines.push(
-      `「${unsure}」が分からなくても大丈夫です。今お使いの物の写真や現物、図面があれば、それをもとに当社で確認します。`,
-    );
-  if (part === 'full') {
-    const subject = input.label || topicName(input.topic);
-    // Acknowledge the topic once; later turns go straight to the conditions.
-    const greeting =
-      input.lead || /のご相談ですね/.test(said) || unsure
-        ? ''
-        : subject
-          ? `${subject}のご相談ですね。`
-          : 'ご相談ありがとうございます。';
-    // The conditions are restated once; later turns acknowledge only new ones.
-    const added = said.includes('伺った条件（')
-      ? statedConditions([current]).filter((c) => !said.includes(c))
-      : [];
-    const opening = `${greeting}${
-      !said.includes('伺った条件（')
-        ? conditions.length
-          ? `伺った条件（${conditions.join('・')}）をもとに、候補を確認します。`
-          : ''
-        : added.length
-          ? `${added.join('・')}も承知しました。`
-          : ''
-    }`;
-    if (input.lead) lines.push(input.lead);
-    if (opening) lines.push(opening);
-  }
-  // The way of asking and the button guide are given once; later turns ask
-  // the next point in a few words.
-  const asked = said.includes('分かる範囲で教えていただけますか');
-  const guided = input.guided || said.includes(`下の「${input.guideLabel || HANDOFF_LABEL}」から`);
-  lines.push(
-    ask
-      ? asked
-        ? `「${ask}」も分かれば教えてください。`
-        : `まだ伺っていない「${ask}」が分かると、候補を絞り込みやすくなります。分かる範囲で教えていただけますか？${input.handoff ? '分かっている条件でお見積りを相談いただけます。' : ''}`
-      : `${
-          input.guideLabel === QUOTE_LABEL
-            ? 'この条件でお見積りを依頼できます。'
-            : '伺った条件で、候補を確認してお見積りにつなげます。'
-        }${guided ? '' : handoffGuide(input.handoff, input.guideLabel, input.phone)}`,
-  );
-  return lines.join('\n');
+  if (input.lead && part === 'full') lines.push(input.lead);
+  if (!replies.length && statedConditions(input.customerTexts).length) lines.push(`伺った条件：${statedConditions(input.customerTexts).join('・')}。`);
+  if (/見積.*(?:不要|まだ|いらな|要らな)|見積は.*必要.*ない/.test(current))
+    lines.push('見積依頼は進めません。取扱可否・在庫の確認として承ります。');
+  if (/急ぎません|急いでいません|急ぎでは(?:ない|ありません)/.test(current))
+    lines.push('お急ぎでないことを承知しました。');
+  if (/在庫/.test(current)) lines.push('個別商品の在庫は商品を特定して登録情報と照合できます。登録在庫・仕入先の掲載在庫・確保済み数量は別で、ここではまだ在庫を確認できていません。');
+  else if (/買え|購入|扱[いえっ]|取扱|販売/.test(current))
+    lines.push('工業用品のご相談を承っていますが、その商品の販売・調達可否はまだ確認できていません。商品を特定して登録情報と照合できます。');
+  if (/^[\d０-９]+(?:[.．]\d+)?$/.test(current.trim())) {
+    lines.push(`「${current}」は${/温度/.test(previous) ? '温度（℃）' : /数量|何個/.test(previous) ? '数量（個・本など）' : /寸法|長さ/.test(previous) ? '寸法（mmなど）' : '何の数値'}でしょうか？意味と単位を教えてください。`);
+  } else if (photoHelpRequested(current)) {
+    lines.push(PHOTO_GUIDE);
+  } else if (/資料.*(?:ない|ありません)|図面.*(?:ない|ありません)|型番.*(?:不明|わから|分から|なく|ない)|^(?:わかりません|分かりません|不明)/.test(said)) {
+    if (!/用途|使[うい]|固定|交換|取り付|取付/.test(said))
+      lines.push('型番が不明でも、用途から絞り込めます。どの機械の、何をする部品でしょうか？');
+    else if (!/形状|[LＬコUＵ]字|丸|板状|筒|穴.*[数個つ]/.test(said))
+      lines.push('その用途を手がかりにします。部品の形状や取り付け方を教えていただけますか？');
+    else
+      lines.push('伺った用途・形状だけでは商品を一意に特定できず、販売可否と在庫は未確認です。このチャットでは情報を整理できます。追加の表示や写真が見つかれば続けて確認できます。担当者への確認をご希望の場合はお問い合わせから相談内容を送れます（まだ送信していません）。');
+  } else if (replies.some((r) => r.includes(IDENTIFICATION_QUESTION))) {
+    lines.push('表示や資料がなければ用途・形状から絞り込めます。どのような部品で、何に使うものか教えてください。');
+  } else lines.push(IDENTIFICATION_QUESTION);
+  return [...new Set(lines)].join('\n');
+}
+
+export function oneMissingPoint(input: ComposeInput) {
+  const points = pointStatus(input.topic, input.customerTexts);
+  const open =
+    points.find((p) => p.state === 'unknown') || points.find((p) => p.state === 'missing');
+  const label = open?.label || '既設品のメーカー・型番';
+  return `追加で確認したいのは「${label}」です。現物の表示や図面で確認できますか？不明な場合は、写真や分かる範囲の情報を担当者へお伝えください。\nこの条件だけでは適合を確定できません。${handoffGuide(input.handoff, input.guideLabel, input.phone)}`;
 }
 
 export function summarizeConsultation(input: ComposeInput) {

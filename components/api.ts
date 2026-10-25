@@ -64,16 +64,28 @@ export function localDateTime(value: string): string {
 }
 
 export async function streamChat(
-  input: { message: string; conversationId?: string },
+  input: { message: string; conversationId?: string; requestId: string; attachmentIds?: string[] },
   onText: (text: string) => void,
 ): Promise<import('@/lib/contracts').ChatResponse> {
-  const response = await fetch('/api/chat', {
-    method: 'POST',
-    credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
-    body: JSON.stringify(input),
-    signal: AbortSignal.timeout(190000),
-  });
+  // Establish ownership before starting work: losing the first answer must not
+  // also lose the only session cookie capable of recovering it.
+  await api('/api/chat/session', { method: 'POST' });
+  let response: Response;
+  try {
+    response = await fetch('/api/chat', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+      body: JSON.stringify(input),
+      signal: AbortSignal.timeout(190000),
+    });
+  } catch (error) {
+    throw new Error(
+      error instanceof DOMException && error.name === 'TimeoutError'
+        ? '回答に時間がかかっています。もう一度お試しいただくか、お問い合わせをご利用ください。'
+        : '通信できませんでした。接続を確認して再度お試しください。',
+    );
+  }
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(error.error?.message || '回答を取得できませんでした。');

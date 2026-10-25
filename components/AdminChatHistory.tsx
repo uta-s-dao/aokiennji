@@ -36,6 +36,7 @@ export default function AdminChatHistory({
               {isSelected ? ' · 選択中の回答' : ''}
             </small>
             <p className="chat-bubble">{message.content}</p>
+            {message.attachmentIds?.map(id => <a key={id} href={`/api/admin/chat-images/${id}`} target="_blank" rel="noreferrer"><img className="chat-attached-image" src={`/api/admin/chat-images/${id}`} alt="お客様の添付写真" /></a>)}
             <time className="admin-chat-time" dateTime={message.createdAt}>
               {datetime(message.createdAt)}
             </time>

@@ -276,9 +276,15 @@ export async function privateSupplierQuestion(message: string): Promise<boolean>
       /[^。、]*(?:知りたい|聞きたい|教えてほしい)(?:わけ|訳)では(?:ない|ありません)[^。、]*/g,
       '',
     );
+  // Asking for our public catalog is not asking for a supplier identity.
+  // Named private companies and domains are still checked below.
+  const publicResource =
+    /カタログ|価格表|自社|御社|アオキエンジ/.test(text) &&
+    !/仕入|外注|取引先|取引口座|原価|仕切|商社|卸売|全部|一覧/.test(text);
+  const privacyText = publicResource ? text.replace(/ホームページ|\bHP\b|\bURL\b/gi, '') : text;
   if (
     /仕入|外注(?:先|業者|会社|の会社|して(?:いる|る)会社)|取引先|取引口座|卸売|原価|仕切り?(?:価格|値|率|単価)|商社|仕入先|ホームページ|\bHP\b|\bURL\b|https?:\/\//i.test(
-      text,
+      privacyText,
     )
   )
     return true;

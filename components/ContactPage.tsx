@@ -33,8 +33,15 @@ export default function Contact() {
         ? requestedQuantity
         : undefined;
     // Written by the chat's hand-off button: what the customer already told us.
-    const draft = p.get('conversationId') ? sessionStorage.getItem('aoki-handoff-draft') : null;
-    sessionStorage.removeItem('aoki-handoff-draft');
+    const conversationId = p.get('conversationId');
+    const draft = conversationId
+      ? sessionStorage.getItem(`aoki-handoff-draft:${conversationId}`) ||
+        sessionStorage.getItem('aoki-handoff-draft')
+      : null;
+    if (conversationId && draft) {
+      sessionStorage.setItem(`aoki-handoff-draft:${conversationId}`, draft);
+      sessionStorage.removeItem('aoki-handoff-draft');
+    }
     setProductId(p.get('productId') || undefined);
     setQuote(p.get('quote') === '1');
     if (draft || subject || quantity)

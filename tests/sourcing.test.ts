@@ -83,7 +83,7 @@ it('sources an unregistered model and keeps procurement prices and suppliers sta
   const reply = await answerChat('B-300-SCIの価格と納期を教えてください', 'customer');
   expect(reply.message.sourcing).toMatchObject({ model: 'B-300-SCI', status: 'candidate' });
   expect(reply.message.content).toContain('調達候補を確認しました');
-  expect(reply.message.handoff).toBe('quote');
+  expect(reply.message.handoff).toBe('inquiry');
   expect(reply.message.content).not.toMatch(
     /取扱いを確認できません|720|supplier\.example|非公開仕入先/,
   );
@@ -191,14 +191,14 @@ it('classifies stock with source evidence for staff without approving quantity o
   expect(stock.pageAvailability!.evidence.length).toBeGreaterThan(0);
   expect(reply.message.content).toContain('掲載上は在庫あり（12個）');
   expect(reply.message.content).toContain('調達先の出荷目安は3営業日');
-  expect(reply.message.content).toContain('当社からのお届け日はお見積りで確認');
+  expect(reply.message.content).toContain('当社からのお届け日は未確認');
   expect(note.offers![0]).toMatchObject({
     availableQuantity: null,
     deliveryMaxDays: null,
     approved: false,
   });
   expect(reply.message.content).not.toContain('必要数量分の在庫・発送日は未確定');
-  expect(reply.message.content).toContain('この内容で見積を依頼する');
+  expect(reply.message.handoff).not.toBe('quote');
   expect(JSON.stringify((await currentMessages(reply.conversationId)))).not.toMatch(
     /supplier\.example|contentHash/,
   );
@@ -247,9 +247,9 @@ it.each([
   }));
   const reply = await answerChat('B-300-SCIを10個、大阪へ1週間以内に発送できますか', 'customer');
   expect(reply.message.content).not.toContain('必要数量分の在庫・発送日は未確定');
-  expect(reply.message.content).toContain('この内容で見積を依頼する');
+  expect(reply.message.handoff).not.toBe('quote');
   expect(reply.message.content).not.toMatch(/1週間以内に発送できます|\d+営業日でお届け|販売単価/);
-  expect(reply.message.handoff).toBe('quote');
+  expect(reply.message.handoff).toBe('inquiry');
   for (const offer of (await researchNotes(reply.conversationId))[0].offers || []) {
     expect(offer).toMatchObject({
       availableQuantity: null,
@@ -297,7 +297,7 @@ it('records failed research and keeps the quote path without pretending search s
   expect(reply.message.sourcing?.status).toBe('failed');
   expect(reply.message.content).toContain('ページの取得が完了せず');
   expect(reply.message.content).not.toContain('候補を確認できました');
-  expect(reply.message.handoff).toBe('quote');
+  expect(reply.message.handoff).toBe('inquiry');
   expect((await researchNotes(reply.conversationId))[0].status).toBe('failed');
 });
 
@@ -426,7 +426,7 @@ it('continues through quantity and destination to a complete selling estimate, t
       roundingYen: 10,
     },
   }));
-  const first = await answerChat('B-300-SCIは取り寄せできますか？', 'estimate-customer');
+  const first = await answerChat('B-300-SCIは取り寄せできますか？価格も知りたいです', 'estimate-customer');
   const note = (await researchNotes(first.conversationId))[0];
   expect(note.offers).toHaveLength(1);
   expect(note.offers![0]).toMatchObject({

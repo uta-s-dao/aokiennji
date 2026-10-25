@@ -232,7 +232,21 @@ export interface ProductSourcing {
     supplierDispatch?: string;
   };
 }
+export interface ProductInquiryState {
+  previousModel?: string;
+  destination?: string;
+  pricingRequested?: boolean;
+  identityUnavailable?: boolean;
+  quantityUnit?: string;
+  asked?: string[];
+  model?: string;
+  manufacturer?: string;
+  quantity?: number;
+  imageCandidates?: { manufacturer: string; value: string; kind: 'order_model' | 'part_number' | 'drawing_number' | 'unknown'; target: string; readable: boolean }[];
+}
 export interface ChatMessage {
+  attachmentIds?: string[];
+  inquiryState?: ProductInquiryState;
   id: string;
   role: 'user' | 'assistant';
   content: string;

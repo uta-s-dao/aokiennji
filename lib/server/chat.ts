@@ -1,3 +1,6 @@
+import { productInquiry, usesProductInquiry } from './product-inquiry';
+import { chatImageInputs } from './chat-images';
+import { asksOneMissingPoint } from '../chat-policy';
 import { asyncFilter, asyncMap } from '@/lib/async-arrays';
 import type {
   ChatMessage,
@@ -29,6 +32,7 @@ import {
 } from './chat-replies';
 import {
   CHAT_ROUTE_LABELS,
+  conversationNotice,
   businessIntents,
   isBareReply,
   planChatRoute,
@@ -68,6 +72,7 @@ import {
   checklist,
   companyFact,
   composeConsultation,
+  oneMissingPoint,
   consultationTopic,
   faqFact,
   handoffDraft,
@@ -87,7 +92,9 @@ export async function answerChat(
   owner: string,
   conversationId?: string,
   output: {
+    attachmentIds?: string[];
     onText?: (text: string) => unknown;
+    receipt?: { conversationId: string; userId: string; assistantId: string };
     signal?: AbortSignal;
     // Runs work after the reply is sent, such as research for the staff.
     defer?: (work: () => Promise<void>) => void;
@@ -101,17 +108,29 @@ export async function answerChat(
     ...output,
     signal: output.signal || AbortSignal.timeout(budgets.chat),
   };
-  const conversation: Conversation = conversationId
-    ? await verifyConversation(conversationId, owner)
+  const received =
+    output.receipt && (await byId<Conversation>('conversations', output.receipt.conversationId));
+  const existingId = conversationId || received?.id;
+  const conversation: Conversation = existingId
+    ? await verifyConversation(existingId, owner)
     : {
-        id: uid(),
+        id: output.receipt?.conversationId || uid(),
         title: message.slice(0, 60),
         status: 'open',
         createdAt: userCreatedAt,
         updatedAt: now(),
       };
-  const previous = conversationId ? await currentMessages(conversation.id) : [];
-  const usageContext = { scope: 'chat' as const, conversationId: conversation.id, turnId: uid() };
+  const imageInputs = output.attachmentIds?.length ? await chatImageInputs(output.attachmentIds, conversation.id, owner) : [];
+  const previous = existingId
+    ? (await currentMessages(conversation.id)).filter(
+        (m) => m.id !== output.receipt?.userId && m.id !== output.receipt?.assistantId,
+      )
+    : [];
+  const usageContext = {
+    scope: 'chat' as const,
+    conversationId: conversation.id,
+    turnId: output.receipt?.userId || uid(),
+  };
   // Record receipt before any external service runs. An interrupted reply must
   // not erase the customer's question or the conversation from the admin list.
   await db().transaction(async () => {
@@ -123,14 +142,15 @@ export async function answerChat(
         conversationId: conversation.id,
         role: 'user',
         content: message,
+        attachmentIds: output.attachmentIds,
         createdAt: userCreatedAt,
       },
       { conversation_id: conversation.id },
     );
-    if (!conversationId)
+    if (!existingId)
       await audit('conversation.created', conversation.id, '商品相談を受け付けました');
   })();
-  const assistantId = uid();
+  const assistantId = output.receipt?.assistantId || uid();
   const sourceTrace = await createSourceTrace();
   const onText = output.onText;
   if (onText) {
@@ -155,8 +175,34 @@ export async function answerChat(
       await onText(content);
     };
   }
+  const notice = conversationNotice(message);
   const privateQuestion = await privateSupplierQuestion(message);
-  if (!privateQuestion && shouldUseSalesConversation(message, previous, settings)) {
+  if (!notice && !privateQuestion && conversation.status !== 'handed_off' && usesProductInquiry(message, previous, imageInputs)) {
+    const result = await productInquiry({ message, history: previous, settings, trace: sourceTrace, context: usageContext, images: imageInputs, signal: output.signal });
+    let responseReason = 'product_inquiry_local';
+    if (!imageInputs.length && !result.inquiryState.imageCandidates?.length && !result.products?.length && !result.estimate && result.handoff !== 'quote') {
+      const generated = await generateGroundedReply({
+        question: message, history: previous, canonical: result.content,
+        facts: [
+          { id: 'current_result', text: result.content },
+          { id: 'identification', text: '写真だけで必ず商品を特定できるとは限らない。写真・資料がなくても用途・形状・取付箇所などの説明から相談できる。異なる型番の在庫や納期は転用できない。' },
+          { id: 'contact', text: '未確認事項はお問い合わせフォームから担当者へ相談できる。送信操作前は受付・社内確認は実行されていない。見積は顧客が希望した場合のみ。' },
+        ], confirmedProduct: false, businessFactsOwnedLocally: true, settings,
+        privateText: containsPrivateSupplierIdentity,
+        customerNotes: previous.filter(m => m.role === 'user').map(m => m.content).concat(message),
+        mode: 'consult', questionPolicy: 'canonical_only',
+      }, { signal: output.signal, usageContext, onInput: (facts, canonical) => { sourceTrace.answerFacts = facts; sourceTrace.answerCanonical = canonical; } });
+      result.content = generated.content;
+      result.responseProvider = generated.provider;
+      responseReason = generated.reason;
+    }
+    const assistant: ChatMessage = { ...result, id: assistantId, role: 'assistant', createdAt: now(), route: result.sourcing ? 'sourcing' : 'consultation', groundingHash: groundingHash(result.products || [], undefined, [], settings.flags, await sourcingContextRevision(conversation.id, settings)) };
+    await save('messages', { ...assistant, conversationId: conversation.id, replyToId: usageContext.turnId, sourceTrace, processing: { responseProvider: assistant.responseProvider, responseModel: assistant.responseProvider === 'openai' ? responseModel(settings) : null, responseMode: 'consult', responseReason, classificationProvider: 'local', webSearch: sourceTrace.stages.some(s => s.scope !== 'registered_data'), durationMs: Date.now() - Date.parse(userCreatedAt) } }, { conversation_id: conversation.id });
+    await onText?.(assistant.content);
+    const { estimateRevision: _revision, ...publicAssistant } = assistant;
+    return { conversationId: conversation.id, message: publicAssistant };
+  }
+  if (!notice && !privateQuestion && shouldUseSalesConversation(message, previous, settings)) {
     const result = await salesConversation({
       message,
       history: previous,
@@ -607,6 +653,7 @@ export async function answerChat(
       ? matches[0]
       : undefined;
   const offered =
+    !notice &&
     route.reason !== 'privacy' &&
     !handedOff &&
     (['summary', 'handoff', 'transaction', 'policy'].includes(route.reason) ||
@@ -777,6 +824,7 @@ export async function answerChat(
   // conversation written by the response model. With repeat, sentences given
   // earlier in the conversation are kept (used when nothing else can answer).
   const fixedPart = async (repeat: boolean) => {
+    if (notice) return notice;
     const once = (text: string) => (repeat ? text : unsaid(text, said));
     // The statement that the staff confirms unregistered values is given once
     // for each of price, stock and delivery.
@@ -810,6 +858,15 @@ export async function answerChat(
             : statement(topic ? await facts() : unregisteredFacts())
           : '',
       );
+    if (
+      route.reason === 'transaction' &&
+      route.transaction === 'quote' &&
+      !matches.length &&
+      !customerTopic &&
+      !intent.model &&
+      customerTexts.length === 1
+    )
+      return 'お見積りをご希望ですね。まず、商品名・型番、または用途と必要な数量を教えていただけますか？まだ見積依頼は送信されていません。';
     if (route.reason === 'transaction')
       return join(
         policy,
@@ -931,7 +988,7 @@ export async function answerChat(
       ? '未確定の項目は後から追記いただけます。分かっている条件でお見積りを相談いただけます。'
       : '承知しました。伺った条件でお見積りへ進めます。';
   }
-  if (handedOff && !privateQuestion) {
+  if (handedOff && !privateQuestion && !notice) {
     route.response = 'local';
     fixed = /追記|追加|寸法を測/.test(request)
       ? 'ご依頼を受け付けています。追加の寸法や条件は、このチャットにお書きください。ご依頼に添えて確認します。'
@@ -1006,6 +1063,10 @@ export async function answerChat(
                     ...compose,
                     lead: [demoNotice, compose.lead].filter(Boolean).join('\n') || undefined,
                   });
+  if (!privateQuestion && !sourcing && !matches.length && asksOneMissingPoint(message)) {
+    route.response = 'local';
+    fixed = oneMissingPoint(compose);
+  }
   const fields = await availableFields();
   if (route.response === 'mixed') await output.onText?.(fixed);
   const generated =
@@ -1258,7 +1319,7 @@ export async function answerChat(
       await sourcingContextRevision(conversation.id, settings),
     ),
     knowledge: topic,
-    products: matches,
+    products: notice ? [] : matches,
     evidence,
     intent: intent.intent,
     factualIntents: route.facts,
@@ -1296,34 +1357,36 @@ export async function answerChat(
         : continued || intent.intent === 'general'
           ? 'reply'
           : 'products',
-    suggestions: followUps(
-      route.reason === 'privacy'
-        ? ['どんな製品を扱っていますか？']
-        : ['summary', 'handoff', 'transaction'].includes(route.reason)
-          ? []
-          : topic
-            ? topic.mode === 'fields'
-              ? ['この分野の見積を相談したい', '必要な仕様を相談したい']
-              : ['どんな製品を扱っていますか？']
-            : intent.intent === 'custom'
-              ? ['図面がなくても相談できますか？']
-              : matches.length > 1
-                ? matches.map(
-                    (p) =>
-                      `${p.manufacturer ? p.manufacturer + ' ' : ''}${p.model || p.name}${intent.intent === 'lead_time' ? 'の納期は？' : intent.intent === 'price' ? 'の価格は？' : intent.intent === 'stock' ? 'の在庫は？' : 'について教えて'}`,
-                  )
-                : matches.length
-                  ? [
-                      intent.intent !== 'lead_time' && 'いつぐらいに届く？',
-                      intent.intent !== 'price' && '価格は？',
-                      settings.flags.quoteRequests &&
-                        intent.intent !== 'quote' &&
-                        '見積を依頼したい',
-                    ].filter((s): s is string => !!s)
-                  : customerTexts.length >= 2
-                    ? ['ここまでの内容をまとめてください']
-                    : ['選ぶときのポイントを教えてください'],
-    ),
+    suggestions: notice
+      ? []
+      : followUps(
+          route.reason === 'privacy'
+            ? ['どんな製品を扱っていますか？']
+            : ['summary', 'handoff', 'transaction'].includes(route.reason)
+              ? []
+              : topic
+                ? topic.mode === 'fields'
+                  ? ['この分野の見積を相談したい', '必要な仕様を相談したい']
+                  : ['どんな製品を扱っていますか？']
+                : intent.intent === 'custom'
+                  ? ['図面がなくても相談できますか？']
+                  : matches.length > 1
+                    ? matches.map(
+                        (p) =>
+                          `${p.manufacturer ? p.manufacturer + ' ' : ''}${p.model || p.name}${intent.intent === 'lead_time' ? 'の納期は？' : intent.intent === 'price' ? 'の価格は？' : intent.intent === 'stock' ? 'の在庫は？' : 'について教えて'}`,
+                      )
+                    : matches.length
+                      ? [
+                          intent.intent !== 'lead_time' && 'いつぐらいに届く？',
+                          intent.intent !== 'price' && '価格は？',
+                          settings.flags.quoteRequests &&
+                            intent.intent !== 'quote' &&
+                            '見積を依頼したい',
+                        ].filter((s): s is string => !!s)
+                      : customerTexts.length >= 2
+                        ? ['ここまでの内容をまとめてください']
+                        : ['選ぶときのポイントを教えてください'],
+        ),
     createdAt: now(),
   };
   await db().transaction(async () => {
