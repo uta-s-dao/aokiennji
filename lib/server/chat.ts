@@ -1,3 +1,4 @@
+import { quoteWanted } from '../consultation-policy';
 import { productInquiry, usesProductInquiry } from './product-inquiry';
 import { chatImageInputs } from './chat-images';
 import { asksOneMissingPoint } from '../chat-policy';
@@ -177,7 +178,8 @@ export async function answerChat(
   }
   const notice = conversationNotice(message);
   const privateQuestion = await privateSupplierQuestion(message);
-  if (!notice && !privateQuestion && conversation.status !== 'handed_off' && usesProductInquiry(message, previous, imageInputs)) {
+  const entryTopic = await knowledgeTopic(message, localIntent(message), previous.at(-1));
+  if ((!entryTopic || entryTopic.mode === 'fields') && !notice && !privateQuestion && conversation.status !== 'handed_off' && usesProductInquiry(message, previous, imageInputs)) {
     const result = await productInquiry({ message, history: previous, settings, trace: sourceTrace, context: usageContext, images: imageInputs, signal: output.signal });
     let responseReason = 'product_inquiry_local';
     if (!imageInputs.length && !result.inquiryState.imageCandidates?.length && !result.products?.length && !result.estimate && result.handoff !== 'quote') {
@@ -196,8 +198,9 @@ export async function answerChat(
       result.responseProvider = generated.provider;
       responseReason = generated.reason;
     }
-    const assistant: ChatMessage = { ...result, id: assistantId, role: 'assistant', createdAt: now(), route: result.sourcing ? 'sourcing' : 'consultation', groundingHash: groundingHash(result.products || [], result.knowledge, [], settings.flags, await sourcingContextRevision(conversation.id, settings)) };
-    await save('messages', { ...assistant, conversationId: conversation.id, replyToId: usageContext.turnId, sourceTrace, processing: { responseProvider: assistant.responseProvider, responseModel: assistant.responseProvider === 'openai' ? responseModel(settings) : null, responseMode: 'consult', responseReason, classificationProvider: 'local', webSearch: sourceTrace.stages.some(s => s.scope !== 'registered_data'), durationMs: Date.now() - Date.parse(userCreatedAt) } }, { conversation_id: conversation.id });
+    const { interpretationProvider, ...inquiryReply } = result;
+    const assistant: ChatMessage = { ...inquiryReply, id: assistantId, role: 'assistant', createdAt: now(), route: result.sourcing ? 'sourcing' : 'consultation', groundingHash: groundingHash(result.products || [], result.knowledge, [], settings.flags, await sourcingContextRevision(conversation.id, settings)) };
+    await save('messages', { ...assistant, conversationId: conversation.id, replyToId: usageContext.turnId, sourceTrace, processing: { responseProvider: assistant.responseProvider, responseModel: assistant.responseProvider === 'openai' ? responseModel(settings) : null, responseMode: 'consult', responseReason, classificationProvider: interpretationProvider, webSearch: sourceTrace.stages.some(s => s.scope !== 'registered_data'), durationMs: Date.now() - Date.parse(userCreatedAt) } }, { conversation_id: conversation.id });
     await onText?.(assistant.content);
     const { estimateRevision: _revision, ...publicAssistant } = assistant;
     return { conversationId: conversation.id, message: publicAssistant };
@@ -647,7 +650,7 @@ export async function answerChat(
       ].includes(k),
     );
   // Once offered, the quote request stays the next step of the conversation.
-  const quoteOffered = previous.some((m) => m.role === 'assistant' && m.handoff === 'quote');
+  const quoteOffered = previous.some((m) => m.role === 'user' && quoteWanted(m.content));
   const quoteProduct =
     matches.length === 1 && ['available', 'orderable'].includes(matches[0].availability)
       ? matches[0]
@@ -665,6 +668,7 @@ export async function answerChat(
   const handoff: ChatMessage['handoff'] = !offered
     ? undefined
     : settings.flags.quoteRequests &&
+        (quoteWanted(message) || quoteOffered) &&
         (buying || quoteOffered) &&
         route.transaction !== 'status' &&
         route.transaction !== 'hold' &&

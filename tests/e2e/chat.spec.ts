@@ -69,7 +69,7 @@ test('chat keeps the topic, reserves space and keeps the composer clear at diffe
   await input.fill('いつぐらいに届く？');
   await send.click();
   await expect(panel.locator('.chat-message.assistant')).toHaveCount(1);
-  await expect(panel.locator('.chat-message.assistant')).toContainText('どの商品');
+  await expect(panel.locator('.chat-message.assistant')).toContainText(/どの商品|商品名や型番/);
   await expect(panel.locator('.chat-message.assistant')).not.toContainText(
     '取扱いを確認できません',
   );

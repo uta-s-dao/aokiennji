@@ -1,0 +1,776 @@
+[
+  {
+    "stage": "aoki-entry-eval",
+    "turns": [
+      {
+        "case": "borofloat",
+        "customer": "BOROFLOAT® 33は扱っていますか？在庫があるか知りたいです。",
+        "assistant": "「BOROFLOAT® 33」の現在庫を確認できる登録値はありません。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "BOROFLOAT® 33",
+          "designationKind": "product_name"
+        }
+      },
+      {
+        "case": "borofloat",
+        "customer": "仕様や型番の種類はわかりません。名前しか知らないのですが、取り扱いがあるかだけ確認できますか？見積もりは不要です。",
+        "assistant": "見積依頼は進めません。\n「BOROFLOAT® 33」をお探しですね。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "BOROFLOAT® 33",
+          "designationKind": "product_name",
+          "quoteDeclined": true
+        }
+      },
+      {
+        "case": "borofloat",
+        "customer": "必要な仕様がわからないまま、商品名だけで担当者に確認してもらえるという意味ですか？今は送信せず、確認に最低限必要な情報だけ教えてください。",
+        "assistant": "下の「この内容で相談を依頼する」から、相談内容と連絡先を確認して送信できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "BOROFLOAT® 33",
+          "designationKind": "product_name",
+          "quoteDeclined": true
+        }
+      },
+      {
+        "case": "cleanseal",
+        "customer": "クリンシル® トップは取り扱っていますか？在庫もわかりますか？",
+        "assistant": "「クリンシル® トップ」の現在庫を確認できる登録値はありません。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "クリンシル® トップ",
+          "designationKind": "product_name"
+        }
+      },
+      {
+        "case": "cleanseal",
+        "customer": "名前しかわからず型番は知りません。見積もりはいらないので、扱っていない商品という理解でよいですか？",
+        "assistant": "見積依頼は進めません。\n「クリンシル® トップ」をお探しですね。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "クリンシル® トップ",
+          "designationKind": "product_name",
+          "quoteDeclined": true
+        }
+      },
+      {
+        "case": "manufacturer",
+        "customer": "ニチアス",
+        "assistant": "メーカー名・型番は分かりますか？図面・部品表・箱・パッケージ・タグ・本体の銘板やラベルに記載があれば、そのまま入力してください。",
+        "state": null
+      },
+      {
+        "case": "manufacturer",
+        "customer": "メーカー名がニチアスです。クリンシル® トップという名前で、型番は知りません。取り扱いと在庫を確認したいだけです。",
+        "assistant": "「クリンシル® トップ」の現在庫を確認できる登録値はありません。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "クリンシル® トップ",
+          "designationKind": "product_name",
+          "manufacturer": "ニチアス"
+        }
+      },
+      {
+        "case": "spec",
+        "customer": "3mm",
+        "assistant": "伺った条件：3mm。\nメーカー名・型番は分かりますか？図面・部品表・箱・パッケージ・タグ・本体の銘板やラベルに記載があれば、そのまま入力してください。",
+        "state": null
+      },
+      {
+        "case": "spec",
+        "customer": "厚さ3mmのものを探しています。BOROFLOAT® 33という名前だけ知っていますが、型番やメーカーはわかりません。取扱いや在庫だけ知りたいです。",
+        "assistant": "「BOROFLOAT® 33」の現在庫を確認できる登録値はありません。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "BOROFLOAT® 33",
+          "designationKind": "product_name"
+        }
+      },
+      {
+        "case": "borofloat_name_only",
+        "customer": "BOROFLOAT® 33",
+        "assistant": "メーカー名・型番は分かりますか？図面・部品表・箱・パッケージ・タグ・本体の銘板やラベルに記載があれば、そのまま入力してください。",
+        "state": null
+      },
+      {
+        "case": "borofloat_name_only",
+        "customer": "型番はわかりません。その商品名しか知らないので、扱っているかと在庫を知りたいです。見積もりは不要です。",
+        "assistant": "個別商品の価格・現在庫・納期は未確認です。登録在庫・仕入先の掲載在庫・確保済み数量は別です。商品名や型番が分かれば登録情報を照合できます。分かる名称を教えてください。",
+        "state": {
+          "pricingRequested": false,
+          "quoteDeclined": true,
+          "identityUnavailable": true
+        }
+      },
+      {
+        "case": "cleanseal_name_only",
+        "customer": "クリンシル® トップ",
+        "assistant": "メーカー名・型番は分かりますか？図面・部品表・箱・パッケージ・タグ・本体の銘板やラベルに記載があれば、そのまま入力してください。",
+        "state": null
+      },
+      {
+        "case": "cleanseal_name_only",
+        "customer": "メーカーや型番はわかりません。最初に書いた商品名で、そちらで買えるか確認できますか？見積もりはいりません。",
+        "assistant": "工業用品のご相談を承っていますが、その商品の販売・調達可否はまだ確認できていません。商品を特定して登録情報と照合できます。\n型番が不明でも、用途から絞り込めます。どの機械の、何をする部品でしょうか？",
+        "state": {
+          "pricingRequested": false,
+          "quoteDeclined": true,
+          "identityUnavailable": true
+        }
+      }
+    ]
+  },
+  {
+    "stage": "aoki-entry-fixed-eval",
+    "turns": [
+      {
+        "case": "borofloat_name_only",
+        "customer": "BOROFLOAT® 33→",
+        "assistant": "「BOROFLOAT® 33」をお探しですね。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "BOROFLOAT® 33",
+          "designationKind": "product_name"
+        }
+      },
+      {
+        "case": "borofloat_name_only",
+        "customer": "型番や仕様はわかりません。その名前で取り扱いがあるかだけ知りたいです。見積もりは不要です。",
+        "assistant": "見積依頼は進めません。\n「BOROFLOAT® 33」をお探しですね。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "BOROFLOAT® 33",
+          "designationKind": "product_name",
+          "quoteDeclined": true
+        }
+      },
+      {
+        "case": "borofloat_name_only",
+        "customer": "必要な仕様がわからないまま、商品名だけで担当者に確認してもらえるという意味ですか？今は送信せず、確認に最低限必要な情報だけ教えてください。",
+        "assistant": "商品を示す情報として「BOROFLOAT® 33」を受け取っています。メーカー名も分かれば添えてください。まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "BOROFLOAT® 33",
+          "designationKind": "product_name",
+          "quoteDeclined": true
+        }
+      },
+      {
+        "case": "cleanseal_name_only",
+        "customer": "クリンシル® トップ",
+        "assistant": "「クリンシル® トップ」をお探しですね。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "クリンシル® トップ",
+          "designationKind": "product_name"
+        }
+      },
+      {
+        "case": "cleanseal_name_only",
+        "customer": "メーカーや型番はわかりません。最初に書いた商品名で、そちらで買えるか確認できますか？見積もりはいりません。",
+        "assistant": "「クリンシル® トップ」をお探しですね。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "クリンシル® トップ",
+          "designationKind": "product_name",
+          "quoteDeclined": true
+        }
+      },
+      {
+        "case": "cleanseal_name_only",
+        "customer": "すみません、クリンシル® トップではありません。探している名前はBOROFLOAT® 33でした。こちらを扱うか知りたいです。",
+        "assistant": "「BOROFLOAT® 33」をお探しですね。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designationKind": "product_name",
+          "quoteDeclined": true,
+          "previousModel": "クリンシル® トップ",
+          "designation": "BOROFLOAT® 33"
+        }
+      },
+      {
+        "case": "manufacturer",
+        "customer": "ニチアス",
+        "assistant": "「ニチアス」をお探しですね。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "ニチアス",
+          "designationKind": "unknown",
+          "manufacturer": "ニチアス"
+        }
+      },
+      {
+        "case": "manufacturer",
+        "customer": "それはメーカー名です。商品名はクリンシル® トップです。型番はわかりません。取り扱いと在庫が知りたいだけで、見積もりはいりません。",
+        "assistant": "「クリンシル® トップ」の現在庫を確認できる登録値はありません。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "クリンシル® トップ",
+          "designationKind": "product_name",
+          "manufacturer": "ニチアス",
+          "quoteDeclined": true
+        }
+      },
+      {
+        "case": "manufacturer",
+        "customer": "今は送信しません。確認に最低限必要な情報は何ですか？メーカー名も商品名も先ほど伝えた通りです。",
+        "assistant": "商品を示す情報として「クリンシル® トップ」を受け取っています。メーカーは「ニチアス」ですね。まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "クリンシル® トップ",
+          "designationKind": "product_name",
+          "manufacturer": "ニチアス",
+          "quoteDeclined": true
+        }
+      },
+      {
+        "case": "numeric",
+        "customer": "40",
+        "assistant": "「40」は何の数値でしょうか？意味と単位を教えてください。",
+        "state": {
+          "pricingRequested": false,
+          "quantity": 40,
+          "identityUnavailable": true
+        }
+      },
+      {
+        "case": "numeric",
+        "customer": "個数ではなく幅40mmの意味です。商品名はBOROFLOAT® 33です。型番は知りません。取り扱いと在庫だけ知りたいです。",
+        "assistant": "希望数量は40個として承りました。\n「BOROFLOAT® 33」の現在庫を確認できる登録値はありません。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "quantity": 40,
+          "identityUnavailable": false,
+          "designation": "BOROFLOAT® 33",
+          "designationKind": "product_name"
+        }
+      },
+      {
+        "case": "numeric",
+        "customer": "40個ではありません。数量はまだ決めていません。幅が40mmです。数量の40個を取り消して、今伝わっている条件だけ教えてください。送信は不要です。",
+        "assistant": "希望数量は40個として承りました。\n「BOROFLOAT® 33」をお探しですね。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "quantity": 40,
+          "identityUnavailable": false,
+          "designation": "BOROFLOAT® 33",
+          "designationKind": "product_name",
+          "quantityUnit": "個"
+        }
+      }
+    ]
+  },
+  {
+    "stage": "aoki-transition-eval",
+    "turns": [
+      {
+        "case": 1,
+        "customer": "DEMO-GLASS-01を3枚ほしいです。取り扱いと在庫を確認できますか？",
+        "assistant": "「 DEMO-GLASS-01」は登録上「取扱あり」です。\n自社の登録在庫は12個です（登録確認日：2026-10-25T09:28:27.065Z）。登録値であり、現在の実在庫・確保済み数量とは異なります。希望数量は3枚です。必要数の確保・現在の販売条件は未確認です。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "DEMO-GLASS-01",
+          "designationKind": "product_name",
+          "quantity": 3,
+          "quantityUnit": "枚",
+          "model": "DEMO-GLASS-01",
+          "manufacturer": ""
+        }
+      },
+      {
+        "case": 1,
+        "customer": "すみません、型番を間違えました。DEMO-GLASS-01ではなくZZ-REVIEW-99を3枚です。こちらの在庫はありますか？",
+        "assistant": "以前の「DEMO-GLASS-01」の在庫・納期は「ZZ-REVIEW-99」には適用できません。\n「ZZ-REVIEW-99」の承認済み登録商品は見つかりませんでした。取扱対象外という意味ではなく、当社の販売・調達可否と自社在庫は未確認です。\n仕入先の掲載在庫も確認できていません。掲載情報は当社の在庫・確保済み数量ではありません。外部サイトの在庫検索は現在利用できません。担当者への確認はお問い合わせから商品情報を送れます（まだ送信していません）。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designationKind": "product_name",
+          "quantity": 3,
+          "quantityUnit": "枚",
+          "previousModel": "DEMO-GLASS-01",
+          "designation": "ZZ-REVIEW-99",
+          "model": "ZZ-REVIEW-99"
+        }
+      },
+      {
+        "case": 1,
+        "customer": "先ほどの在庫12個というのは、今お願いしているZZ-REVIEW-99の在庫ではないということですね。見積は不要です。",
+        "assistant": "希望数量は3枚として承りました。\n見積依頼は進めません。\n「ZZ-REVIEW-99」の現在庫を確認できる登録値はありません。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designationKind": "unknown",
+          "quantity": 3,
+          "quantityUnit": "枚",
+          "previousModel": "ZZ-REVIEW-99",
+          "designation": "ZZ-REVIEW-99",
+          "quoteDeclined": true
+        }
+      },
+      {
+        "case": 2,
+        "customer": "メーカーも型番も資料もないのですが、炉の扉を留めるL字金具を5個探しています。見積は不要で、取り扱いがあるか知りたいです。",
+        "assistant": "希望数量は5個として承りました。\n伺った条件：5個。\n見積依頼は進めません。取扱可否・在庫の確認として承ります。\n工業用品のご相談を承っていますが、その商品の販売・調達可否はまだ確認できていません。商品を特定して登録情報と照合できます。\n型番が不明でも、用途から絞り込めます。どの機械の、何をする部品でしょうか？",
+        "state": {
+          "pricingRequested": false,
+          "quantity": 5,
+          "quantityUnit": "個",
+          "quoteDeclined": true,
+          "identityUnavailable": true
+        }
+      },
+      {
+        "case": 2,
+        "customer": "炉の扉を留めるためのL字金具です。先ほどお伝えした通りです。寸法なら測れますが、何を測ればよいですか？",
+        "assistant": "分かる商品名・表示文字、または用途をお知らせください。メーカー名も分かれば添えてください。まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。",
+        "state": {
+          "pricingRequested": false,
+          "quantity": 5,
+          "quantityUnit": "個",
+          "quoteDeclined": true,
+          "identityUnavailable": true
+        }
+      },
+      {
+        "case": 2,
+        "customer": "名称はL字金具、用途は炉の扉の固定です。メーカーは不明です。取り扱い確認に必要な情報で、まだ足りないのは何ですか？",
+        "assistant": "分かる商品名・表示文字、または用途をお知らせください。メーカー名も分かれば添えてください。まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。",
+        "state": {
+          "pricingRequested": false,
+          "quantity": 5,
+          "quantityUnit": "個",
+          "quoteDeclined": true,
+          "identityUnavailable": true
+        }
+      },
+      {
+        "case": 3,
+        "customer": "耐熱ガラスを探しています。取り扱っていますか？",
+        "assistant": "社内の取扱分野資料には「ガラス製品」の記載があります。ただし、個別商品の販売可否や現在庫を示す資料ではありません。\n工業用品のご相談を承っていますが、その商品の販売・調達可否はまだ確認できていません。商品を特定して登録情報と照合できます。\n型番が不明でも、用途から絞り込めます。どの機械の、何をする部品でしょうか？",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": true
+        }
+      },
+      {
+        "case": 3,
+        "customer": "その前に、営業時間を教えてください。このチャットで注文までできるのでしょうか？",
+        "assistant": "営業時間は、このチャットに登録された情報がないためお答えできません。お電話（093-382-2110）でご確認ください。\n下の「この内容で見積を依頼する」から、この会話の内容を添えてお見積りを依頼できます。",
+        "state": null
+      },
+      {
+        "case": 3,
+        "customer": "分かりました。先ほどの耐熱ガラスの話に戻ります。炉ののぞき窓用で、2枚です。まず取扱可否だけ知りたいので見積は要りません。追加で何が必要ですか？",
+        "assistant": "希望数量は2個として承りました。\n分かる商品名・表示文字、または用途をお知らせください。メーカー名も分かれば添えてください。まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": true,
+          "quantity": 2,
+          "quoteDeclined": true
+        }
+      }
+    ]
+  },
+  {
+    "stage": "aoki-entry-final-eval",
+    "turns": [
+      {
+        "case": "numeric",
+        "customer": "40",
+        "assistant": "「40」は何の数値でしょうか？意味と単位を教えてください。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false
+        }
+      },
+      {
+        "case": "numeric",
+        "customer": "個数ではなく幅40mmの意味です。商品名はBOROFLOAT® 33です。型番は知りません。取り扱いと在庫だけ知りたいです。",
+        "assistant": "「BOROFLOAT® 33」の現在庫を確認できる登録値はありません。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "BOROFLOAT® 33",
+          "designationKind": "product_name",
+          "dimensions": "幅40mm"
+        }
+      },
+      {
+        "case": "numeric",
+        "customer": "数量はまだ決めていません。40個という意味ではないので、もし数量として入っていれば取り消してください。幅40mmの商品を探しています。今は送信不要です。",
+        "assistant": "承知しました。ご相談ありがとうございました。また必要になりましたら、新しい相談を始めてください。",
+        "state": null
+      },
+      {
+        "case": "manufacturer",
+        "customer": "ニチアス",
+        "assistant": "商品を示す情報として「ニチアス」を受け取っています。メーカー名も分かれば添えてください。まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "ニチアス",
+          "designationKind": "unknown"
+        }
+      },
+      {
+        "case": "manufacturer",
+        "customer": "ニチアスはメーカー名です。商品名はクリンシル® トップです。型番はわかりません。取り扱いと在庫を知りたいです。見積もりは不要です。",
+        "assistant": "見積依頼は進めません。\n「クリンシル® トップ」の現在庫を確認できる登録値はありません。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designationKind": "product_name",
+          "previousModel": "ニチアス",
+          "designation": "クリンシル® トップ",
+          "quoteDeclined": true,
+          "manufacturer": "ニチアス"
+        }
+      },
+      {
+        "case": "manufacturer",
+        "customer": "今は送信しません。取扱確認のために最低限必要な情報は何ですか？メーカーと商品名は今伝えた通りです。",
+        "assistant": "商品を示す情報として「クリンシル® トップ」を受け取っています。メーカーは「ニチアス」ですね。まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designationKind": "product_name",
+          "previousModel": "ニチアス",
+          "designation": "クリンシル® トップ",
+          "quoteDeclined": true,
+          "manufacturer": "ニチアス"
+        }
+      }
+    ]
+  },
+  {
+    "stage": "aoki-transition-final-eval",
+    "turns": [
+      {
+        "case": 2,
+        "customer": "メーカーも型番も資料もないのですが、炉の扉を留めるL字金具を5個探しています。見積は不要で、取り扱いがあるか知りたいです。",
+        "assistant": "希望数量は5個として承りました。\n見積依頼は進めません。\n「炉の扉を留める・L字」という条件を受け取っています。メーカー・型番が不明でも、この説明を使ってお問い合わせから取扱可否を確認できます。現時点では対象商品を特定できておらず、販売・調達可否と在庫は未確認です。まだ問い合わせは送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "purpose": "炉の扉を留める",
+          "shape": "L字",
+          "quantity": 5,
+          "quantityUnit": "個",
+          "quoteDeclined": true,
+          "identityUnavailable": true
+        }
+      },
+      {
+        "case": 2,
+        "customer": "寸法なら測れます。取扱いの確認のために、どこをどう測ればよいですか？",
+        "assistant": "商品を示す情報として「炉の扉を留める・L字」を受け取っています。メーカー・型番が不明なことも承知しました。まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。",
+        "state": {
+          "pricingRequested": false,
+          "purpose": "炉の扉を留める",
+          "shape": "L字",
+          "quantity": 5,
+          "quantityUnit": "個",
+          "quoteDeclined": true,
+          "identityUnavailable": true
+        }
+      },
+      {
+        "case": 2,
+        "customer": "不明な寸法を推測するのではなく、手元の現物を測りたいです。L字の両辺の長さと厚み、取付穴の直径や間隔を測ればよいでしょうか？",
+        "assistant": "商品を示す情報として「炉の扉を留める・L字・L字の両辺の長さと厚み、取付穴の直径や間隔」を受け取っています。メーカー・型番が不明なことも承知しました。まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。",
+        "state": {
+          "pricingRequested": false,
+          "purpose": "炉の扉を留める",
+          "shape": "L字",
+          "quantity": 5,
+          "quantityUnit": "個",
+          "quoteDeclined": true,
+          "identityUnavailable": true,
+          "dimensions": "L字の両辺の長さと厚み、取付穴の直径や間隔"
+        }
+      },
+      {
+        "case": 3,
+        "customer": "耐熱ガラスを探しています。取り扱っていますか？",
+        "assistant": "社内の取扱分野資料には「ガラス製品」の記載があります。ただし、個別商品の販売可否や現在庫を示す資料ではありません。\nメーカー名・型番、または具体的な製品名・シリーズ名は分かりますか？箱・ラベル・図面にある表示をそのまま教えてください。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false
+        }
+      },
+      {
+        "case": 3,
+        "customer": "その前に、営業時間を教えてください。このチャットで注文までできるのでしょうか？",
+        "assistant": "営業時間は、このチャットに登録された情報がないためお答えできません。お電話（093-382-2110）でご確認ください。\nこのチャットからはご注文を受け付けていません（オンラインのご注文受付は現在休止しています）。\n下の「この内容で相談を依頼する」から、この会話の内容を添えて相談を依頼できます。",
+        "state": null
+      },
+      {
+        "case": 3,
+        "customer": "分かりました。先ほどの耐熱ガラスの話に戻ります。炉ののぞき窓用で、2枚です。まず取扱可否だけ知りたいので見積は要りません。追加で何が必要ですか？",
+        "assistant": "希望数量は2枚として承りました。\n商品を示す情報として「炉ののぞき窓用」を受け取っています。メーカー・型番が不明なことも承知しました。まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": true,
+          "purpose": "炉ののぞき窓用",
+          "quantity": 2,
+          "quantityUnit": "枚",
+          "quoteDeclined": true
+        }
+      }
+    ]
+  },
+  {
+    "stage": "aoki-entry-v4-eval",
+    "turns": [
+      {
+        "case": "numeric",
+        "customer": "40",
+        "assistant": "「40」は何の数値でしょうか？意味と単位を教えてください。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false
+        }
+      },
+      {
+        "case": "numeric",
+        "customer": "個数ではなく幅40mmの意味です。商品名はBOROFLOAT® 33です。型番は知りません。取り扱いと在庫だけ知りたいです。",
+        "assistant": "「BOROFLOAT® 33」の現在庫を確認できる登録値はありません。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "BOROFLOAT® 33",
+          "designationKind": "product_name",
+          "dimensions": "幅40mm"
+        }
+      },
+      {
+        "case": "numeric",
+        "customer": "数量はまだ決めていません。40個という意味ではないので、もし数量として入っていれば取り消してください。幅40mmの商品を探しています。今は送信不要です。",
+        "assistant": "「BOROFLOAT® 33」をお探しですね。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "BOROFLOAT® 33",
+          "designationKind": "product_name",
+          "dimensions": "幅40mm"
+        }
+      },
+      {
+        "case": "manufacturer",
+        "customer": "ニチアス",
+        "assistant": "メーカーは「ニチアス」ですね。製品名・シリーズ名・型番の記載も分かりますか？",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "manufacturer": "ニチアス"
+        }
+      },
+      {
+        "case": "manufacturer",
+        "customer": "商品名はクリンシル® トップです。型番はわかりません。見積もりは不要で、取扱いと在庫だけ知りたいです。",
+        "assistant": "見積依頼は進めません。\n「クリンシル® トップ」の現在庫を確認できる登録値はありません。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "designation": "クリンシル® トップ",
+          "designationKind": "product_name",
+          "quoteDeclined": true
+        }
+      }
+    ]
+  },
+  {
+    "stage": "aoki-transition-v4-eval",
+    "turns": [
+      {
+        "case": 2,
+        "customer": "メーカーも型番も資料もないのですが、炉の扉を留めるL字金具を5個探しています。見積は不要で、取り扱いがあるか知りたいです。",
+        "assistant": "希望数量は5個として承りました。\n見積依頼は進めません。\n「炉の扉を留める・L字」という条件を受け取っています。メーカー・型番が不明でも、この説明を使ってお問い合わせから取扱可否を確認できます。現時点では対象商品を特定できておらず、販売・調達可否と在庫は未確認です。まだ問い合わせは送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "purpose": "炉の扉を留める",
+          "shape": "L字",
+          "quantity": 5,
+          "quantityUnit": "個",
+          "quoteDeclined": true,
+          "identityUnavailable": true
+        }
+      },
+      {
+        "case": 2,
+        "customer": "寸法なら測れます。取扱いの確認のために、どこをどう測ればよいですか？",
+        "assistant": "「炉の扉を留める・L字」ですね。形状を識別するため、全体の縦・横・厚さを単位付きで教えてください。取り付け穴がある場合は、穴の直径と穴同士の中心距離も分かると照合に役立ちます。現物の写真や手描きの寸法図でも相談できます。これらだけで販売可否や適合を確定するものではありません。",
+        "state": {
+          "pricingRequested": false,
+          "purpose": "炉の扉を留める",
+          "shape": "L字",
+          "quantity": 5,
+          "quantityUnit": "個",
+          "quoteDeclined": true,
+          "identityUnavailable": true
+        }
+      },
+      {
+        "case": 2,
+        "customer": "まだ測っていません。L字の両辺の長さと厚み、取付穴の直径や間隔を測ればよいということですね？",
+        "assistant": "商品を示す情報として「炉の扉を留める・L字」を受け取っています。メーカー・型番が不明なことも承知しました。まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。",
+        "state": {
+          "pricingRequested": false,
+          "purpose": "炉の扉を留める",
+          "shape": "L字",
+          "quantity": 5,
+          "quantityUnit": "個",
+          "quoteDeclined": true,
+          "identityUnavailable": true
+        }
+      },
+      {
+        "case": 3,
+        "customer": "耐熱ガラスを探しています。取り扱っていますか？",
+        "assistant": "社内の取扱分野資料には「ガラス製品」の記載があります。ただし、個別商品の販売可否や現在庫を示す資料ではありません。\nメーカー名・型番、または具体的な製品名・シリーズ名は分かりますか？箱・ラベル・図面にある表示をそのまま教えてください。",
+        "state": {
+          "pricingRequested": false,
+          "purpose": "耐熱ガラスを探しています",
+          "identityUnavailable": false
+        }
+      },
+      {
+        "case": 3,
+        "customer": "その前に、営業時間を教えてください。このチャットで注文までできるのでしょうか？",
+        "assistant": "営業時間は、このチャットに登録された情報がないためお答えできません。お電話（093-382-2110）でご確認ください。\nこのチャットからはご注文を受け付けていません（オンラインのご注文受付は現在休止しています）。\n下の「この内容で相談を依頼する」から、この会話の内容を添えて相談を依頼できます。",
+        "state": null
+      },
+      {
+        "case": 3,
+        "customer": "分かりました。先ほどの耐熱ガラスの話に戻ります。炉ののぞき窓用で、2枚です。まず取扱可否だけ知りたいので見積は要りません。追加で何が必要ですか？",
+        "assistant": "希望数量は2枚として承りました。\n商品を示す情報として「炉ののぞき窓用」を受け取っています。メーカー名も分かれば添えてください。まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。",
+        "state": {
+          "pricingRequested": false,
+          "purpose": "炉ののぞき窓用",
+          "identityUnavailable": false,
+          "quantity": 2,
+          "quantityUnit": "枚",
+          "quoteDeclined": true
+        }
+      }
+    ]
+  },
+  {
+    "stage": "aoki-entry-accepted-eval",
+    "turns": [
+      {
+        "case": "manufacturer",
+        "customer": "ニチアス",
+        "assistant": "メーカーは「ニチアス」ですね。製品名・シリーズ名・型番の記載も分かりますか？",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "manufacturer": "ニチアス"
+        }
+      },
+      {
+        "case": "manufacturer",
+        "customer": "クリンシル® トップ",
+        "assistant": "「クリンシル® トップ」をお探しですね。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "manufacturer": "ニチアス",
+          "designation": "クリンシル® トップ",
+          "designationKind": "product_name"
+        }
+      },
+      {
+        "case": "manufacturer",
+        "customer": "先ほどのメーカーと商品名で、何を用意すれば取扱確認できますか。見積不要",
+        "assistant": "商品を示す情報として「クリンシル® トップ」を受け取っています。メーカーは「ニチアス」ですね。まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。",
+        "state": {
+          "pricingRequested": false,
+          "identityUnavailable": false,
+          "manufacturer": "ニチアス",
+          "designation": "クリンシル® トップ",
+          "designationKind": "product_name",
+          "quoteDeclined": true
+        }
+      },
+      {
+        "case": "borofloat",
+        "customer": "BOROFLOAT® 33→",
+        "assistant": "「BOROFLOAT® 33」をお探しですね。登録商品を照合しましたが、この名称に一致する商品は見つかりませんでした。個別商品の販売・調達可否と現在庫は未確認です。\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "designation": "BOROFLOAT® 33",
+          "designationKind": "product_name",
+          "identityUnavailable": false
+        }
+      }
+    ]
+  },
+  {
+    "stage": "aoki-transition-accepted-eval",
+    "turns": [
+      {
+        "case": 2,
+        "customer": "炉の扉を留めるL字金具を5個探しています。型番も資料もありません。見積は不要で、取扱可否を知りたいです。",
+        "assistant": "希望数量は5個として承りました。\n見積依頼は進めません。\n「炉の扉を留める・L字」という条件を受け取っています。メーカー・型番が不明でも、この説明を使ってお問い合わせから取扱可否を確認できます。現時点では対象商品を特定できておらず、販売・調達可否と在庫は未確認です。まだ問い合わせは送信していません。",
+        "state": {
+          "pricingRequested": false,
+          "purpose": "炉の扉を留める",
+          "shape": "L字",
+          "quantity": 5,
+          "quantityUnit": "個",
+          "quoteDeclined": true,
+          "identityUnavailable": true
+        }
+      },
+      {
+        "case": 2,
+        "customer": "何を測ればいいですか？",
+        "assistant": "「炉の扉を留める・L字」ですね。形状を識別するため、全体の縦・横・厚さを単位付きで教えてください。取り付け穴がある場合は、穴の直径と穴同士の中心距離も分かると照合に役立ちます。現物の写真や手描きの寸法図でも相談できます。これらだけで販売可否や適合を確定するものではありません。",
+        "state": {
+          "pricingRequested": false,
+          "purpose": "炉の扉を留める",
+          "shape": "L字",
+          "quantity": 5,
+          "quantityUnit": "個",
+          "quoteDeclined": true,
+          "identityUnavailable": true,
+          "guidance": "measurement"
+        }
+      },
+      {
+        "case": 2,
+        "customer": "まだ測っていません。両辺の長さと厚み、穴径と穴中心間距離を測るということですね？",
+        "assistant": "はい、その測定項目で形状を照合しやすくなります。まだ測定値は受け取っていません。測れた値に単位を添え、難しい箇所は未確認としていただいて大丈夫です。販売可否や適合は別途確認が必要です。",
+        "state": {
+          "pricingRequested": false,
+          "purpose": "炉の扉を留める",
+          "shape": "L字",
+          "quantity": 5,
+          "quantityUnit": "個",
+          "quoteDeclined": true,
+          "identityUnavailable": true,
+          "guidance": "measurement"
+        }
+      }
+    ]
+  }
+]
