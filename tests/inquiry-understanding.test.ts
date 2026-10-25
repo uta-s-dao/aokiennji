@@ -41,3 +41,18 @@ it('rejects identities and quantity evidence absent from the latest message',asy
  const result=await understandInquiry({message:'まだ分かりません',history:[],settings:DEFAULT_SETTINGS,context:{scope:'chat'}});
  expect(result).toMatchObject({designation:'',model:'',manufacturer:'',quantity:0});
 });
+
+it('does not treat a general category as a specific product',async()=>{
+ model.mockResolvedValueOnce(parsed({designation:'耐熱ガラス',designationKind:'category',next:'identity'}));
+ const r=await answerChat('耐熱ガラスを探している','category');
+ expect(r.message.inquiryState?.designation).toBeUndefined();
+ expect(r.message.content).toContain('メーカー名・型番');
+});
+it('uses a manufacturer answer to ask for the remaining identity',async()=>{
+ model.mockResolvedValueOnce(parsed({next:'identity'}));
+ const first=await answerChat('ガラスを探しています','maker');
+ model.mockResolvedValueOnce(parsed({manufacturer:'Example Maker',next:'identity'}));
+ const next=await answerChat('Example Maker','maker',first.conversationId);
+ expect(next.message.content).toContain('メーカーは「Example Maker」');
+ expect(next.message.content).not.toContain('資料がなければ');
+});

@@ -167,7 +167,7 @@ export async function productInquiry(input: {
     delete state.manufacturer;
     state.identityUnavailable = false;
   }
-  if (understanding?.designation) {
+  if (understanding?.designation && understanding.designationKind !== 'category') {
     state.designation = understanding.designation;
     state.designationKind = understanding.designationKind;
     state.identityUnavailable = false;
@@ -466,6 +466,12 @@ export async function productInquiry(input: {
   }
   if (!state.model && !state.designation && /価格|いくら|在庫|納期|いつ.*届/.test(message))
     return reply(`${fieldEvidence}個別商品の価格・現在庫・納期は未確認です。登録在庫・仕入先の掲載在庫・確保済み数量は別です。商品名や型番が分かれば登録情報を照合できます。分かる名称を教えてください。`);
+  if (understanding && !state.identityUnavailable && understanding.next === 'identity')
+    return reply(fieldEvidence + (state.manufacturer
+      ? `メーカーは「${state.manufacturer}」ですね。製品名・シリーズ名・型番の記載も分かりますか？`
+      : 'メーカー名・型番、または具体的な製品名・シリーズ名は分かりますか？箱・ラベル・図面にある表示をそのまま教えてください。'));
+  if (understanding?.next === 'clarify')
+    return reply(fieldEvidence + knownQuestions.clarify);
   // Without interpretation, an answer to identification must not be treated as absence.
   if (!understanding && !state.identityUnavailable && /メーカー名・型番/.test(previous?.content || ''))
     return reply(`${fieldEvidence}「${message}」というご回答を受け取りました。商品名・型番・メーカー名のどれに当たるか判断できませんでした。表示されている名称でしょうか？`);
