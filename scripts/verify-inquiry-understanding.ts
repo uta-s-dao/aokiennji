@@ -15,6 +15,7 @@ async function main() {
   for(const row of rows) {assert(!r.message.content.includes(row.supplierName),'Private supplier leaked');if(row.website)assert(!r.message.content.includes(row.website),'Private URL leaked')}
  }
  assert(turns[0].reply.includes('取扱分野資料'),'Registered field source not used');
+ assert(turns[0].reply.includes('メーカー名・型番'),'General category must ask identification');
  assert(turns[1].state?.designation==='BOROFLOAT® 33' || turns[1].state?.model==='BOROFLOAT® 33','Identity lost');
  assert(!turns[1].reply.includes('資料がなければ'),'Checklist advanced');
  assert.equal(turns[2].state?.quantity,5);
