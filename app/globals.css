@@ -5414,9 +5414,101 @@ label small {
   .cms-toolbar small { flex-basis: 100%; }
 }
 
-.chat-photo-controls { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 8px; }
-.chat-photo-controls button, .chat-photo-preview button { padding: 6px 10px; border: 1px solid #c8ced4; border-radius: 6px; background: #fff; color: #25384a; }
-.chat-photo-controls small { flex-basis: 100%; font-size: 11px; }
-.chat-photo-preview { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.chat-photo-preview img { width: 72px; height: 72px; object-fit: contain; }
-.chat-attached-image { display: block; max-width: 180px; max-height: 150px; object-fit: contain; margin-top: 8px; }
+.chat-photo-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.chat-photo-preview img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+.chat-attached-image {
+  display: block;
+  max-width: 180px;
+  max-height: 150px;
+  object-fit: contain;
+  margin-top: 8px;
+}
+
+.chat-compose {
+  position: relative;
+}
+.chat-attachment-menu {
+  display: grid;
+  gap: 4px;
+  position: absolute;
+  left: 14px;
+  bottom: calc(100% - 8px);
+  z-index: 5;
+  width: 220px;
+  max-width: calc(100% - 28px);
+  padding: 8px;
+  border: 1px solid #dce5ee;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 28px #16324f26;
+}
+.chat-attachment-menu button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #fff;
+  color: #25384a;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.chat-attachment-menu button:hover,
+.chat-attachment-menu button:focus-visible {
+  background: #edf4fb;
+}
+.chat-compose form .chat-add-attachment {
+  flex-shrink: 0;
+  background: transparent;
+  color: #47637e;
+}
+.chat-compose form .chat-add-attachment:hover,
+.chat-compose form .chat-add-attachment[aria-expanded='true'] {
+  background: #e4edf7;
+}
+.chat-photo-preview {
+  flex-wrap: wrap;
+}
+.chat-photo-preview button {
+  padding: 6px 10px;
+  border: 1px solid #c8ced4;
+  border-radius: 6px;
+  background: #fff;
+  color: #25384a;
+}
+.chat-file-name {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.chat-attachment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+}
+.chat-attachment svg {
+  flex-shrink: 0;
+}
+
+
+
+
+
+.chat-attachment-menu small { padding: 4px 12px 8px; color: #62758a; font-size: 11px; line-height: 1.6; }
