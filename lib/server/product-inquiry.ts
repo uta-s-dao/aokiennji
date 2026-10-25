@@ -3,7 +3,7 @@ import { destinationIn } from './research';
 import { sourcingEstimate } from './sourcing-estimate';
 import { estimateReply } from '../sourcing-estimate';
 import { listedStockLabels } from './page-availability';
-import { requestPatterns } from '../chat-policy';
+import { requestPatterns, socialOnly, policyKeys } from '../chat-policy';
 import { understandInquiry } from './inquiry-understanding';
 import { z } from 'zod';
 import type {
@@ -37,16 +37,14 @@ const candidate = z.object({
 const reading = z.object({ candidates: z.array(candidate).max(8) });
 export function usesProductInquiry(message: string, history: ChatMessage[], images: string[] = []) {
   if (images.length) return true;
+  if (policyKeys(message).some(key => ['catalog', 'invoice', 'hours', 'payment', 'formEdit'].includes(key))) return false;
   if (/注文|発注/.test(message) && !/注文用型番|注文番号/.test(message)) return false;
   if (/営業時間|会社概要|所在地|住所|支払|請求書|注文.*(?:変更|キャンセル)|個人情報/.test(message))
     return false;
-  return (
-    !!history.at(-1)?.inquiryState ||
-    !!history.at(-1)?.salesState ||
-    !!localIntent(message).model ||
-    !!consultationTopic([message]) ||
-    /商品|部品|型番|品番|在庫|取扱|取り扱|買え|購入|写真|銘板|ラベル/.test(message)
-  );
+  // Unrecognized input is exactly what interpretation is for. Never require
+  // a model-shaped token, a category keyword, or pre-existing inquiry state.
+  // Established non-product policies above, and pure social turns, stay local.
+  return !socialOnly(message);
 }
 export async function productInquiry(input: {
   message: string;
@@ -56,19 +54,23 @@ export async function productInquiry(input: {
   context: AiUsageContext & { conversationId: string; turnId: string };
   images?: string[];
   signal?: AbortSignal;
-}): Promise<Partial<ChatMessage> & { content: string; inquiryState: ProductInquiryState }> {
+}): Promise<Partial<ChatMessage> & { content: string; inquiryState: ProductInquiryState; interpretationProvider: 'local' | 'openai' }> {
   const { message, history, settings } = input;
   const previous = history.toReversed().find((m) => m.role === 'assistant');
+  // Policy answers (hours, payment, etc.) do not erase the active product.
+  // Keep the immediately preceding reply separately for interpreting short answers.
+  const previousInquiry = history.toReversed().find(m => m.role === 'assistant' && (m.inquiryState || m.salesState));
   const state: ProductInquiryState = structuredClone(
-    previous?.inquiryState ||
-      (previous?.salesState
+    previousInquiry?.inquiryState ||
+      (previousInquiry?.salesState
         ? {
-            model: previous.salesState.selectedModel,
-            quantity: previous.salesState.quantity,
-            quantityUnit: previous.salesState.quantityUnit,
+            model: previousInquiry.salesState.selectedModel,
+            quantity: previousInquiry.salesState.quantity,
+            quantityUnit: previousInquiry.salesState.quantityUnit,
           }
         : {}),
   );
+  delete state.guidance;
   if (/別の商品|別件/.test(message))
     for (const key of Object.keys(state)) delete (state as Record<string, unknown>)[key];
   state.destination = destinationIn([message]) || state.destination;
@@ -85,19 +87,21 @@ export async function productInquiry(input: {
       state.model && `型番：${state.model}`,
       state.designation && `商品名・表示：${state.designation}`,
       state.manufacturer && `メーカー：${state.manufacturer}`,
-      state.quantity && `数量：${state.quantity}${state.quantityUnit || '個'}`,
+      state.quantity && `数量：${state.quantity}${state.quantityUnit || '（単位未確認）'}`,
       state.destination && `お届け先：${state.destination}`,
     ]
       .filter(Boolean)
       .join('・');
   const draft = () =>
     `【最新の照会条件】\n${currentFacts() || '商品は特定前です'}\n【会話経過（訂正前の条件を含みます）】\n${handoffDraft(texts)}`;
+  let interpretationProvider: 'local' | 'openai' = 'local';
   const reply = (content: string, extra: Partial<ChatMessage> = {}) => ({
     content:
       state.quantity && !state.model && /数量|個|枚|本|台/.test(message)
-        ? `希望数量は${state.quantity}${state.quantityUnit || '個'}として承りました。\n${content}`
+        ? `希望数量は${state.quantity}${state.quantityUnit || '（単位未確認）'}として承りました。\n${content}`
         : content,
     inquiryState: state,
+    interpretationProvider,
     knowledge: relevantFields.length && !state.model ? { mode: 'fields' as const, fields: relevantFields } : undefined,
     products: relevantFields.length ? [] : undefined,
     evidence: [],
@@ -160,7 +164,8 @@ export async function productInquiry(input: {
     }
   }
   const understanding = await understandInquiry(input);
-  if (understanding?.newSubject && (understanding.model || understanding.designation)) {
+  if (understanding) interpretationProvider = 'openai';
+  if (understanding?.newSubject && (state.model || state.designation) && (understanding.model || understanding.designation)) {
     state.previousModel = state.model || state.designation;
     delete state.model;
     delete state.designation;
@@ -172,6 +177,9 @@ export async function productInquiry(input: {
     state.designationKind = understanding.designationKind;
     state.identityUnavailable = false;
   }
+  for (const key of ['purpose', 'shape', 'dimensions'] as const)
+    if (understanding?.[key]) state[key] = understanding[key];
+  if (understanding?.quantityWithdrawn) { delete state.quantity; delete state.quantityUnit; }
   if (understanding?.quantity) {
     state.quantity = understanding.quantity;
     state.quantityUnit = understanding.quantityUnit || undefined;
@@ -209,7 +217,7 @@ export async function productInquiry(input: {
     /数量|希望|欲し|ほし|訂正|ではなく|じゃなく/.test(message) ||
     /^\s*\d+\s*(個|本|台|枚|セット)/.test(message) ||
     (!!explicit && !/先ほど|以前|前の|案内された|在庫情報/.test(message));
-  if (qty && quantityContext) {
+  if (!understanding && qty && quantityContext && !/ではありません|取り消|取消|数量.*未定|数量.*決めて/.test(message)) {
     state.quantity = Number(qty[1]);
     state.quantityUnit = qty[0].replace(/[\d\s]/g, '');
   }
@@ -258,8 +266,7 @@ export async function productInquiry(input: {
   }
   if (explicit) {
     if (state.model !== explicit) {
-      if (state.model) state.previousModel = state.model;
-      delete state.manufacturer;
+      if (state.model) { state.previousModel = state.model; delete state.manufacturer; }
     }
     state.model = explicit;
     delete state.imageCandidates;
@@ -285,7 +292,8 @@ export async function productInquiry(input: {
       }),
     );
   if (photoHelpRequested(message)) return reply(PHOTO_GUIDE);
-  if (requestPatterns.handoff.test(message) && !quoteWanted(message)) {
+  const wantsHandoff = understanding ? understanding.handoffPreference === 'requested' : requestPatterns.handoff.test(message) && !/送信せず|送信しない|送信したくない|依頼しない/.test(message);
+  if (wantsHandoff && !quoteWanted(message)) {
     return reply(
       settings.flags.humanHandoff
         ? '下の「この内容で相談を依頼する」から、相談内容と連絡先を確認して送信できます。まだ依頼は送信していません。'
@@ -294,6 +302,8 @@ export async function productInquiry(input: {
     );
   }
   if (quoteWanted(message) && !state.quoteDeclined) {
+    if (!state.model && !state.designation && !consultationTopic(texts) && texts.length === 1)
+      return reply('お見積りをご希望ですね。まず、商品名・型番、または用途と必要な数量を教えていただけますか？まだ見積依頼は送信されていません。');
     return reply(
       settings.flags.quoteRequests
         ? 'ご希望の見積依頼へ進めます。下の「この内容で見積を依頼する」から内容と連絡先を確認して送信してください。まだ依頼は送信していません。'
@@ -310,6 +320,19 @@ export async function productInquiry(input: {
     : /急ぎません|急いでいません/.test(message)
       ? 'お急ぎでないことを承知しました。\n'
       : '';
+  const description = [state.designation || state.model, state.purpose, state.shape, state.dimensions].filter(Boolean).join('・');
+  if (state.designation && state.designationKind === 'unknown' && !state.manufacturer && understanding?.requestedInformation === 'identification')
+    return reply(`「${state.designation}」という名称を受け取りました。メーカー名と商品名・シリーズ名のどちらでしょうか？`);
+  if (understanding?.confirmingGuidance && previous?.inquiryState?.guidance === 'measurement') {
+    state.guidance = 'measurement';
+    return reply('はい、その測定項目で形状を照合しやすくなります。まだ測定値は受け取っていません。測れた値に単位を添え、難しい箇所は未確認としていただいて大丈夫です。販売可否や適合は別途確認が必要です。');
+  }
+  if (understanding?.requestedInformation === 'measurement') {
+    state.guidance = 'measurement';
+    return reply(`${description ? `「${description}」ですね。` : ''}形状を識別するため、全体の縦・横・厚さを単位付きで教えてください。取り付け穴がある場合は、穴の直径と穴同士の中心距離も分かると照合に役立ちます。現物の写真や手描きの寸法図でも相談できます。これらだけで販売可否や適合を確定するものではありません。`);
+  }
+  if (understanding?.requestedInformation === 'requirements')
+    return reply(`${description ? `商品を示す情報として「${description}」を受け取っています。` : '分かる商品名・表示文字、または用途をお知らせください。'}${state.manufacturer ? `メーカーは「${state.manufacturer}」ですね。` : state.identityUnavailable ? 'メーカー・型番が不明なことも承知しました。' : 'メーカー名も分かれば添えてください。'}まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。`);
   if (state.designation && !state.model) {
     const key = (text: string) => modelIdentity(text).replace(/[®™©]/g, '');
     const matches = catalog.filter(p => key(p.name) === key(state.designation!) || key(p.model) === key(state.designation!));
@@ -348,7 +371,7 @@ export async function productInquiry(input: {
           ? `自社の登録在庫は${p.stock}個です（登録確認日：${p.verifiedAt || '未記録'}）。登録値であり、現在の実在庫・確保済み数量とは異なります。`
           : '自社在庫はこのチャットで確認できる登録値がありません。';
       return reply(
-        `${acknowledgement}「${p.manufacturer} ${p.model}」は登録上「${availability}」です。\n${stock}${state.quantity ? `希望数量は${state.quantity}${state.quantityUnit || '個'}です。` : ''}必要数の確保・現在の販売条件は未確認です。${settings.flags.showStock && p.stock !== null && state.quantity && state.quantity > p.stock ? `ご希望の${state.quantity}個には不足しています。追加調達の可否は未確認です。` : ''}${localIntent(message).intent === 'lead_time' || /納期|いつ.*届|何日/.test(message) ? (settings.flags.showLeadTime && p.leadTime ? `登録上の納期目安は${p.leadTime}です。実際のお届け日は未確認です。` : '納期は未確認です。') : ''}${/価格|いくら|値段/.test(message) ? (settings.flags.showPrice && p.price !== null ? `登録参考単価は${p.price.toLocaleString('ja-JP')}円（税抜・送料別）です。` : '販売価格は未確認です。') : ''}${/在庫/.test(message) && !state.quantity && !previous?.content.includes('何個ほど必要でしょうか') ? '何個ほど必要でしょうか？' : ''}`,
+        `${acknowledgement}「${p.manufacturer} ${p.model}」は登録上「${availability}」です。\n${stock}${state.quantity ? `希望数量は${state.quantity}${state.quantityUnit || '（単位未確認）'}です。` : ''}必要数の確保・現在の販売条件は未確認です。${settings.flags.showStock && p.stock !== null && state.quantity && state.quantity > p.stock ? `ご希望の${state.quantity}個には不足しています。追加調達の可否は未確認です。` : ''}${localIntent(message).intent === 'lead_time' || /納期|いつ.*届|何日/.test(message) ? (settings.flags.showLeadTime && p.leadTime ? `登録上の納期目安は${p.leadTime}です。実際のお届け日は未確認です。` : '納期は未確認です。') : ''}${/価格|いくら|値段/.test(message) ? (settings.flags.showPrice && p.price !== null ? `登録参考単価は${p.price.toLocaleString('ja-JP')}円（税抜・送料別）です。` : '販売価格は未確認です。') : ''}${/在庫/.test(message) && !state.quantity && !previous?.content.includes('何個ほど必要でしょうか') ? '何個ほど必要でしょうか？' : ''}`,
         {
           products,
           requestedQuantity: state.quantity,
@@ -452,6 +475,7 @@ export async function productInquiry(input: {
     state.identityUnavailable &&
     knownQuestions[understanding.next] &&
     !understanding.known.some((field) => field === understanding.next) &&
+    !state[understanding.next as 'purpose' | 'shape' | 'dimensions'] &&
     !knownFromText[understanding.next]?.test(texts.join('\n')) &&
     !(state.asked || []).includes(understanding.next)
   ) {
@@ -466,6 +490,8 @@ export async function productInquiry(input: {
   }
   if (!state.model && !state.designation && /価格|いくら|在庫|納期|いつ.*届/.test(message))
     return reply(`${fieldEvidence}個別商品の価格・現在庫・納期は未確認です。登録在庫・仕入先の掲載在庫・確保済み数量は別です。商品名や型番が分かれば登録情報を照合できます。分かる名称を教えてください。`);
+  if (understanding && state.identityUnavailable && (state.purpose || state.shape || state.dimensions))
+    return reply(`${acknowledgement}「${description}」という条件を受け取っています。メーカー・型番が不明でも、この説明を使ってお問い合わせから取扱可否を確認できます。現時点では対象商品を特定できておらず、販売・調達可否と在庫は未確認です。まだ問い合わせは送信していません。`);
   if (understanding && !state.identityUnavailable && understanding.next === 'identity')
     return reply(fieldEvidence + (state.manufacturer
       ? `メーカーは「${state.manufacturer}」ですね。製品名・シリーズ名・型番の記載も分かりますか？`

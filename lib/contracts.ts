@@ -233,6 +233,10 @@ export interface ProductSourcing {
   };
 }
 export interface ProductInquiryState {
+  guidance?: 'measurement';
+  purpose?: string;
+  shape?: string;
+  dimensions?: string;
   designation?: string;
   designationKind?: 'product_name' | 'series' | 'material' | 'unknown';
   quoteDeclined?: boolean;
