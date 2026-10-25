@@ -14,7 +14,7 @@ export function quoteWanted(text: string) {
   return (
     /見積/.test(text) &&
     !/不要|まだ|いらな|要らな|希望しな|しなく|しない|なし/.test(text) &&
-    /希望|依頼|お願い|ください|ほしい|欲しい/.test(text)
+    /希望|依頼|お願い|ください|ほしい|欲しい|相談したい|進めたい/.test(text)
   );
 }
 

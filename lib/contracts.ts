@@ -233,6 +233,9 @@ export interface ProductSourcing {
   };
 }
 export interface ProductInquiryState {
+  designation?: string;
+  designationKind?: 'product_name' | 'series' | 'material' | 'unknown';
+  quoteDeclined?: boolean;
   previousModel?: string;
   destination?: string;
   pricingRequested?: boolean;
