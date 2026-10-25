@@ -8,6 +8,7 @@ import { safeFetch } from './safe-fetch';
 // chooses the stage and writes stock/quotation statements.
 export async function salesModel<T>(input: {
   settings: AppSettings;
+  model?: string;
   context: AiUsageContext;
   instructions: string;
   data: unknown;
@@ -18,7 +19,7 @@ export async function salesModel<T>(input: {
   signal?: AbortSignal;
 }): Promise<T> {
   if (!process.env.OPENAI_API_KEY || openaiQuotaPaused()) throw Error('generation_unavailable');
-  const model = responseModel(input.settings);
+  const model = input.model || responseModel(input.settings);
   const body = JSON.stringify({
     model,
     store: false,

@@ -196,7 +196,7 @@ export async function answerChat(
       result.responseProvider = generated.provider;
       responseReason = generated.reason;
     }
-    const assistant: ChatMessage = { ...result, id: assistantId, role: 'assistant', createdAt: now(), route: result.sourcing ? 'sourcing' : 'consultation', groundingHash: groundingHash(result.products || [], undefined, [], settings.flags, await sourcingContextRevision(conversation.id, settings)) };
+    const assistant: ChatMessage = { ...result, id: assistantId, role: 'assistant', createdAt: now(), route: result.sourcing ? 'sourcing' : 'consultation', groundingHash: groundingHash(result.products || [], result.knowledge, [], settings.flags, await sourcingContextRevision(conversation.id, settings)) };
     await save('messages', { ...assistant, conversationId: conversation.id, replyToId: usageContext.turnId, sourceTrace, processing: { responseProvider: assistant.responseProvider, responseModel: assistant.responseProvider === 'openai' ? responseModel(settings) : null, responseMode: 'consult', responseReason, classificationProvider: 'local', webSearch: sourceTrace.stages.some(s => s.scope !== 'registered_data'), durationMs: Date.now() - Date.parse(userCreatedAt) } }, { conversation_id: conversation.id });
     await onText?.(assistant.content);
     const { estimateRevision: _revision, ...publicAssistant } = assistant;

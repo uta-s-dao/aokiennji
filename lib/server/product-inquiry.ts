@@ -1,3 +1,4 @@
+import { availableFields, itemFieldsFromText } from './supplier-knowledge';
 import { destinationIn } from './research';
 import { sourcingEstimate } from './sourcing-estimate';
 import { estimateReply } from '../sourcing-estimate';
@@ -73,9 +74,16 @@ export async function productInquiry(input: {
   state.destination = destinationIn([message]) || state.destination;
   state.pricingRequested ||= /価格|いくら|値段|送料|概算/.test(message) || quoteWanted(message);
   const texts = [...history.filter((m) => m.role === 'user').map((m) => m.content), message];
+  const fields = await availableFields();
+  const mentionedFields = itemFieldsFromText(message);
+  const relevantFields = (mentionedFields.length ? mentionedFields : localIntent(message).referencesPrevious ? previous?.knowledge?.fields || [] : []).filter(f => fields.includes(f));
+  const fieldEvidence = relevantFields.length
+    ? `社内の取扱分野資料には「${relevantFields.join('・')}」の記載があります。ただし、個別商品の販売可否や現在庫を示す資料ではありません。\n`
+    : '';
   const currentFacts = () =>
     [
       state.model && `型番：${state.model}`,
+      state.designation && `商品名・表示：${state.designation}`,
       state.manufacturer && `メーカー：${state.manufacturer}`,
       state.quantity && `数量：${state.quantity}${state.quantityUnit || '個'}`,
       state.destination && `お届け先：${state.destination}`,
@@ -90,6 +98,8 @@ export async function productInquiry(input: {
         ? `希望数量は${state.quantity}${state.quantityUnit || '個'}として承りました。\n${content}`
         : content,
     inquiryState: state,
+    knowledge: relevantFields.length && !state.model ? { mode: 'fields' as const, fields: relevantFields } : undefined,
+    products: relevantFields.length ? [] : undefined,
     evidence: [],
     responseProvider: 'local' as const,
     composed: true,
@@ -101,6 +111,7 @@ export async function productInquiry(input: {
   if (input.images?.length) {
     // A new image never silently inherits a previously selected item's identity.
     delete state.model;
+    delete state.designation;
     delete state.manufacturer;
     delete state.imageCandidates;
     try {
@@ -149,12 +160,30 @@ export async function productInquiry(input: {
     }
   }
   const understanding = await understandInquiry(input);
+  if (understanding?.newSubject && (understanding.model || understanding.designation)) {
+    state.previousModel = state.model || state.designation;
+    delete state.model;
+    delete state.designation;
+    delete state.manufacturer;
+    state.identityUnavailable = false;
+  }
+  if (understanding?.designation) {
+    state.designation = understanding.designation;
+    state.designationKind = understanding.designationKind;
+    state.identityUnavailable = false;
+  }
+  if (understanding?.quantity) {
+    state.quantity = understanding.quantity;
+    state.quantityUnit = understanding.quantityUnit || undefined;
+  }
+  if (understanding?.quotePreference === 'declined') state.quoteDeclined = true;
+  if (understanding?.quotePreference === 'requested' || quoteWanted(message)) state.quoteDeclined = false;
   const latestIdentityText =
     message.split(/ではなく|じゃなく|ではなくて|から(?=[A-Za-z])/).at(-1) || message;
   const explicit =
     /(?:図面番号|部品番号)/.test(message) && !/注文用?型番/.test(message)
       ? undefined
-      : understanding?.model ||
+      : understanding ? understanding.model || undefined :
         localIntent(latestIdentityText).model ||
         message.match(/(?:型番|品番)[は：:\s]*([A-Za-z0-9][A-Za-z0-9_./-]{2,})/)?.[1];
   state.identityUnavailable ||=
@@ -163,6 +192,7 @@ export async function productInquiry(input: {
     (!!previous &&
       /型番|表示|資料/.test(previous.content) &&
       /^(?:ありません|ないです|ない|不明|わかりません|分かりません)[。！]?\s*$/.test(message));
+  if (state.designation || state.model) state.identityUnavailable = false;
   const qty = [
     ...message
       .normalize('NFKC')
@@ -263,7 +293,7 @@ export async function productInquiry(input: {
       settings.flags.humanHandoff ? { handoff: 'inquiry', handoffDraft: draft() } : {},
     );
   }
-  if (quoteWanted(message)) {
+  if (quoteWanted(message) && !state.quoteDeclined) {
     return reply(
       settings.flags.quoteRequests
         ? 'ご希望の見積依頼へ進めます。下の「この内容で見積を依頼する」から内容と連絡先を確認して送信してください。まだ依頼は送信していません。'
@@ -280,6 +310,20 @@ export async function productInquiry(input: {
     : /急ぎません|急いでいません/.test(message)
       ? 'お急ぎでないことを承知しました。\n'
       : '';
+  if (state.designation && !state.model) {
+    const key = (text: string) => modelIdentity(text).replace(/[®™©]/g, '');
+    const matches = catalog.filter(p => key(p.name) === key(state.designation!) || key(p.model) === key(state.designation!));
+    if (matches.length === 1) {
+      state.model = matches[0].model;
+      state.manufacturer = matches[0].manufacturer;
+    } else {
+      const candidates = catalog.filter(p => key(`${p.name} ${p.model}`).includes(key(state.designation!))).slice(0, 5);
+      const stockQuestion = /在庫/.test(message);
+      const opening = stockQuestion ? `「${state.designation}」の現在庫を確認できる登録値はありません。` : `「${state.designation}」をお探しですね。`;
+      const sourceNote = previous?.content.includes(fieldEvidence.trim()) ? '' : fieldEvidence;
+      return reply(`${acknowledgement}${opening}${sourceNote}登録商品を照合しましたが、${candidates.length ? 'この名称だけでは対象商品を一つに特定できません。' : 'この名称に一致する商品は見つかりませんでした。'}個別商品の販売・調達可否と現在庫は未確認です。${candidates.length ? '\n候補：' + candidates.map(p => `${p.name}（${p.model}）`).join('、') + '。どの商品でしょうか？' : '\nお問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。'}`, { suggestions: candidates.map(p => `${p.model}について確認したい`) });
+    }
+  }
   if (state.model) {
     const products = catalog.filter(
       (p) =>
@@ -354,7 +398,7 @@ export async function productInquiry(input: {
     if (estimate?.estimate)
       return reply(estimateReply(estimate.estimate), {
         sourcing: result,
-        products: [],
+        products: relevantFields.length ? [] : undefined,
         estimate: estimate.estimate,
         estimateRevision: estimate.revision,
         handoffDraft: handoffDraft(texts, estimateReply(estimate.estimate)),
@@ -371,7 +415,7 @@ export async function productInquiry(input: {
       `${acknowledgement}${previousModelNotice}「${state.model}」の承認済み登録商品は見つかりませんでした。取扱対象外という意味ではなく、当社の販売・調達可否と自社在庫は未確認です。\n${observed}${stock}${dispatch}掲載情報は当社の在庫・確保済み数量ではありません。${search ? '今回の照会結果だけでは販売を確約できません。' : '外部サイトの在庫検索は現在利用できません。'}担当者への確認はお問い合わせから商品情報を送れます（まだ送信していません）。${missingPriceCondition}${estimate?.missing.includes('お届け先に対応する配送条件') ? `${state.destination}への配送条件は未確認です。` : ''}`,
       {
         sourcing: result,
-        products: [],
+        products: relevantFields.length ? [] : undefined,
         requestedQuantity: state.quantity,
         ...(settings.flags.humanHandoff
           ? { handoff: 'inquiry' as const, handoffDraft: draft() }
@@ -420,5 +464,10 @@ export async function productInquiry(input: {
       );
     return reply([...opening, knownQuestions[understanding.next]].join('\n'));
   }
-  return reply(fallback);
+  if (!state.model && !state.designation && /価格|いくら|在庫|納期|いつ.*届/.test(message))
+    return reply(`${fieldEvidence}個別商品の価格・現在庫・納期は未確認です。登録在庫・仕入先の掲載在庫・確保済み数量は別です。商品名や型番が分かれば登録情報を照合できます。分かる名称を教えてください。`);
+  // Without interpretation, an answer to identification must not be treated as absence.
+  if (!understanding && !state.identityUnavailable && /メーカー名・型番/.test(previous?.content || ''))
+    return reply(`${fieldEvidence}「${message}」というご回答を受け取りました。商品名・型番・メーカー名のどれに当たるか判断できませんでした。表示されている名称でしょうか？`);
+  return reply(fieldEvidence + fallback);
 }
