@@ -23,7 +23,7 @@ export function businessIntents(message: string): BusinessIntent[] {
 }
 // Placing an order, unlike "注文したら最短いつ出荷？" or "発注先を決めたい".
 const orderRequest =
-  /(?:注文|発注)(?:を|も)?(?:したい|します|しましょう|させて|いたし|お願い|でき(?:ます|る|ない)|する(?:には|方法)|の(?:仕方|方法|手続|流れ)|方法|は(?:どこ|どう|どのように))|\b(?:place an? order|(?:want|like) to order|order (?:this|it|now|\d))/i;
+  /(?:注文|発注)(?:を|も)?(?:して(?:おいて|ください|ほしい|欲しい|くれる|もら)|したい|します|しましょう|させて|いたし|お願い|でき(?:ます|る|ない)|する(?:には|方法)|の(?:仕方|方法|手続|流れ)|方法|は(?:どこ|どう|どのように))|\b(?:place an? order|(?:want|like) to order|order (?:this|it|now|\d))/i;
 // Asking for a quote, unlike "見積の回答はいつ？" or "見積を依頼するか決めます".
 const quoteRequest =
   /見積(?:もり|り)?(?:を|も|の)?(?:お願い(?!し(?:たら|た場合))|依頼(?!する?か|し(?:たら|た場合|た後|てから)|すれば|する(?:場合|と|前)|後|に|の|時)|相談|希望|ください|下さい|ほしい|欲しい|して(?:ほし|欲し|もら|いただ|くだ)|出して|作って|取りたい|取らせ|頂きたい|いただきたい|いただけ|もらいたい|もらえ|可能|でき(?:ます|る|ない))|見積(?:もり|り)?(?:に|で)(?:します|しよう|進|切り替|お願い)|(?:この|その|上記の)(?:内容|条件)で見積|\bquot(?:e|ation)\b/i;
@@ -64,7 +64,14 @@ export function socialOnly(message: string) {
 
 // "まとめてください" asks for a summary; "まとめて見積" only means "together".
 const summaryPattern =
-  /(?:内容|条件|希望|相談|ここまで|これまで|今まで|要点)[^。？?]{0,14}(?:まとめ|整理|要約)|(?:まとめ|(?:整理|要約)し)て(?!\s*\d|の|見積|注文|購入|発注|買|相談|送|お願いでき|教え|知り|聞)|(?:まとめ|整理|要約)(?:直|る|を|が(?:欲し|ほし))|短く(?:して|書|作|まとめ|整理)|(?:説明|文面|文章|メモ|依頼文)を(?:短く)?(?:作|書|用意|考え)|文章に(?:して|まとめ)|貼り付け|書けるように/;
+  /(?:内容|条件|希望|相談|ここまで|これまで|今まで|要点)[^。？?]{0,14}(?:まとめ|整理|要約)(?!し?ます|し?ました|しています|しました)|(?:まとめ|(?:整理|要約)し)て(?!\s*\d|の|見積|注文|購入|発注|買|相談|送|お願いでき|教え|知り|聞)|(?:まとめ|整理|要約)(?:直|る|を|が(?:欲し|ほし))|短く(?:して|書|作|まとめ|整理)|(?:説明|文面|文章|メモ|依頼文)を(?:短く)?(?:作|書|用意|考え)|文章に(?:して|まとめ)|貼り付け|書けるように/;
+// Explicitly requesting one open selection point takes precedence over a
+// passing mention of summarising the conditions in a long self-description.
+export function asksOneMissingPoint(message: string) {
+  return /(?:足りない|不足(?:している)?|未確認の|追加(?:の)?確認|確認(?:すべき|するべき|が必要な))[^。！？?\n]{0,30}(?:一つ|1つ|一点|1点)/.test(
+    message.normalize('NFKC'),
+  );
+}
 const handoffPattern =
   /担当(?:者|の方|さん)?(?:の方)?(?:に|へ|と|から)(?:直接)?(?:相談|確認|連絡|引き?継|渡|送|つな|繋|話|聞|見|お願い|問い?合わせ|依頼|伝え)|どこ(?:で|に|から)(?:入力|記入|書|送|申し込)|連絡先を|(?:お?問い?合わせ|問合せ)(?:したい|します|する|たい|を送|の方法|方法|先|窓口|は(?:どこ|どう)|フォーム|ボタン|れば)|どこから(?:問い?合わせ|連絡|相談|依頼|送|申し込)|(?:連絡|電話|返信|折り返し)(?:して|を)(?:もらえ|ほしい|欲しい|ください|いただけ|お願い)|引き?継(?:いで|ぎ|げ)|どのボタン|どこで入力|人と話|電話で(?:相談|話|問)|直接(?:相談|話)/;
 const statusPattern =
@@ -177,6 +184,38 @@ export interface ChatRoute {
   transaction?: TransactionKind;
 }
 
+// Questions about the assistant and explicit conversation endings must not
+// start product discovery or ask for personal details.
+export function conversationNotice(message: string): string | undefined {
+  const text = message.normalize('NFKC').trim();
+  if (
+    /システム(?:指示|プロンプト)|内部(?:指示|プロンプト)|APIキー|秘密鍵|他(?:の|ユーザー|顧客|のお客様).{0,10}(?:メール|個人情報|会話|履歴)/i.test(
+      text,
+    )
+  )
+    return '内部の指示・認証情報や、他のお客様の個人情報・会話は公開できません。商品の取扱いや製作についてご相談ください。';
+  if (
+    /(?:あなた|このチャット|チャットボット|アシスタント).{0,20}(?:AI|人間|自動)|^(?:AI|人間)(?:です|なの)/i.test(
+      text,
+    )
+  )
+    return 'このチャットは自動応答の商品・製作相談アシスタントです。担当者本人ではありません。登録情報をもとにご案内し、正式な価格・納期や対応可否は担当者が確認します。';
+  // Declining a quote is not ending a product/stock consultation.
+  if (/見積.{0,12}(?:不要|まだ|いらな|要らな|しません)/.test(text) && !/(?:相談|会話)(?:を)?(?:終了|終わり)|購入しません/.test(text)) return;
+  if (
+    /(?:今回は|今は|購入|注文|見積|相談).{0,12}(?:しません|やめます|不要です|見送ります)|(?:相談|会話)(?:を)?(?:終了|終わり)/.test(
+      text,
+    ) &&
+    !/[?？]|(?:では|じゃ)なく|(?:ですが|けど|ただ|別件)/.test(text)
+  )
+    return '承知しました。ご相談ありがとうございました。また必要になりましたら、新しい相談を始めてください。';
+  if (
+    /天気|天候|天気予報|占い|今日の運勢/.test(text) &&
+    !/屋外|施工|工事|搬入|据付|耐候/.test(text)
+  )
+    return 'このチャットはアオキエンジの商品・製作のご相談窓口です。そのご質問は対応範囲外のためお答えできません。製品名・型番・用途についてはご相談いただけます。';
+}
+
 // This policy owns whether external services are called. Values that the
 // registry answers exactly (price, stock, lead time, privacy, procedures) stay
 // local; every other turn is a conversation, written by the response model.
@@ -194,7 +233,7 @@ export function planChatRoute(input: ChatRouteInput): ChatRoute {
     search = false,
   ): ChatRoute => ({ reason, facts, response, classify, search });
   if (input.privateQuestion || (topic && topic.mode !== 'fields')) return route('privacy');
-  if (socialOnly(original)) return route('social');
+  if (conversationNotice(original) || socialOnly(original)) return route('social');
   if (bareReply.test(original)) return route('discovery', [], 'ai');
 
   const facts = requestedFacts(text);
@@ -226,7 +265,7 @@ export function planChatRoute(input: ChatRouteInput): ChatRoute {
   // choice also need a consultative reply.
   const beyondProcedure = specPattern.test(text) || choiceWords.test(text);
 
-  if (summaryPattern.test(text)) return route('summary', [], 'ai');
+  if (summaryPattern.test(text) && !asksOneMissingPoint(text)) return route('summary', [], 'ai');
   // A price, stock or delivery question is answered even when the customer
   // also wants to buy; the quote request is offered under the answer.
   const asksFacts = facts.some((f) => f === 'price' || f === 'stock' || f === 'lead_time');

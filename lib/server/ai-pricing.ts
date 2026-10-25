@@ -1,8 +1,8 @@
 import { ApiError } from './auth';
 import { MICRO_YEN } from './billing-config';
 
-export const PRICE_VERSION = '2026-10-21-v1';
-// USD per million tokens. Standard text requests only. Unknown models fail closed.
+export const PRICE_VERSION = '2026-10-25-v2';
+// USD per million tokens. Unknown models/modalities fail closed.
 const rates: Record<string, { input: number; cached: number; output: number; context: number }> = {
   'openai:gpt-4.1': { input: 2, cached: 0.5, output: 8, context: 1_047_576 },
   'openai:gpt-4.1-mini': { input: 0.4, cached: 0.1, output: 1.6, context: 1_047_576 },
@@ -110,13 +110,25 @@ export function quoteCall(provider: string, model: string, bodyText: string): Pr
     q.version += `:jev:${process.env.AI_JEV_PRICE_VERSION}`;
   } else {
     const rate = rates[`${provider}:${model}`];
+    let imageCount = 0;
+    const pricedBody = JSON.stringify(body, (_key, value) => {
+      if (value?.type !== 'input_image') return value;
+      // Documented high-detail tile/patch limits for these models are below
+      // 16,384 tokens/image. Keep a conservative reserve, never price base64 as text.
+      // https://developers.openai.com/api/docs/guides/images-vision
+      if (provider !== 'openai' || !['gpt-4.1', 'gpt-4.1-mini', 'gpt-5-mini'].includes(model) ||
+          value.detail !== 'high' || typeof value.image_url !== 'string' ||
+          !/^data:image\/webp;base64,[A-Za-z0-9+/=]+$/.test(value.image_url) ||
+          value.image_url.length > 7 * 1024 * 1024 || ++imageCount > 3) throw invalid();
+      return { type: 'bounded_chat_image' };
+    });
     if (
       !rate ||
       (body.service_tier && body.service_tier !== 'default') ||
       body.previous_response_id ||
       body.conversation ||
       body.cachedContent ||
-      /"type"\s*:\s*"(input_image|input_file|input_audio)"|"inlineData"|"fileData"/.test(bodyText)
+      /"type"\s*:\s*"(input_file|input_audio)"|"inlineData"|"fileData"/.test(bodyText)
     )
       throw invalid();
     const tools = body.tools || [];
@@ -130,7 +142,7 @@ export function quoteCall(provider: string, model: string, bodyText: string): Pr
       provider === 'openai' ? body.max_output_tokens : body.generationConfig?.maxOutputTokens;
     if (!Number.isSafeInteger(maxOutput) || maxOutput <= 0 || maxOutput > 65_536) throw invalid();
     // UTF-8 bytes bound text tokens conservatively, including schema/framing overhead.
-    q.inputBound = Buffer.byteLength(bodyText) + 8192;
+    q.inputBound = Buffer.byteLength(pricedBody) + 8192 + imageCount * 16384;
     // Include Gemini thinking usage by reserving the model's full output ceiling.
     q.outputBound = provider === 'gemini' ? 65_536 : maxOutput;
     if (tools.length) {

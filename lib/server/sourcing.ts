@@ -394,6 +394,15 @@ export async function sourceProduct(input: {
       return note.sourcing;
     }
     await store();
+    // A disabled public search also forbids re-fetching past supplier pages.
+    // Registered records above remain available without any external request.
+    if (!settings.flags.webSearch || settings.searchProvider === 'none') {
+      note.sourcing = { model, status: localRecords.length ? 'identified' : 'not_found', checkedAt: now(), availabilityChecked: false };
+      note.summary = trace.conclusion = '登録情報のみ照合。外部検索は無効のため未実行。在庫・販売条件は未確認。';
+      note.status = 'done'; note.completedAt = now();
+      await store();
+      return note.sourcing;
+    }
     const spacedModel = model
       .normalize('NFKC')
       .replace(/[-_‐‑–—−\s]+/g, ' ')

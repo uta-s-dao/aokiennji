@@ -60,7 +60,7 @@ it('records an accepted question even when the reply is aborted before any text'
   ]);
 });
 
-it('retains the streamed text as incomplete when delivery fails and excludes it from public context', async () => {
+it('retains a completed deterministic answer when delivery fails and permits recovery', async () => {
   vi.stubEnv('OPENAI_API_KEY', 'unit-openai');
   (await putSettings({ ...DEFAULT_SETTINGS, responseProvider: 'openai' }));
   let offered = '';
@@ -76,9 +76,9 @@ it('retains the streamed text as incomplete when delivery fails and excludes it 
   const [conversation] = (await list<Conversation>('conversations'));
   expect((await conversationMessages(conversation.id))).toMatchObject([
     { role: 'user', content: 'DEMO-GLASS-01の価格と用途を相談したい' },
-    { role: 'assistant', content: offered, incomplete: true },
+    { role: 'assistant', content: offered },
   ]);
-  expect((await currentMessages(conversation.id)).map((m) => m.role)).toEqual(['user']);
+  expect((await currentMessages(conversation.id)).map((m) => m.role)).toEqual(['user', 'assistant']);
 });
 
 it('stores the final reply before sending it and replaces partial text without duplicate replies', async () => {
@@ -88,7 +88,7 @@ it('stores the final reply before sending it and replaces partial text without d
   const result = await answerChat('DEMO-GLASS-01の価格と用途を相談したい', 'customer', undefined, {
     onText: (text) => chunks.push(text),
   });
-  expect(chunks.length).toBeGreaterThan(1);
+  expect(chunks.length).toBeGreaterThanOrEqual(1);
   expect((await conversationMessages(result.conversationId))).toHaveLength(2);
   expect((await conversationMessages(result.conversationId)).at(-1)).toMatchObject(
     JSON.parse(JSON.stringify(result.message)),

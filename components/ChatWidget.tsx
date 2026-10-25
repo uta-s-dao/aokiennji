@@ -59,6 +59,25 @@ export default function ChatWidget({
   const [open, setOpen] = useState(false);
   const [docked, setDocked] = useState(false);
   const [draft, setDraft] = useState('');
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState('');
+  const photoPicker = useRef<HTMLInputElement>(null);
+  const cameraPicker = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!photo) { setPhotoPreview(''); return; }
+    const url = URL.createObjectURL(photo);
+    setPhotoPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [photo]);
+  function choosePhoto(file?: File) {
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      setError('JPEG・PNG・WebPの写真を5MB以下で選んでください。'); return;
+    }
+    pendingSend.current = null;
+    setPhoto(file); setError('');
+  }
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string>();
   const [busy, setBusy] = useState(false);
@@ -68,6 +87,7 @@ export default function ChatWidget({
   const [archive, setArchive] = useState<SavedChat[]>([]);
   const [viewing, setViewing] = useState<'list' | SavedChat | null>(null);
   const [error, setError] = useState('');
+  const [failedMessage, setFailedMessage] = useState<string | null>(null);
   const [atBottom, setAtBottom] = useState(true);
   const [viewport, setViewport] = useState<CSSProperties>({});
   const input = useRef<HTMLTextAreaElement>(null);
@@ -76,6 +96,12 @@ export default function ChatWidget({
   const scroller = useRef<HTMLDivElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
   const sending = useRef(false);
+  const pendingSend = useRef<{
+    message: string;
+    conversationId?: string;
+    requestId: string;
+    attachmentIds?: string[];
+  } | null>(null);
   const enabled = config?.flags.chat !== false;
   const lastMessage = messages.at(-1);
 
@@ -93,6 +119,24 @@ export default function ChatWidget({
     let active = true;
     // Earlier versions kept the conversation per browser tab.
     sessionStorage.removeItem('aoki-conversation');
+    try {
+      const pending = JSON.parse(sessionStorage.getItem('aoki-chat-pending') || 'null');
+      if (
+        pending &&
+        typeof pending.message === 'string' &&
+        pending.message.length <= 2000 &&
+        typeof pending.requestId === 'string' &&
+        /^[0-9a-f-]{36}$/i.test(pending.requestId) &&
+        (pending.conversationId === undefined || typeof pending.conversationId === 'string')
+      ) {
+        pendingSend.current = pending;
+        setDraft(pending.message);
+        setFailedMessage(pending.message);
+        setError('前回の回答の受信が中断されました。再試行で回答を確認できます。');
+      }
+    } catch {
+      /* Storage may be unavailable; in-memory retry remains usable. */
+    }
     const saved = currentChat();
     // After a long pause the next visit starts a new consultation; the last
     // one moves to this browser's list of past consultations.
@@ -143,6 +187,7 @@ export default function ChatWidget({
   useEffect(() => {
     if (open) {
       // Focus must not scroll the document underneath the conversation.
+      // Keep the conversation readable on phones without opening the keyboard immediately.
       if (window.matchMedia('(min-width: 761px)').matches) {
         input.current?.focus({ preventScroll: true });
       } else {
@@ -220,15 +265,25 @@ export default function ChatWidget({
   }, [partialReply, atBottom]);
 
   const send = useCallback(
-    async (value?: string) => {
-      const message = (value ?? draft).trim();
+    async (value?: string, preserveDraft = false) => {
+      const message = (value ?? draft).trim() || (photo ? '写真の商品を確認したいです。' : '');
       if (!message || sending.current || restoring || !enabled) return;
+      const request: { message: string; conversationId?: string; requestId: string; attachmentIds?: string[] } =
+        pendingSend.current?.message === message &&
+        pendingSend.current.conversationId === conversationId
+          ? pendingSend.current
+          : { message, conversationId, requestId: crypto.randomUUID() };
+      pendingSend.current = request;
+      try {
+        sessionStorage.setItem('aoki-chat-pending', JSON.stringify(request));
+      } catch {}
       sending.current = true;
       setViewing(null);
       setError('');
+      setFailedMessage(null);
       setBusy(true);
       setPartialReply('');
-      setDraft('');
+      if (!preserveDraft) setDraft('');
       const temp: ChatMessage = {
         id: `temp-${Date.now()}`,
         role: 'user',
@@ -237,12 +292,29 @@ export default function ChatWidget({
       };
       setMessages((prev) => [...prev, temp]);
       try {
-        const res = await streamChat({ message, conversationId }, setPartialReply);
+        if (photo && !request.attachmentIds?.length) {
+          await api('/api/chat/session', { method: 'POST' });
+          const uploaded = await api<{ id: string; conversationId: string }>(`/api/chat/images${request.conversationId ? `?conversationId=${encodeURIComponent(request.conversationId)}` : ''}`, { method: 'POST', body: photo, headers: { 'Content-Type': photo.type } });
+          request.attachmentIds = [uploaded.id];
+          request.conversationId = uploaded.conversationId;
+          setConversationId(uploaded.conversationId);
+          try { sessionStorage.setItem('aoki-chat-pending', JSON.stringify(request)); } catch {}
+        }
+        const res = await streamChat(request, setPartialReply);
+        setPhoto(null);
+        const received = await api<{ messages: ChatMessage[] }>(
+          `/api/chat/${encodeURIComponent(res.conversationId)}`,
+        );
+        pendingSend.current = null;
+        try {
+          sessionStorage.removeItem('aoki-chat-pending');
+        } catch {}
         setConversationId(res.conversationId);
-        setMessages((prev) => [...prev, res.message]);
+        setMessages(received.messages);
       } catch (e) {
         setMessages((prev) => prev.filter((m) => m.id !== temp.id));
-        setDraft(message);
+        if (!preserveDraft) setDraft((current) => current || message);
+        setFailedMessage(message);
         setError(errorMessage(e));
       } finally {
         sending.current = false;
@@ -251,19 +323,33 @@ export default function ChatWidget({
         input.current?.focus({ preventScroll: true });
       }
     },
-    [draft, restoring, enabled, conversationId],
+    [draft, photo, restoring, enabled, conversationId],
   );
 
   function resetConversation() {
     if (busy || restoring) return;
+    pendingSend.current = null;
+    try {
+      sessionStorage.removeItem('aoki-chat-pending');
+    } catch {}
     archiveCurrent();
     setArchive(archivedChats());
     setViewing(null);
     setMessages([]);
     setConversationId(undefined);
     setDraft('');
+    setPhoto(null);
     setError('');
+    setFailedMessage(null);
     input.current?.focus({ preventScroll: true });
+  }
+  function saveHandoffDraft(text: string) {
+    if (!conversationId) return;
+    try {
+      sessionStorage.setItem(`aoki-handoff-draft:${conversationId}`, text.slice(-5000));
+    } catch {
+      // Navigation and the server transcript remain available without storage.
+    }
   }
   if (!enabled) return null;
   return (
@@ -309,7 +395,7 @@ export default function ChatWidget({
               </div>
               <div className="chat-heading">
                 <strong>商品相談アシスタント</strong>
-                <small>アオキエンジ株式会社</small>
+                <small>自動応答 · アオキエンジ株式会社</small>
               </div>
               {archive.length > 0 && (
                 <button
@@ -423,7 +509,8 @@ export default function ChatWidget({
                             <span>A</span>アオキエンジ
                           </div>
                         )}
-                        <div className="chat-bubble">{m.content}</div>
+                        <div className="chat-bubble">{m.content}
+                          {m.attachmentIds?.map(id => <a key={id} href={`/api/chat/images/${id}`} target="_blank" rel="noreferrer"><img className="chat-attached-image" src={`/api/chat/images/${id}`} alt="添付した商品写真" /></a>)}</div>
                       </article>
                     ))}
                   </div>
@@ -480,7 +567,9 @@ export default function ChatWidget({
                           <span>A</span>アオキエンジ
                         </div>
                       )}
-                      <div className="chat-bubble">{m.content}</div>
+                      <div className="chat-bubble">{m.content}
+                        {m.attachmentIds?.map(id => <a key={id} href={`/api/chat/images/${id}`} target="_blank" rel="noreferrer"><img className="chat-attached-image" src={`/api/chat/images/${id}`} alt="添付した商品写真" /></a>)}
+                      </div>
                       {m.role === 'assistant' &&
                       m.products?.length &&
                       m.presentation === 'reply' ? (
@@ -588,8 +677,7 @@ export default function ChatWidget({
                           })}`}
                           onClick={() => {
                             // The form starts from what was discussed here.
-                            if (m.handoffDraft)
-                              sessionStorage.setItem('aoki-handoff-draft', m.handoffDraft);
+                            if (m.handoffDraft) saveHandoffDraft(m.handoffDraft);
                             setOpen(false);
                           }}
                         >
@@ -650,10 +738,27 @@ export default function ChatWidget({
               )}
             </div>
             <footer className="chat-compose">
+              <div className="chat-photo-controls">
+                <input hidden ref={photoPicker} type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { choosePhoto(e.target.files?.[0]); e.target.value = ''; }} />
+                <input hidden ref={cameraPicker} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={(e) => { choosePhoto(e.target.files?.[0]); e.target.value = ''; }} />
+                <button type="button" disabled={busy || restoring} onClick={() => photoPicker.current?.click()}>写真を選ぶ</button>
+                <button type="button" disabled={busy || restoring} onClick={() => cameraPicker.current?.click()}>カメラで撮る</button>
+                <small>カメラが使えない場合は写真を選べます。5MBまで。送信した写真は、読取機能が利用可能な場合にAIへ送られます。</small>
+              </div>
+              {photoPreview && <div className="chat-photo-preview">
+                <img src={photoPreview} alt="送信前の写真" />
+                <button type="button" disabled={busy} onClick={() => { setPhoto(null); pendingSend.current = null; }}>写真を削除</button>
+                <button type="button" disabled={busy} onClick={() => cameraPicker.current?.click()}>撮り直す</button>
+              </div>}
               {error && (
                 <div className="form-error" role="alert">
                   {error}{' '}
-                  <button type="button" className="link-button" onClick={() => send()}>
+                  <button
+                    type="button"
+                    className="link-button"
+                    disabled={busy || restoring}
+                    onClick={() => send(failedMessage ?? undefined, draft !== failedMessage)}
+                  >
                     再試行
                   </button>
                 </div>
@@ -688,7 +793,7 @@ export default function ChatWidget({
                 <button
                   type="submit"
                   aria-label="メッセージを送信"
-                  disabled={busy || restoring || !draft.trim()}
+                  disabled={busy || restoring || (!draft.trim() && !photo)}
                 >
                   <ArrowUp size={20} />
                 </button>
@@ -702,7 +807,15 @@ export default function ChatWidget({
                 {config?.flags.humanHandoff && (
                   <Link
                     href={`/contact${conversationId ? '?conversationId=' + encodeURIComponent(conversationId) : ''}`}
-                    onClick={() => setOpen(false)}
+                    onClick={() => {
+                      saveHandoffDraft(
+                        messages
+                          .filter((m) => m.role === 'user')
+                          .map((m) => m.content)
+                          .join('\n'),
+                      );
+                      setOpen(false);
+                    }}
                     aria-label="当社へのお問い合わせ"
                   >
                     相談を依頼する

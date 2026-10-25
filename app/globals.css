@@ -5413,3 +5413,10 @@ label small {
   .cms-toolbar .button:last-of-type { flex: 1.5; }
   .cms-toolbar small { flex-basis: 100%; }
 }
+
+.chat-photo-controls { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 8px; }
+.chat-photo-controls button, .chat-photo-preview button { padding: 6px 10px; border: 1px solid #c8ced4; border-radius: 6px; background: #fff; color: #25384a; }
+.chat-photo-controls small { flex-basis: 100%; font-size: 11px; }
+.chat-photo-preview { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.chat-photo-preview img { width: 72px; height: 72px; object-fit: contain; }
+.chat-attached-image { display: block; max-width: 180px; max-height: 150px; object-fit: contain; margin-top: 8px; }

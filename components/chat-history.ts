@@ -9,7 +9,7 @@ const KEEP_DAYS = 30;
 const KEEP_CHATS = 10;
 const KEEP_MESSAGES = 40;
 
-export type SavedMessage = Pick<ChatMessage, 'id' | 'role' | 'content' | 'createdAt'>;
+export type SavedMessage = Pick<ChatMessage, 'id' | 'role' | 'content' | 'createdAt' | 'attachmentIds'>;
 export interface SavedChat {
   id: string;
   title: string;
@@ -46,10 +46,11 @@ export function saveCurrent(id: string, messages: SavedMessage[]) {
     id,
     title: messages.find((m) => m.role === 'user')?.content.slice(0, 40) || 'ご相談',
     updatedAt: messages.at(-1)!.createdAt,
-    messages: messages.slice(-KEEP_MESSAGES).map(({ id, role, content, createdAt }) => ({
+    messages: messages.slice(-KEEP_MESSAGES).map(({ id, role, content, createdAt, attachmentIds }) => ({
       id,
       role,
       content: content.slice(0, 2000),
+      attachmentIds,
       createdAt,
     })),
   } satisfies SavedChat);

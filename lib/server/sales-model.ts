@@ -11,6 +11,7 @@ export async function salesModel<T>(input: {
   context: AiUsageContext;
   instructions: string;
   data: unknown;
+  images?: string[];
   schema: Record<string, unknown>;
   validator: z.ZodType<T>;
   purpose: 'classification' | 'research';
@@ -22,7 +23,7 @@ export async function salesModel<T>(input: {
     model,
     store: false,
     instructions: input.instructions,
-    input: JSON.stringify(input.data),
+    input: input.images?.length ? [{ role: 'user', content: [{ type: 'input_text', text: JSON.stringify(input.data) }, ...input.images.map((image_url) => ({ type: 'input_image', image_url, detail: 'high' }))] }] : JSON.stringify(input.data),
     max_output_tokens: 4500,
     text: {
       format: { type: 'json_schema', name: 'sales_stage', strict: true, schema: input.schema },

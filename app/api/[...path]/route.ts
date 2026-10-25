@@ -1,3 +1,5 @@
+import { chatRequest } from '@/lib/server/chat-request';
+import { uploadChatImage, readChatImage, CHAT_IMAGE_MAX_BYTES } from '@/lib/server/chat-images';
 import { queueReceiptNotification } from '@/lib/server/receipt-notifications';
 import { asyncEvery } from '@/lib/async-arrays';
 import { once } from '@/lib/server/idempotency';
@@ -151,6 +153,38 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
       );
     if (p[0] === 'products' && p.length === 2 && method === 'GET')
       return ok(await getPublicProduct(p[1]));
+    if (path === 'chat/session' && method === 'POST') {
+      await requireFlag('chat');
+      await rateLimit(`chat-session:${clientKey(req)}`, 120, 60000);
+      const response = ok(null);
+      if (!(await anonOwner(req))) await setSession(response, 'anon');
+      return response;
+    }
+    if (path === 'chat/images' && method === 'POST') {
+      await requireFlag('chat');
+      await rateLimit(`chat-images:${clientKey(req)}`, 12, 60000);
+      const owner = await anonOwner(req);
+      if (!owner) throw new ApiError(401, 'chat_session_required', '相談を開始してから写真を送信してください。');
+      const reader = req.body?.getReader();
+      if (!reader) throw new ApiError(400, 'image', '写真を選んでください。');
+      const chunks: Uint8Array[] = [];
+      let size = 0;
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          size += value.byteLength;
+          if (size > CHAT_IMAGE_MAX_BYTES) { await reader.cancel(); throw new ApiError(413, 'image_size', '写真は5MB以下にしてください。'); }
+          chunks.push(value);
+        }
+      } finally { reader.releaseLock(); }
+      const cid = req.nextUrl.searchParams.get('conversationId') || undefined;
+      return ok(await uploadChatImage(Buffer.concat(chunks), owner, cid));
+    }
+    if ((p[0] === 'chat' && p[1] === 'images' && p.length === 3 || p[0] === 'admin' && p[1] === 'chat-images' && p.length === 3) && method === 'GET') {
+      const image = await readChatImage(p[2], await anonOwner(req), p[0] === 'admin');
+      return new NextResponse(new Uint8Array(image.bytes), { headers: { 'Content-Type': 'image/webp', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'" } });
+    }
     if (path === 'chat' && method === 'POST') {
       await requireFlag('chat');
       await rateLimit(`chat:${clientKey(req)}`, 90, 60000);
@@ -158,18 +192,25 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
         .object({
           message: z.string().trim().min(1).max(2000),
           conversationId: z.string().max(100).optional(),
+          requestId: z.string().uuid().optional(),
+          attachmentIds: z.array(z.string().uuid()).max(3).optional(),
         })
         .parse(await body(req));
       const cookieResponse = ok(null);
       let owner = await anonOwner(req);
+      if (!owner && input.requestId)
+        throw new ApiError(
+          401,
+          'chat_session_required',
+          '相談を開始できませんでした。Cookieを有効にして再試行してください。',
+        );
       if (!owner) owner = await setSession(cookieResponse, 'anon');
       if (input.conversationId) await verifyConversation(input.conversationId, owner);
       if (req.headers.get('accept')?.includes('text/event-stream')) {
         const encoder = new TextEncoder();
         const controller = new AbortController();
         const signal = AbortSignal.any([
-          req.signal,
-          controller.signal,
+          ...(input.requestId ? [] : [req.signal, controller.signal]),
           AbortSignal.timeout(
             responseBudgets(
               (await getSettings()).flags.webSearch,
@@ -180,18 +221,45 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
         const stream = new ReadableStream<Uint8Array>({
           async start(streamController) {
             const send = (type: string, data: unknown) => {
-              if (!controller.signal.aborted)
+              if (controller.signal.aborted) return;
+              try {
                 streamController.enqueue(
                   encoder.encode(`data: ${JSON.stringify({ type, data })}\n\n`),
                 );
+              } catch {
+                // The browser may disconnect after the server accepted the turn.
+                // Keep completing/caching keyed requests for a safe retry.
+                controller.abort();
+              }
             };
             try {
               send('status', 'ご相談内容を確認しています');
-              const result = await answerChat(input.message, owner!, input.conversationId, {
-                onText: (text) => send('text', text),
-                signal,
-                defer: (work) => after(work),
-              });
+              const answer = (receipt?: {
+                conversationId: string;
+                userId: string;
+                assistantId: string;
+              }) =>
+                answerChat(input.message, owner!, input.conversationId, {
+                  receipt,
+                  attachmentIds: input.attachmentIds,
+                  onText: (text) => send('text', text),
+                  signal,
+                  defer: (work) => after(work),
+                });
+              const work = input.requestId
+                ? chatRequest(
+                    owner!,
+                    input.requestId,
+                    { message: input.message, conversationId: input.conversationId, attachmentIds: input.attachmentIds },
+                    answer,
+                  )
+                : answer();
+              // Keep accepted work alive if the response stream is cancelled.
+              if (input.requestId)
+                after(async () => {
+                  await work.catch(() => undefined);
+                });
+              const result = await work;
               send('result', result);
             } catch {
               send('error', '回答を完了できませんでした。もう一度お試しください。');
@@ -213,9 +281,20 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
         for (const cookie of cookieResponse.cookies.getAll()) response.cookies.set(cookie);
         return response;
       }
-      const result = await answerChat(input.message, owner, input.conversationId, {
-        defer: (work) => after(work),
-      });
+      const answer = (receipt?: { conversationId: string; userId: string; assistantId: string }) =>
+        answerChat(input.message, owner!, input.conversationId, {
+          receipt,
+          attachmentIds: input.attachmentIds,
+          defer: (work) => after(work),
+        });
+      const result = input.requestId
+        ? await chatRequest(
+            owner,
+            input.requestId,
+            { message: input.message, conversationId: input.conversationId, attachmentIds: input.attachmentIds },
+            answer,
+          )
+        : await answer();
       const response = ok(result);
       for (const cookie of cookieResponse.cookies.getAll()) response.cookies.set(cookie);
       return response;

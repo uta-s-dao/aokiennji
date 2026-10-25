@@ -139,7 +139,7 @@ test('an unregistered item quote keeps its quantity and destination in the form'
   await expect(link).toBeVisible();
   await link.click();
   await expect(page).toHaveURL(/quote=1/);
-  await expect(page.getByLabel('数量', { exact: false })).toHaveValue('10');
+  await expect(page.getByRole('spinbutton', { name: '数量' })).toHaveValue('10');
   await expect(page.getByLabel('ご相談内容')).toHaveValue(/B-300-SCI/);
   await expect(page.getByLabel('ご相談内容')).toHaveValue(/大阪/);
 });
