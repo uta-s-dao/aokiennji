@@ -52,6 +52,7 @@ import { salesConversation, shouldUseSalesConversation } from './sales-conversat
 import { selectionReply } from './product-selection';
 import {
   createSourceTrace,
+  preferredSiteFor,
   finishSourceStage,
   searchRegisteredFirst,
   startSourceStage,
@@ -1587,7 +1588,25 @@ export async function currentMessages(id: string): Promise<ChatMessage[]> {
           for(const e of evidence) if(Date.now()-Date.parse(e.checkedAt)<86400000 && (!e.sourceId || ((await byId<Source>('sources',e.sourceId))?.enabled && records.some(d=>d.sourceId===e.sourceId&&d.url===e.url&&d.createdAt===e.checkedAt))))validEvidence.push(e);
           lookup.candidates=lookup.candidates.filter(c=>current.some(p=>p.name===c.name&&p.model===c.model)||validEvidence.some(e=>e.entries.some(p=>p.name===c.name&&p.model===c.model)));
         }
-        return { ...original, productNameLookup: lookup, content: productNameLookupReply((original.inquiryState.designation || original.inquiryState.model || original.inquiryState.researchSubject)!, lookup) };
+        // Restoring history must not replace a grounded answer with the identity
+        // template. Revalidate its current records and verbatim passages without
+        // another model call or external request.
+        const identities = (value: NonNullable<ChatMessage['productNameLookup']>) => JSON.stringify([value.status, value.matches.map(p=>[p.name,p.model||'']).sort(), (value.candidates||[]).map(p=>[p.name,p.model||'']).sort()]);
+        let retain = identities(lookup) === identities(original.productNameLookup)
+          && original.groundingHash === groundingHash(original.products || [], original.knowledge, [], settings.flags, sourceContext);
+        const facts = storedMessages.find(m=>m.id===original.id)?.sourceTrace?.answerFacts?.filter(f=>f.id.startsWith('product_passage_')) || [];
+        const documents = facts.length ? await list<{sourceId:string;url:string;detailOf?:string;content:string;createdAt:string}>('documents') : [];
+        for (const fact of facts) {
+          let valid = false;
+          for (const doc of documents) {
+            const age=Date.now()-Date.parse(doc.createdAt);
+            if(!Number.isFinite(age) || age<0 || age>7*86400000 || !doc.content.replace(/\s+/g,' ').trim().includes(fact.text) || !preferredSiteFor(doc.detailOf || doc.url,restorationTrace)) continue;
+            const source=await byId<Source>('sources',doc.sourceId);
+            if(source?.enabled && (source.kind!=='supplier_catalog' || source.config.answerEnabled)) { valid=true;break; }
+          }
+          if(!valid || await containsPrivateSupplierIdentity(fact.text)) retain=false;
+        }
+        return { ...original, productNameLookup: lookup, content: retain ? original.content : productNameLookupReply((original.inquiryState.designation || original.inquiryState.model || original.inquiryState.researchSubject)!, lookup) };
       }
       if (original.salesState) {
         const selection = original.selection

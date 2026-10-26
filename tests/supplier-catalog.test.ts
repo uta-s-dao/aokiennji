@@ -316,3 +316,19 @@ it('uses an explicit model label even if the interpreter classifies its value as
   const result = await answerChat('ニチアスの型番9007は何の製品ですか？', 'explicit-model');
   expect(result.message.productNameLookup?.matches).toEqual([{ name, model: '9007' }]);
 });
+
+it('keeps the grounded explanation on history reload and drops it when its supporting document is removed',async()=>{
+ await crawlSupplierCatalog(await site());
+ const quote='この製品はPTFEを打ち抜いたガスケットで、配管の接合面を密封するための製品です。';
+ await save('documents',{id:'technical-detail',sourceId:source.id,url:'https://catalog.example/detail/9007',detailOf:'https://catalog.example/home/',title:name,content:quote,createdAt:now(),supplierCatalog:{version:1,entries:[{name,model:'9007'}]}},{source_id:source.id,content:quote});
+ model.mockResolvedValueOnce(interpretation(name));
+ model.mockResolvedValueOnce({passages:[{source:0,quote}]});
+ const answer=await answerChat(`${name}の用途と特徴を教えてください`,'restored-explanation');
+ expect(answer.message.content).toContain(quote);
+ const restored=(await currentMessages(answer.conversationId)).at(-1)!;
+ expect(restored.content).toBe(answer.message.content);
+ expect(model).toHaveBeenCalledTimes(2);
+ const {db}=await import('../lib/server/db');
+ await db().prepare('DELETE FROM documents WHERE id=?').run('technical-detail');
+ expect((await currentMessages(answer.conversationId)).at(-1)!.content).not.toContain(quote);
+});
