@@ -389,6 +389,11 @@ export async function productInquiry(input: {
     const previousModelNotice = state.previousModel
       ? `以前の「${state.previousModel}」の在庫・納期は「${state.model}」には適用できません。\n`
       : '';
+    if (process.env.TYPESAFE_API_KEY && settings.flags.webSearch) {
+      const { investigateProduct } = await import('./investigation');
+      const lookup = await investigateProduct(state.model, input);
+      return reply(`${acknowledgement}${previousModelNotice}${productNameLookupReply(state.model, lookup)}`, { productNameLookup: lookup });
+    }
     const result = publicSourcing(
       await sourceProduct({
         model: state.model,

@@ -1573,10 +1573,10 @@ export async function currentMessages(id: string): Promise<ChatMessage[]> {
         }) => message,
       ),
     async (original) => {
-      if (original.productNameLookup && original.inquiryState?.designation) {
-        const latest = await lookupProductName(original.inquiryState.designation, { trace: structuredClone(restorationTrace), settings: { ...settings, flags: { ...settings.flags, webSearch: false } }, context: { scope: 'chat' } });
-        const lookup = latest.status === 'identified' || original.productNameLookup.status === 'identified' ? latest : original.productNameLookup;
-        return { ...original, productNameLookup: lookup, content: productNameLookupReply(original.inquiryState.designation, lookup) };
+      if (original.productNameLookup && (original.inquiryState?.designation || original.inquiryState?.model)) {
+        const latest = await lookupProductName((original.inquiryState.designation || original.inquiryState.model)!, { trace: structuredClone(restorationTrace), settings: { ...settings, flags: { ...settings.flags, webSearch: false } }, context: { scope: 'chat' } });
+        const lookup = latest.status === 'identified' ? { ...latest, investigation: original.productNameLookup.investigation } : original.productNameLookup.status === 'identified' ? latest : original.productNameLookup;
+        return { ...original, productNameLookup: lookup, content: productNameLookupReply((original.inquiryState.designation || original.inquiryState.model)!, lookup) };
       }
       if (original.salesState) {
         const selection = original.selection

@@ -8,6 +8,7 @@ import type {
   Source,
   SourceTrace,
   SupplierKnowledge,
+  StoredChatMessage,
 } from '../contracts';
 import { byId, list, now, save } from './db';
 import { safeFetch } from './safe-fetch';
@@ -45,13 +46,18 @@ export function productNameLookupReply(
 ) {
   const outcome =
     lookup.status === 'identified'
-      ? `登録仕入先の商品掲載で、この名称に一致する情報を確認しました。\n${lookup.matches.map((p) => `掲載商品名：${p.name}${p.model ? `（掲載型番：${p.model}）` : ''}`).join('\n')}\n${lookup.checkedAt ? `掲載確認日：${lookup.checkedAt.slice(0, 10)}。` : ''}掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。`
+      ? `${lookup.investigation ? '社内資料・登録先ページで、この名称または型番の記載を確認しました。' : '登録仕入先の商品掲載で、この名称に一致する情報を確認しました。'}\n${lookup.matches.map((p) => `掲載商品名：${p.name}${p.model ? `（掲載型番：${p.model}）` : ''}`).join('\n')}\n${lookup.checkedAt ? `掲載確認日：${lookup.checkedAt.slice(0, 10)}。` : ''}掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。`
       : lookup.status === 'not_searched'
         ? '登録商品を照合しましたが、登録済みの商品掲載索引にも一致する情報がありません。外部サイトの検索は現在無効のため、まだ検索していません。'
         : lookup.status === 'failed'
           ? '外部検索または商品ページの取得を完了できず、掲載の有無を確認できませんでした。'
           : '今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。';
-  return `「${name}」をお探しですね。\n${outcome}\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。`;
+  const progress = lookup.investigation?.question
+    ? `\n${lookup.investigation.question}`
+    : lookup.investigation && ['step_limit', 'timeout'].includes(lookup.investigation.stopReason)
+      ? '\n調査の上限に達したため、確認できた範囲でご案内しています。'
+      : '';
+  return `「${name}」をお探しですね。\n${outcome}\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。${progress}`;
 }
 
 // Match a product name in its own record, never an arbitrary nearby number.
@@ -320,6 +326,7 @@ export async function lookupProductName(
     settings: AppSettings;
     context: AiUsageContext;
     signal?: AbortSignal;
+    message?: string;
   },
 ) {
   const { trace, settings } = input;
@@ -385,13 +392,37 @@ export async function lookupProductName(
       ...new Map(found.map((e) => [`${catalogNameKey(e.name)}\0${e.model || ''}`, e])).values(),
     ],
   });
-  if (found.length) {
+  const resumeRequested =
+    input.context.conversationId &&
+    input.message &&
+    settings.flags.webSearch &&
+    process.env.TYPESAFE_API_KEY &&
+    (
+      (await (
+        await import('./business')
+      ).conversationMessages(input.context.conversationId)) as StoredChatMessage[]
+    )
+      .toReversed()
+      .find((m) => m.sourceTrace?.investigation?.subject === name)?.sourceTrace?.investigation
+      ?.stopReason === 'needs_customer';
+  if (found.length && !resumeRequested) {
     trace.conclusion = '登録索引の商品名に一致。販売・在庫は未確認';
     return result('identified');
   }
-  if (!settings.flags.webSearch || settings.searchProvider === 'none') {
+  if (
+    !settings.flags.webSearch ||
+    (settings.searchProvider === 'none' && !process.env.TYPESAFE_API_KEY)
+  ) {
     trace.conclusion = '索引に一致なし。外部検索は無効のため未実行';
     return result('not_searched');
+  }
+  if (process.env.TYPESAFE_API_KEY) {
+    const { investigateProduct } = await import('./investigation');
+    return investigateProduct(name, {
+      ...input,
+      message: input.message || name,
+      context: { ...input.context, conversationId: input.context.conversationId || '' },
+    });
   }
   const stage = startSourceStage(
     trace,
