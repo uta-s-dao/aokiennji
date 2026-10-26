@@ -485,6 +485,10 @@ export async function productInquiry(input: {
     );
   if (
     understanding?.requestedInformation === 'selection' ||
+    (!state.model &&
+      !state.designation &&
+      Object.keys(state.specifications || {}).length > 0 &&
+      /(?:この|指定|希望|同じ)?寸法.*(?:選べ|製品|商品|探)|(?:選べ|製品|商品).*寸法/.test(message)) ||
     /何を確認|追加.*必要.*条件|必要な条件|選ぶため.*情報|選定.*(?:情報|条件)|チェック項目/.test(
       message,
     )

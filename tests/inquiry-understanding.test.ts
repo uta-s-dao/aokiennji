@@ -392,3 +392,24 @@ it('answers food contact and washing evidence requirements without asserting app
   expect(r.message.content).toContain('接触温度');
   expect(r.message.handoff).toBeUndefined();
 });
+
+
+it('treats a dimensional selection request as specifications rather than a product name', async () => {
+  model.mockResolvedValueOnce(
+    parsed({
+      designationKind: 'category',
+      dimensions: '内径50mm・外径90mm・厚さ3mm',
+      requestedInformation: 'identification',
+      quantity: 2, quantityUnit: '枚', quantityEvidence: '2枚',
+    }),
+  );
+  const r = await answerChat(
+    'PTFE製で、内径50mm・外径90mm・厚さ3mmのガスケットを2枚探しています。この寸法で選べる製品はありますか？',
+    'dimension-selection',
+  );
+  expect(r.message.content).toContain('流体');
+  expect(r.message.content).toContain('厚さ3mm');
+  expect(r.message.content).toContain('2枚');
+  expect(r.message.content).not.toContain('この名称');
+  expect(r.message.productNameLookup).toBeUndefined();
+});
