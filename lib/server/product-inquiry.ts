@@ -21,6 +21,7 @@ import {
 } from '../consultation-policy';
 import { composeConsultation, consultationTopic, handoffDraft, keyFacts } from './consultation';
 import { localIntent } from './providers';
+import { productCandidates } from './product-metadata';
 import { publicProducts } from './business';
 import { modelIdentity } from './product-model';
 import { sourceProduct } from './sourcing';
@@ -166,6 +167,7 @@ export async function productInquiry(input: {
   }
   const understanding = await understandInquiry(input);
   if (understanding) interpretationProvider = 'openai';
+  if (understanding?.newSubject) delete state.researchSubject;
   if (understanding?.newSubject && (state.model || state.designation) && (understanding.model || understanding.designation)) {
     state.previousModel = state.model || state.designation;
     delete state.model;
@@ -341,11 +343,11 @@ export async function productInquiry(input: {
       state.model = matches[0].model;
       state.manufacturer = matches[0].manufacturer;
     } else {
-      const candidates = catalog.filter(p => key(`${p.name} ${p.model}`).includes(key(state.designation!))).slice(0, 5);
+      const candidates = (await productCandidates(state.designation)).map(c=>c.product).slice(0,5);
       const stockQuestion = /在庫/.test(message);
       const opening = stockQuestion ? `「${state.designation}」の現在庫を確認できる登録値はありません。` : `「${state.designation}」をお探しですね。`;
       const sourceNote = previous?.content.includes(fieldEvidence.trim()) ? '' : fieldEvidence;
-      if (!candidates.length && state.designationKind !== 'unknown') {
+      if ((!candidates.length || (process.env.TYPESAFE_API_KEY && settings.flags.webSearch)) && state.designationKind !== 'unknown') {
         const lookup = await lookupProductName(state.designation, input);
         return reply(`${acknowledgement}${productNameLookupReply(state.designation, lookup)}`, {
           productNameLookup: lookup,
@@ -457,6 +459,16 @@ export async function productInquiry(input: {
           : {}),
       },
     );
+  }
+  if (!state.model && !state.designation && (state.purpose || state.shape || consultationTopic(texts))) {
+    state.researchSubject ||= [state.purpose,state.shape,state.dimensions].filter(Boolean).join('・') || message;
+    if (process.env.TYPESAFE_API_KEY && settings.flags.webSearch) {
+      const { investigateProduct } = await import('./investigation');
+      const lookup = await investigateProduct(state.researchSubject, input);
+      return reply(`${acknowledgement}${productNameLookupReply(state.researchSubject,lookup)}`,{productNameLookup:lookup});
+    }
+    const options=await productCandidates([state.researchSubject,state.dimensions,message].filter(Boolean).join(' '));
+    if(understanding && options.some(c=>c.searchHints && !c.product.isDemo)){ const lookup={status:'not_found' as const,matches:[],candidates:options.filter(c=>c.searchHints && !c.product.isDemo).slice(0,5).map(c=>({name:c.product.name,model:c.product.model}))};return reply(productNameLookupReply(state.researchSubject,lookup),{productNameLookup:lookup}); }
   }
   const knownQuestions: Record<string, string> = {
     purpose: 'どの機械の、何をする部品でしょうか？',

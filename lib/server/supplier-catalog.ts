@@ -45,19 +45,24 @@ export function productNameLookupReply(
   lookup: NonNullable<ChatMessage['productNameLookup']>,
 ) {
   const outcome =
-    lookup.status === 'identified'
-      ? `${lookup.investigation ? '社内資料・登録先ページで、この名称または型番の記載を確認しました。' : '登録仕入先の商品掲載で、この名称に一致する情報を確認しました。'}\n${lookup.matches.map((p) => `掲載商品名：${p.name}${p.model ? `（掲載型番：${p.model}）` : ''}`).join('\n')}\n${lookup.checkedAt ? `掲載確認日：${lookup.checkedAt.slice(0, 10)}。` : ''}掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。`
-      : lookup.status === 'not_searched'
-        ? '登録商品を照合しましたが、登録済みの商品掲載索引にも一致する情報がありません。外部サイトの検索は現在無効のため、まだ検索していません。'
-        : lookup.status === 'failed'
-          ? '外部検索または商品ページの取得を完了できず、掲載の有無を確認できませんでした。'
-          : '今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。';
+    lookup.candidates?.length && !lookup.matches.length
+      ? '登録情報・調査したページから候補を見つけました。対象の確定と仕様適合は未確認です。'
+      : lookup.status === 'identified'
+        ? `${lookup.investigation ? '資料・取得したWebページで、この名称または型番の記載を確認しました。' : '登録仕入先の商品掲載で、この名称に一致する情報を確認しました。'}\n${lookup.matches.map((p) => `掲載商品名：${p.name}${p.model ? `（掲載型番：${p.model}）` : ''}`).join('\n')}\n${lookup.checkedAt ? `掲載確認日：${lookup.checkedAt.slice(0, 10)}。` : ''}掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。`
+        : lookup.status === 'not_searched'
+          ? '登録商品を照合しましたが、登録済みの商品掲載索引にも一致する情報がありません。外部サイトの検索は現在無効のため、まだ検索していません。'
+          : lookup.status === 'failed'
+            ? '外部検索または商品ページの取得を完了できず、掲載の有無を確認できませんでした。'
+            : '今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。';
+  const candidates = lookup.candidates?.length
+    ? `\n用途・仕様から見つかった候補（同一商品・適合は未確認）：${lookup.candidates.map((p) => `${p.name}${p.model ? `（${p.model}）` : ''}`).join('、')}。この中に近いものはありますか？`
+    : '';
   const progress = lookup.investigation?.question
     ? `\n${lookup.investigation.question}`
     : lookup.investigation && ['step_limit', 'timeout'].includes(lookup.investigation.stopReason)
       ? '\n調査の上限に達したため、確認できた範囲でご案内しています。'
       : '';
-  return `「${name}」をお探しですね。\n${outcome}\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。${progress}`;
+  return `「${name}」をお探しですね。\n${outcome}\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。${candidates}${progress}`;
 }
 
 // Match a product name in its own record, never an arbitrary nearby number.

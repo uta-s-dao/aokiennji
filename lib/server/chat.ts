@@ -1,3 +1,4 @@
+import { productCandidates } from './product-metadata';
 import { quoteWanted } from '../consultation-policy';
 import { productInquiry, usesProductInquiry } from './product-inquiry';
 import { lookupProductName, productNameLookupReply } from './supplier-catalog';
@@ -15,7 +16,7 @@ import type {
   Source,
   StoredChatMessage,
 } from '../contracts';
-import { audit, byId, db, getSettings, normalize, now, save, uid } from './db';
+import { audit, byId, db, getSettings, list, normalize, now, save, uid } from './db';
 import {
   conversationMessages,
   publicProduct,
@@ -1561,8 +1562,9 @@ export async function currentMessages(id: string): Promise<ChatMessage[]> {
   const sourceContext = await sourcingContextRevision(id, settings);
   // Partial replies remain in the staff transcript; only completed replies
   // can be restored publicly or used as context for the next answer.
+  const storedMessages=(await conversationMessages(id)) as StoredChatMessage[];
   return await asyncMap(
-    ((await conversationMessages(id)) as StoredChatMessage[])
+    storedMessages
       .filter((m) => !m.incomplete)
       .map(
         ({
@@ -1573,10 +1575,19 @@ export async function currentMessages(id: string): Promise<ChatMessage[]> {
         }) => message,
       ),
     async (original) => {
-      if (original.productNameLookup && (original.inquiryState?.designation || original.inquiryState?.model)) {
-        const latest = await lookupProductName((original.inquiryState.designation || original.inquiryState.model)!, { trace: structuredClone(restorationTrace), settings: { ...settings, flags: { ...settings.flags, webSearch: false } }, context: { scope: 'chat' } });
-        const lookup = latest.status === 'identified' ? { ...latest, investigation: original.productNameLookup.investigation } : original.productNameLookup.status === 'identified' ? latest : original.productNameLookup;
-        return { ...original, productNameLookup: lookup, content: productNameLookupReply((original.inquiryState.designation || original.inquiryState.model)!, lookup) };
+      if (original.productNameLookup && (original.inquiryState?.designation || original.inquiryState?.model || original.inquiryState?.researchSubject)) {
+        const latest = await lookupProductName((original.inquiryState.designation || original.inquiryState.model || original.inquiryState.researchSubject)!, { trace: structuredClone(restorationTrace), settings: { ...settings, flags: { ...settings.flags, webSearch: false } }, context: { scope: 'chat' } });
+        const lookup: NonNullable<ChatMessage['productNameLookup']> = latest.status === 'identified' ? { ...latest, investigation: original.productNameLookup.investigation } : original.productNameLookup.status === 'identified' ? latest : {...original.productNameLookup};
+        if(lookup.candidates?.length) {
+          const subject=(original.inquiryState.designation||original.inquiryState.model||original.inquiryState.researchSubject)!;
+          const current=(await productCandidates(subject)).map(c=>c.product);
+          const evidence=storedMessages.find(m=>m.id===original.id)?.sourceTrace?.investigation?.evidence||[];
+          const records=await list<{sourceId:string;url:string;createdAt:string}>('documents');
+          const validEvidence: typeof evidence=[];
+          for(const e of evidence) if(Date.now()-Date.parse(e.checkedAt)<86400000 && (!e.sourceId || ((await byId<Source>('sources',e.sourceId))?.enabled && records.some(d=>d.sourceId===e.sourceId&&d.url===e.url&&d.createdAt===e.checkedAt))))validEvidence.push(e);
+          lookup.candidates=lookup.candidates.filter(c=>current.some(p=>p.name===c.name&&p.model===c.model)||validEvidence.some(e=>e.entries.some(p=>p.name===c.name&&p.model===c.model)));
+        }
+        return { ...original, productNameLookup: lookup, content: productNameLookupReply((original.inquiryState.designation || original.inquiryState.model || original.inquiryState.researchSubject)!, lookup) };
       }
       if (original.salesState) {
         const selection = original.selection

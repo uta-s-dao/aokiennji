@@ -42,11 +42,13 @@ export default function AdminSourceTrace({ trace }: { trace: SourceTrace }) {
                     ? 'ページ取得'
                     : action.action.startsWith('doc_')
                       ? '社内資料を読む'
-                      : action.action === 'search'
+                      : action.action === 'search' || action.action === 'public_search'
                         ? '追加検索'
-                        : action.action.startsWith('ask_')
-                          ? '顧客への追加質問'
-                          : '調査終了'}
+                        : action.action.startsWith('candidate_')
+                          ? '商品候補の選択（未確定）'
+                          : action.action.startsWith('ask_')
+                            ? '顧客への追加質問'
+                            : '調査終了'}
                 </strong>
                 <p>{action.target || action.label}</p>
                 <p>

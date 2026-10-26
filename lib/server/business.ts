@@ -69,6 +69,7 @@ export async function publicProduct(p: Product): Promise<Product | null> {
       : [];
   return {
     ...p,
+    searchMetadata: undefined,
     availability: valid ? p.availability : 'needs_review',
     approved: valid,
     price: valid && flags.showPrice ? p.price : null,
@@ -81,7 +82,7 @@ export async function publicProduct(p: Product): Promise<Product | null> {
 }
 export async function publicProducts(q = '', category = '') {
   const terms = normalize(q);
-  return (await asyncMap(await list<Product>('products'), publicProduct))
+  const matches = (await asyncMap(await list<Product>('products'), publicProduct))
     .filter((p): p is Product => !!p)
     .filter(
       (p) =>
@@ -91,6 +92,10 @@ export async function publicProducts(q = '', category = '') {
             `${p.name} ${p.model} ${p.manufacturer} ${p.description} ${p.specifications}`,
           ).includes(terms)),
     );
+  if(!terms) return matches;
+  const {productCandidates}=await import('./product-metadata');
+  const related=(await productCandidates(q)).map(c=>c.product).filter(p=>!category||p.category===category);
+  return [...new Map([...matches,...related].map(p=>[p.id,p])).values()];
 }
 export async function getPublicProduct(id: string) {
   const p = await byId<Product>('products', id);

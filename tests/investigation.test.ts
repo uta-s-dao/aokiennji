@@ -5,7 +5,10 @@ import { DEFAULT_SETTINGS, type Source } from '../lib/contracts';
 import { save, now, db, putSettings } from '../lib/server/db';
 import { safeFetch } from '../lib/server/safe-fetch';
 import { jsonRequest, searchWeb } from '../lib/server/providers';
-vi.mock('../lib/server/safe-fetch', () => ({ safeFetch: vi.fn() }));
+vi.mock('../lib/server/safe-fetch', async (original) => ({
+  ...(await original<typeof import('../lib/server/safe-fetch')>()),
+  safeFetch: vi.fn(),
+}));
 vi.mock('../lib/server/providers', async (original) => ({
   ...(await original<typeof import('../lib/server/providers')>()),
   jsonRequest: vi.fn(),
@@ -339,4 +342,101 @@ it('never repeats an identical search query in one investigation', async () => {
   choose((a) => (a.search ? 'search' : 'finish'));
   await run();
   expect(search).toHaveBeenCalledOnce();
+});
+
+it('expands from registered search to public search for a description without a model, and returns an unconfirmed candidate', async () => {
+  const description = '炉の扉を固定するSUS316のL字金具';
+  search.mockImplementation(async (_query, _settings, domains) =>
+    domains.length
+      ? []
+      : [
+          {
+            id: 'outside',
+            title: '炉扉固定部品',
+            url: 'https://outside.example/item/',
+            excerpt: 'SUS316の固定部品',
+            retrievedAt: now(),
+            visibility: 'public',
+            trust: 'discovery',
+          },
+        ],
+  );
+  network.mockImplementation(async (url) => ({
+    status: 200,
+    url,
+    headers: new Headers(),
+    body: Buffer.from(
+      url.endsWith('/robots.txt')
+        ? ''
+        : `<table><tr><th>型番</th><th>商品名</th></tr><tr><td>FIX-10</td><td>炉扉固定部品</td></tr></table>`,
+    ),
+  }));
+  let n = 0;
+  choose((a) =>
+    ++n === 1
+      ? 'search'
+      : n === 2
+        ? 'public_search'
+        : n === 3
+          ? firstUrl(a)
+          : n === 4
+            ? Object.keys(a).find((k) => k.startsWith('candidate_'))!
+            : 'finish',
+  );
+  const trace = await createSourceTrace();
+  const result = await investigateProduct(description, {
+    message: description,
+    settings,
+    context,
+    trace,
+  });
+  expect(search.mock.calls.map((c) => c[2])).toEqual([['investigate.example'], []]);
+  expect(network.mock.calls.some(([url]) => url === 'https://outside.example/item/')).toBe(true);
+  expect(result).toMatchObject({
+    status: 'not_found',
+    matches: [],
+    candidates: [{ name: '炉扉固定部品', model: 'FIX-10' }],
+  });
+  expect(trace.stages.some((s) => s.scope === 'public_web')).toBe(true);
+  expect(
+    (await db().prepare('SELECT json FROM products').all()).some(
+      (r) => JSON.parse(r.json).model === 'FIX-10',
+    ),
+  ).toBe(false);
+});
+
+it('does not offer public search before trying registered sources', async () => {
+  choose((a) => {
+    expect(a.public_search).toBeUndefined();
+    return 'ask_specification';
+  });
+  await run();
+  expect(search).not.toHaveBeenCalled();
+});
+
+it('starts research from customer purpose and shape even when no product name or model is known', async () => {
+  const { productInquiry } = await import('../lib/server/product-inquiry');
+  vi.stubEnv('OPENAI_API_KEY', '');
+  choose((a) => {
+    expect(Object.keys(a).some((k) => k.startsWith('url_'))).toBe(true);
+    return 'ask_specification';
+  });
+  const reply = await productInquiry({
+    message: '型番は不明です。炉の扉を固定するL字金具です',
+    history: [
+      {
+        id: 'unknown',
+        role: 'assistant',
+        content: '用途を教えてください',
+        createdAt: now(),
+        inquiryState: { purpose: '炉の扉を固定する', shape: 'L字金具', identityUnavailable: true },
+      },
+    ],
+    settings,
+    trace: await createSourceTrace(),
+    context: { ...context, turnId: 'unknown-turn' },
+  });
+  expect(reply.productNameLookup?.investigation?.stopReason).toBe('needs_customer');
+  expect(reply.inquiryState.model).toBeUndefined();
+  expect(reply.content).toContain('サイズ');
 });

@@ -1,3 +1,4 @@
+import { prepareProductMetadata } from '@/lib/server/product-metadata';
 import { chatRequest } from '@/lib/server/chat-request';
 import { uploadChatImage, readChatImage, CHAT_IMAGE_MAX_BYTES } from '@/lib/server/chat-images';
 import { queueReceiptNotification } from '@/lib/server/receipt-notifications';
@@ -479,6 +480,13 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
       return ok((await list<AuditEvent>('audit_events')).toReversed().slice(0, 300));
     if (p[0] === 'admin' && p[1] === 'products') {
       if (method === 'GET' && p.length === 2) return ok(await list<Product>('products'));
+      if (method === 'POST' && p.length === 4 && p[3] === 'search-metadata') {
+        const old = await found<Product>('products',p[2]);
+        const product=prepareProductMetadata(old);
+        await save('products',product,{source_id:product.sourceId,supplier_id:product.supplierId,model_key:productIdentity(product)});
+        await audit('product.metadata_queued',product.id,'検索用情報の再作成を予約しました');
+        return ok(product);
+      }
       if (method === 'POST' || method === 'PUT') {
         const input = productSchema.parse(await body(req));
         const old = method === 'PUT' ? await found<Product>('products', p[2]) : undefined;
@@ -504,12 +512,12 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
           input.sourceId = id;
         }
         if (input.supplierId) await found<Supplier>('suppliers', input.supplierId);
-        const product: Product = {
+        const product: Product = prepareProductMetadata({
           ...input,
           id: old?.id || uid(),
           createdAt: old?.createdAt || now(),
           updatedAt: now(),
-        };
+        }, old);
         await save('products', product, {
           source_id: product.sourceId,
           supplier_id: product.supplierId,

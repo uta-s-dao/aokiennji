@@ -12,7 +12,8 @@ import { conversationMessages } from './business';
 import { beginAiCall } from './ai-usage';
 import { jevEndpoint } from './jev-config';
 import { jsonRequest, searchWeb } from './providers';
-import { safeFetch } from './safe-fetch';
+import { productCandidates } from './product-metadata';
+import { safeFetch, validateExternalUrl } from './safe-fetch';
 import { decodeHtml } from './html';
 import {
   catalogAllowed,
@@ -25,6 +26,8 @@ import { finishSourceStage, preferredSiteFor, startSourceStage } from './preferr
 
 export type InvestigationState = {
   sourceRevision?: string;
+  publicUrls?: string[];
+  selectedCandidates?: CatalogEntry[];
   customerMessages?: string[];
   question?: string;
   subject: string;
@@ -33,7 +36,7 @@ export type InvestigationState = {
   read: string[];
   candidates: { url: string; label: string }[];
   evidence: {
-    sourceId: string;
+    sourceId?: string;
     url: string;
     quote: string;
     entries: CatalogEntry[];
@@ -54,6 +57,7 @@ export type InvestigationState = {
 export type InvestigationResult = {
   status: 'identified' | 'not_found' | 'not_searched' | 'failed';
   matches: CatalogEntry[];
+  candidates?: CatalogEntry[];
   checkedAt?: string;
   investigation: { steps: number; stopReason: string; question?: string };
 };
@@ -67,7 +71,7 @@ const eligibleSource = async (id: string) => {
   const s = await byId<Source>('sources', id);
   return s?.enabled && (s.kind !== 'supplier_catalog' || s.config.answerEnabled) ? s : undefined;
 };
-const pageUrl = (raw: string, trace: SourceTrace) => {
+const pageUrl = (raw: string, trace: SourceTrace, publicUrls: string[] = []) => {
   try {
     const u = new URL(raw);
     u.hash = '';
@@ -78,7 +82,9 @@ const pageUrl = (raw: string, trace: SourceTrace) => {
       (u.port && !['80', '443'].includes(u.port))
     )
       return;
-    return preferredSiteFor(u.href, trace)?.sourceId ? u.href : undefined;
+    return preferredSiteFor(u.href, trace)?.sourceId || publicUrls.includes(u.href)
+      ? u.href
+      : undefined;
   } catch {
     return;
   }
@@ -207,6 +213,7 @@ export async function investigateProduct(
             ? 'failed'
             : 'not_found',
       matches: matches(),
+      candidates: state.selectedCandidates || [],
       checkedAt: state.evidence[0]?.checkedAt,
       investigation: {
         steps: state.actions.length,
@@ -238,6 +245,8 @@ export async function investigateProduct(
     state.question = prior.question;
     state.customerMessages = prior.customerMessages;
     state.searchedQueries = prior.searchedQueries;
+    state.publicUrls = prior.publicUrls;
+    state.selectedCandidates = undefined;
   }
   state.customerMessages = [...(state.customerMessages || []), input.message.slice(0, 1000)].slice(
     -6,
@@ -252,12 +261,15 @@ export async function investigateProduct(
   for (const site of trace.preferredSites)
     if (site.eligible && site.sourceId && (await eligibleSource(site.sourceId))) active.push(site);
   const allowedTrace = { ...trace, preferredSites: active };
-  state.candidates = state.candidates.filter((c) => pageUrl(c.url, allowedTrace));
+  const permitted = (raw: string) => pageUrl(raw, allowedTrace, state.publicUrls);
+  state.candidates = state.candidates.filter((c) => permitted(c.url));
   const kept: typeof state.evidence = [];
   for (const e of state.evidence)
     if (
-      (await eligibleSource(e.sourceId)) &&
+      ((e.sourceId && (await eligibleSource(e.sourceId))) ||
+        (!e.sourceId && state.publicUrls?.includes(e.url))) &&
       (!e.url ||
+        !e.sourceId ||
         active.some(
           (s) =>
             s.sourceId === e.sourceId && preferredSiteFor(e.url, { ...trace, preferredSites: [s] }),
@@ -304,13 +316,14 @@ export async function investigateProduct(
       Number(catalogNameKey(a.content).includes(catalogNameKey(subject))),
   );
   const robots = new Map<string, ReturnType<typeof catalogRobots>>();
-  const stage = startSourceStage(
+  let stage = startSourceStage(
     trace,
     'preferred_sites',
     subject,
     [...new Set(active.map((s) => s.domain))],
     'Jevが資料・URL・追加検索から次の行動を選ぶ反復調査',
   );
+  const registeredProducts = await productCandidates(`${subject} ${input.message}`);
   try {
     for (let step = 0; step < MAX_DECISIONS; step++) {
       if (signal.aborted) {
@@ -321,6 +334,29 @@ export async function investigateProduct(
         finish: 'Finish with evidence already observed; do not invent facts.',
         ...questions,
       };
+      const productOptions = [
+        ...registeredProducts.map((c) => ({
+          entry: { name: c.product.name, model: c.product.model },
+          context: `登録商品の候補（適合未確認）：${c.product.description} ${c.product.specifications} ${JSON.stringify(c.searchHints)}`,
+        })),
+        ...state.evidence.flatMap((e) =>
+          e.entries.map((entry) => ({ entry, context: e.quote.slice(0, 300) })),
+        ),
+      ]
+        .filter(
+          (c, i, a) =>
+            !state.selectedCandidates?.some(
+              (p) => p.name === c.entry.name && p.model === c.entry.model,
+            ) &&
+            a.findIndex((x) => x.entry.name === c.entry.name && x.entry.model === c.entry.model) ===
+              i,
+        )
+        .slice(0, 20);
+      productOptions.forEach(
+        (c, i) =>
+          (actions[`candidate_${i}`] =
+            `Select a possible product for customer confirmation, never declare compatibility: ${JSON.stringify(c)}`),
+      );
       const docs = documents.filter((d) => !state.read.includes(d.id)).slice(0, 20);
       docs.forEach(
         (d, i) =>
@@ -334,14 +370,23 @@ export async function investigateProduct(
             (actions[`url_${i}`] =
               `Fetch registered supplier page: ${c.url}; context: ${c.label.slice(0, 400)}`),
         );
-      if (
-        settings.searchProvider !== 'none' &&
-        state.searches < 2 &&
-        active.length &&
-        !state.searchedQueries?.includes(`${subject} ${input.message.slice(0, 150)}`)
-      )
-        actions.search =
-          'Search registered supplier domains for this product, using the customer subject and latest question.';
+      const query = `${subject} ${input.message.slice(0, 150)}`;
+      const registeredAttempted =
+        !active.length ||
+        state.visited.some((url) => preferredSiteFor(url, allowedTrace)) ||
+        state.searchedQueries?.some((q) => q.startsWith('search:'));
+      if (settings.searchProvider !== 'none' && state.searches < 2) {
+        if (active.length && !state.searchedQueries?.includes(`search:${query}`))
+          actions.search =
+            'Search registered supplier domains first using all customer-provided product requirements.';
+        if (
+          registeredAttempted &&
+          !matches().length &&
+          !state.searchedQueries?.includes(`public_search:${query}`)
+        )
+          actions.public_search =
+            'Registered sources have been attempted without identifying the item. Expand to general public web search, then verify promising pages. Do not conclude no product merely because registered sites had none.';
+      }
       const selection = await decide(state, actions, {
         message: input.message,
         context: input.context,
@@ -364,6 +409,13 @@ export async function investigateProduct(
       if (action in questions) {
         finishSourceStage(stage, 'done', '顧客への追加質問が必要');
         return finish('needs_customer', questions[action as keyof typeof questions]);
+      }
+      if (action.startsWith('candidate_')) {
+        const chosen = productOptions[Number(action.slice(10))];
+        state.selectedCandidates = [...(state.selectedCandidates || []), chosen.entry].slice(0, 5);
+        log.target = chosen.entry.model || chosen.entry.name;
+        log.outcome = 'candidate_pending_confirmation';
+        continue;
       }
       if (action.startsWith('doc_')) {
         const doc = docs[Number(action.slice(4))];
@@ -397,17 +449,24 @@ export async function investigateProduct(
         log.outcome = 'read';
         continue;
       }
-      if (action === 'search') {
+      if (action === 'search' || action === 'public_search') {
+        if (action === 'public_search' && stage.scope !== 'public_web') {
+          finishSourceStage(stage, 'done', '登録先の調査から一般Webへ拡張');
+          stage = startSourceStage(
+            trace,
+            'public_web',
+            query,
+            [],
+            '登録先で特定できないため一般Web検索へ拡張',
+          );
+        }
         state.searches++;
-        state.searchedQueries = [
-          ...(state.searchedQueries || []),
-          `${subject} ${input.message.slice(0, 150)}`,
-        ].slice(-10);
+        state.searchedQueries = [...(state.searchedQueries || []), `${action}:${query}`].slice(-10);
         log.target = subject;
         const found = await searchWeb(
           `${subject} ${input.message.slice(0, 150)}`,
           settings,
-          stage.domains,
+          action === 'public_search' ? [] : [...new Set(active.map((s) => s.domain))],
           {
             context: input.context,
             signal,
@@ -418,7 +477,21 @@ export async function investigateProduct(
         );
         let added = 0;
         for (const e of found) {
-          const url = e.url && pageUrl(e.url, allowedTrace);
+          let discovered: string | undefined;
+          if (e.url && action === 'public_search') {
+            try {
+              const u = validateExternalUrl(e.url);
+              u.hash = '';
+              discovered = u.href;
+              state.publicUrls = [...new Set([...(state.publicUrls || []), discovered])].slice(
+                0,
+                150,
+              );
+            } catch {
+              continue;
+            }
+          }
+          const url = discovered || (e.url && permitted(e.url));
           if (url && !state.candidates.some((c) => c.url === url)) {
             state.candidates.unshift({ url, label: `${e.title} ${e.excerpt.slice(0, 300)}` });
             added++;
@@ -428,10 +501,12 @@ export async function investigateProduct(
         continue;
       }
       const target = links[Number(action.slice(4))];
-      const url = pageUrl(target.url, allowedTrace)!;
+      const url = permitted(target.url)!;
       state.visited.push(url);
       log.target = url;
-      const site = preferredSiteFor(url, allowedTrace)!;
+      const registeredSite = preferredSiteFor(url, allowedTrace);
+      const site = registeredSite || { domain: new URL(url).hostname, sourceId: undefined };
+      const originKind = registeredSite ? ('preferred_sites' as const) : ('public_web' as const);
       try {
         const origin = new URL(url).origin;
         if (!robots.has(origin)) {
@@ -454,14 +529,13 @@ export async function investigateProduct(
         });
         if ([301, 302, 303, 307, 308].includes(response.status)) {
           const location = response.headers.get('location');
-          const next = location && pageUrl(new URL(location, url).href, allowedTrace);
+          const next = location && permitted(new URL(location, url).href);
           if (!next || state.visited.includes(next)) throw Error('redirect_unavailable');
           state.candidates.unshift({ url: next, label: '登録先ページの移転先' });
           log.outcome = 'redirect_discovered';
           continue;
         }
-        if (response.status !== 200 || !pageUrl(response.url, allowedTrace))
-          throw Error('page_unavailable');
+        if (response.status !== 200 || !permitted(response.url)) throw Error('page_unavailable');
         const contentType = response.headers.get('content-type');
         if (contentType && !/html|text\/plain/i.test(contentType))
           throw Error('unsupported_content');
@@ -499,7 +573,7 @@ export async function investigateProduct(
           title: $('title').text().slice(0, 200),
           url: response.url,
           sourceId: site.sourceId,
-          origin: 'preferred_sites',
+          origin: originKind,
           outcome: entries.some(
             (e) =>
               catalogNameKey(e.name) === catalogNameKey(subject) ||
@@ -512,26 +586,36 @@ export async function investigateProduct(
           retrievedAt: now(),
         });
         stage.returnedUrls.push(response.url);
-        await save(
-          'documents',
-          {
-            id: `supplier-page-${createHash('sha256').update(`${site.sourceId}\0${response.url}`).digest('hex')}`,
-            sourceId: site.sourceId,
-            title: $('title').text(),
-            url: response.url,
-            content: text,
-            createdAt: now(),
-            supplierCatalog: { version: 1, entries },
-          },
-          { source_id: site.sourceId!, content: text },
-        );
+        if (site.sourceId)
+          await save(
+            'documents',
+            {
+              id: `supplier-page-${createHash('sha256').update(`${site.sourceId}\0${response.url}`).digest('hex')}`,
+              sourceId: site.sourceId,
+              title: $('title').text(),
+              url: response.url,
+              content: text,
+              createdAt: now(),
+              supplierCatalog: { version: 1, entries },
+            },
+            { source_id: site.sourceId!, content: text },
+          );
         let added = 0;
         for (const a of $('a[href]').toArray()) {
           if (state.candidates.length >= 150) break;
           const href = $(a).attr('href')!;
           let next: string | undefined;
           try {
-            next = pageUrl(new URL(href, response.url).href, allowedTrace);
+            const resolved = new URL(href, response.url);
+            resolved.hash = '';
+            if (!registeredSite && resolved.origin === new URL(response.url).origin) {
+              validateExternalUrl(resolved.href);
+              state.publicUrls = [...new Set([...(state.publicUrls || []), resolved.href])].slice(
+                0,
+                150,
+              );
+            }
+            next = permitted(resolved.href);
           } catch {
             continue;
           }
@@ -553,7 +637,7 @@ export async function investigateProduct(
           title: 'ページ取得未完了',
           url,
           sourceId: site.sourceId,
-          origin: 'preferred_sites',
+          origin: originKind,
           outcome: 'unreachable',
           reason: '取得失敗または巡回制限',
           excerpt: '',
@@ -561,6 +645,7 @@ export async function investigateProduct(
         });
       }
       if (
+        settings.searchProvider === 'none' &&
         state.actions.slice(-2).length === 2 &&
         state.actions
           .slice(-2)

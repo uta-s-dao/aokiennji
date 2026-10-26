@@ -20,6 +20,7 @@ import {
   productIdentity,
   demoMode,
 } from './db';
+import { prepareProductMetadata } from './product-metadata';
 import { ApiError } from './auth';
 import { productSchema } from './validation';
 import { importSupplierKnowledge, parseSupplierWorkbook } from './supplier-knowledge';
@@ -92,7 +93,7 @@ async function ingest(
       const old = (await list<Product>('products')).find(
         (p) => p.sourceId === source.id && productIdentity(p) === productIdentity(input),
       );
-      const p: Product = {
+      const p: Product = prepareProductMetadata({
         ...valid.data,
         approved: approved && !!input.verifiedAt && source.trust !== 'discovery',
         id: old?.id || uid(),
@@ -101,7 +102,7 @@ async function ingest(
         isDemo: old?.isDemo ?? demoMode(),
         createdAt: old?.createdAt || now(),
         updatedAt: now(),
-      };
+      }, old);
       await save('products', p, {
         source_id: source.id,
         supplier_id: p.supplierId,
