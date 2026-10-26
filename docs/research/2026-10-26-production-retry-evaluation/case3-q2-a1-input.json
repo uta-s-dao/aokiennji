@@ -1,0 +1,50 @@
+{
+  "id": "22b5350e-b236-49c4-902e-49254ff45734",
+  "ok": true,
+  "result": {
+    "origin": "https://aoki-enji.official-b.workers.dev/",
+    "refs": {
+      "e1": {
+        "name": "本文へ移動",
+        "role": "link"
+      },
+      "e2": {
+        "name": "過去の相談",
+        "role": "button"
+      },
+      "e3": {
+        "name": "新しい相談を始める",
+        "role": "button"
+      },
+      "e4": {
+        "name": "チャットを閉じる",
+        "role": "button"
+      },
+      "e5": {
+        "name": "最新のメッセージへ",
+        "role": "button"
+      },
+      "e6": {
+        "name": "当社へのお問い合わせ",
+        "role": "link"
+      },
+      "e7": {
+        "name": "ファイルを添付",
+        "role": "button"
+      },
+      "e8": {
+        "name": "相談内容",
+        "role": "textbox"
+      },
+      "e9": {
+        "name": "メッセージを送信",
+        "role": "button"
+      }
+    },
+    "snapshot": "- generic\n  - link \"本文へ移動\" [ref=e1]\n  - dialog \"商品相談チャット\"\n    - banner\n      - strong\n        - StaticText \"商品相談アシスタント\"\n      - StaticText \"自動応答 · アオキエンジ株式会社\"\n      - button \"過去の相談\" [ref=e2]\n      - button \"新しい相談を始める\" [ref=e3]\n      - button \"チャットを閉じる\" [ref=e4]\n    - generic\n      - log \"相談の会話\"\n        - article\n          - StaticText \"ニチアスの型番9007は何の製品ですか？名称と確認できる仕様を教えてください。\"\n        - article\n          - StaticText \"A\"\n          - StaticText \"アオキエンジ\"\n          - StaticText \"取得できた資料では、質問された用途・特徴・適用範囲を説明できる根拠を確認できませんでした。\\n掲載で確認した製品：ナフロン® PTFE打抜きガスケット（9007）。\\n選定では、1. 用途と接触する物・使用環境、2. 形状・寸法と取付方法、3. 使用温度・荷重や圧力などの運転条件を照合します。伺った条件は、型番：9007・メーカー：ニチアスです。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。\\n当社の販売・調達可否と現在庫は未確認です。まだ依頼は送信していません。\"\n      - button \"最新のメッセージへ\" [ref=e5]\n    - contentinfo\n      - form\n        - button \"ファイルを添付\" [expanded=false, ref=e7]\n        - textbox \"相談内容\" [ref=e8]: 型番だけでは足りない場合、どんな情報を確認したらよいですか？\n          - StaticText \"型番だけでは足りない場合、どんな情報を確認したらよいですか？\"\n        - button \"メッセージを送信\" [ref=e9]\n      - StaticText \"登録情報をもとにご案内します\"\n      - link \"当社へのお問い合わせ\" [ref=e6]\n        - StaticText \"相談を依頼する\"",
+    "browserPageId": "fac50f72-f594-4882-91c1-d84b964445f6"
+  },
+  "_meta": {
+    "runtimeId": "2eb7d5be-c126-4cfd-8483-31d3f7adcc5e"
+  }
+}

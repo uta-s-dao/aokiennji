@@ -1,0 +1,46 @@
+{
+  "id": "19a8cdb4-7272-4e3a-b0fe-16b6c7a2753e",
+  "ok": true,
+  "result": {
+    "origin": "https://aoki-enji.official-b.workers.dev/",
+    "refs": {
+      "e1": {
+        "name": "本文へ移動",
+        "role": "link"
+      },
+      "e2": {
+        "name": "過去の相談",
+        "role": "button"
+      },
+      "e3": {
+        "name": "新しい相談を始める",
+        "role": "button"
+      },
+      "e4": {
+        "name": "チャットを閉じる",
+        "role": "button"
+      },
+      "e5": {
+        "name": "当社へのお問い合わせ",
+        "role": "link"
+      },
+      "e6": {
+        "name": "ファイルを添付",
+        "role": "button"
+      },
+      "e7": {
+        "name": "相談内容",
+        "role": "textbox"
+      },
+      "e8": {
+        "name": "メッセージを送信",
+        "role": "button"
+      }
+    },
+    "snapshot": "- generic\n  - link \"本文へ移動\" [ref=e1]\n  - dialog \"商品相談チャット\"\n    - banner\n      - strong\n        - StaticText \"商品相談アシスタント\"\n      - StaticText \"自動応答 · アオキエンジ株式会社\"\n      - button \"過去の相談\" [disabled, ref=e2]\n      - button \"新しい相談を始める\" [disabled, ref=e3]\n      - button \"チャットを閉じる\" [ref=e4]\n    - log \"相談の会話\"\n      - article\n        - StaticText \"会社の所在地と事業内容を教えてください。\"\n      - article\n        - StaticText \"A\"\n        - StaticText \"アオキエンジ\"\n        - StaticText \"アオキエンジ株式会社の所在地は福岡県北九州市門司区原町別院1番26号です。\\nアオキエンジ株式会社の事業: 鋼構造物・機械装置（設計から製作、輸送、据付まで。現場に合う設備づくりを、一貫して支えます。） 耐火材・炉内金物（工業炉を支える耐火材と炉内金物。用途に応じた製品選定から施工まで対応します。） 耐熱ガラス・鋳物（必要な仕様から、必要な部材へ。耐熱ガラス、鋳物、スタッドなどをご相談いただけます。） 据付・設備工事（機械設備の据付、土木建築、太陽光発電設備まで。ものづくりの現場を支えます。） 主な実績: 貯蔵サイロ、屋外タンク、工業炉の耐火材施工、材料搬送台車、製鋼工場の排ガスダクト、熱交換器。\\n具体的な製作・据付の対応範囲は、図面・仕様と現場条件を確認して判断します。\"\n      - article\n        - StaticText \"図面から製作して現地で据付する相談もできますか？\"\n      - status\n        - StaticText \"内容を確認しています\"\n    - contentinfo\n      - form\n        - button \"ファイルを添付\" [expanded=false, disabled, ref=e6]\n        - textbox \"相談内容\" [ref=e7]\n        - button \"メッセージを送信\" [disabled, ref=e8]\n      - StaticText \"登録情報をもとにご案内します\"\n      - link \"当社へのお問い合わせ\" [ref=e5]\n        - StaticText \"相談を依頼する\"",
+    "browserPageId": "fac50f72-f594-4882-91c1-d84b964445f6"
+  },
+  "_meta": {
+    "runtimeId": "2eb7d5be-c126-4cfd-8483-31d3f7adcc5e"
+  }
+}

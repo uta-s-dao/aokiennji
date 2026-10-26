@@ -1,0 +1,46 @@
+{
+  "id": "9fe0dd55-8f1c-4fb3-913b-b1a14acfc73c",
+  "ok": true,
+  "result": {
+    "origin": "https://aoki-enji.official-b.workers.dev/",
+    "refs": {
+      "e1": {
+        "name": "Error 1102 Ray ID: a508c43d8dca0b1f • 2026-10-26 10:27:06 UTC",
+        "role": "heading"
+      },
+      "e2": {
+        "name": "Worker exceeded resource limits",
+        "role": "heading"
+      },
+      "e3": {
+        "name": "What happened?",
+        "role": "heading"
+      },
+      "e4": {
+        "name": "What can I do?",
+        "role": "heading"
+      },
+      "e5": {
+        "name": "Cloudflare",
+        "role": "link"
+      },
+      "e6": {
+        "name": "Workers - Errors and Exceptions",
+        "role": "link"
+      },
+      "e7": {
+        "name": "Click to reveal",
+        "role": "button"
+      },
+      "e8": {
+        "name": "Cloudflare",
+        "role": "link"
+      }
+    },
+    "snapshot": "- generic\n  - heading \"Error 1102 Ray ID: a508c43d8dca0b1f • 2026-10-26 10:27:06 UTC\" [level=1, ref=e1]\n    - StaticText \"Error 1102 Ray ID: a508c43d8dca0b1f • 2026-10-26 10:27:06 UTC\"\n  - heading \"Worker exceeded resource limits\" [level=2, ref=e2]\n  - heading \"What happened?\" [level=2, ref=e3]\n  - paragraph\n    - StaticText \"You've requested a page on a website (aoki-enji.official-b.workers.dev) that is on the \"\n    - link \"Cloudflare\" [ref=e5]\n    - StaticText \" network. An unknown error occurred while rendering the page.\"\n  - heading \"What can I do?\" [level=2, ref=e4]\n  - paragraph\n    - strong\n      - StaticText \"If you are the owner of this website:\"\n    - LineBreak \"\\n\"\n    - StaticText \"refer to \"\n    - link \"Workers - Errors and Exceptions\" [ref=e6]\n    - StaticText \" and check Workers Logs for aoki-enji.official-b.workers.dev.\"\n  - paragraph\n    - generic\n      - StaticText \"Cloudflare Ray ID: \"\n      - strong\n        - StaticText \"a508c43d8dca0b1f\"\n    - StaticText \"•\"\n    - generic\n      - StaticText \"Your IP: \"\n      - button \"Click to reveal\" [ref=e7]\n      - StaticText \"•\"\n    - generic\n      - StaticText \"Performance & security by \"\n      - link \"Cloudflare\" [ref=e8]",
+    "browserPageId": "fac50f72-f594-4882-91c1-d84b964445f6"
+  },
+  "_meta": {
+    "runtimeId": "2eb7d5be-c126-4cfd-8483-31d3f7adcc5e"
+  }
+}

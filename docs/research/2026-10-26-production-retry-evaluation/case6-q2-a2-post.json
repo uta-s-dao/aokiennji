@@ -1,0 +1,274 @@
+{
+  "id": "5248b52a-a301-4f0a-a48b-831675f2c20f",
+  "ok": true,
+  "result": {
+    "origin": "https://aoki-enji.official-b.workers.dev/",
+    "refs": {
+      "e1": {
+        "name": "本文へ移動",
+        "role": "link"
+      },
+      "e10": {
+        "name": "製作実績",
+        "role": "link"
+      },
+      "e11": {
+        "name": "会社案内",
+        "role": "link"
+      },
+      "e12": {
+        "name": "お問い合わせ",
+        "role": "link"
+      },
+      "e13": {
+        "name": "プライバシー",
+        "role": "link"
+      },
+      "e14": {
+        "name": "チャット見積システムの導入相談",
+        "role": "link"
+      },
+      "e15": {
+        "name": "管理画面",
+        "role": "link"
+      },
+      "e16": {
+        "name": "アオキエンジ ホーム",
+        "role": "link"
+      },
+      "e17": {
+        "name": "メインナビゲーション",
+        "role": "navigation"
+      },
+      "e18": {
+        "name": "お知らせ",
+        "role": "heading"
+      },
+      "e19": {
+        "name": "耐火物製品製造の受注から出荷までの全行程を一括管理。 長年の経験で培ったノウハウを駆使し、様々な製品・構造物に対応いたします。",
+        "role": "heading"
+      },
+      "e2": {
+        "name": "商品相談チャットを開く",
+        "role": "button"
+      },
+      "e20": {
+        "name": "事業領域",
+        "role": "heading"
+      },
+      "e21": {
+        "name": "事業・サービスを見る",
+        "role": "link"
+      },
+      "e22": {
+        "name": "鋼構造物・機械装置 01 / STRUCTURES & MACHINERY 鋼構造物・機械装置 設計から製作、輸送、据付まで。現場に合う設備づくりを、一貫して支えます。 詳しく見る",
+        "role": "link"
+      },
+      "e23": {
+        "name": "耐火材・炉内金物 02 / REFRACTORY & FURNACE 耐火材・炉内金物 工業炉を支える耐火材と炉内金物。用途に応じた製品選定から施工まで対応します。 詳しく見る",
+        "role": "link"
+      },
+      "e24": {
+        "name": "耐熱ガラス・鋳物 03 / INDUSTRIAL MATERIALS 耐熱ガラス・鋳物 必要な仕様から、必要な部材へ。耐熱ガラス、鋳物、スタッドなどをご相談いただけます。 詳しく見る",
+        "role": "link"
+      },
+      "e25": {
+        "name": "据付・設備工事 04 / INSTALLATION & CONSTRUCTION 据付・設備工事 機械設備の据付、土木建築、太陽光発電設備まで。ものづくりの現場を支えます。 詳しく見る",
+        "role": "link"
+      },
+      "e26": {
+        "name": "製作実績",
+        "role": "heading"
+      },
+      "e27": {
+        "name": "実績一覧を見る",
+        "role": "link"
+      },
+      "e28": {
+        "name": "てすと１ てすと１ てすと１ てすと１",
+        "role": "link"
+      },
+      "e29": {
+        "name": "貯蔵サイロ 鋼構造物 貯蔵サイロ 製作から輸送、船積み、現地据付まで対応。",
+        "role": "link"
+      },
+      "e3": {
+        "name": "お知らせ",
+        "role": "region"
+      },
+      "e30": {
+        "name": "屋外タンク 鋼構造物 屋外タンク 用途に応じたタンクの製作・輸送・据付。",
+        "role": "link"
+      },
+      "e31": {
+        "name": "チャット見積システムの導入相談",
+        "role": "heading"
+      },
+      "e32": {
+        "name": "仕組みと導入相談を見る →",
+        "role": "link"
+      },
+      "e33": {
+        "name": "商品・工業用部材を探す",
+        "role": "heading"
+      },
+      "e34": {
+        "name": "製品を検索・相談する →",
+        "role": "link"
+      },
+      "e35": {
+        "name": "事業・サービス",
+        "role": "link"
+      },
+      "e36": {
+        "name": "製品検索",
+        "role": "link"
+      },
+      "e37": {
+        "name": "製作実績",
+        "role": "link"
+      },
+      "e38": {
+        "name": "会社案内",
+        "role": "link"
+      },
+      "e39": {
+        "name": "お問い合わせ",
+        "role": "link"
+      },
+      "e4": {
+        "name": "アオキエンジ株式会社 AOKI ENG CO., LTD.",
+        "role": "link"
+      },
+      "e40": {
+        "name": "鋼構造物・機械装置の 設計・製作・据付",
+        "role": "heading"
+      },
+      "e41": {
+        "name": "事業・サービスを見る",
+        "role": "link"
+      },
+      "e42": {
+        "name": "製作実績を見る",
+        "role": "link"
+      },
+      "e43": {
+        "name": "SCROLL TO EXPLORE",
+        "role": "link"
+      },
+      "e44": {
+        "name": "てすと",
+        "role": "heading"
+      },
+      "e45": {
+        "name": "鋼構造物・機械装置",
+        "role": "heading"
+      },
+      "e46": {
+        "name": "耐火材・炉内金物",
+        "role": "heading"
+      },
+      "e47": {
+        "name": "耐熱ガラス・鋳物",
+        "role": "heading"
+      },
+      "e48": {
+        "name": "据付・設備工事",
+        "role": "heading"
+      },
+      "e49": {
+        "name": "てすと１",
+        "role": "heading"
+      },
+      "e5": {
+        "name": "お問い合わせ",
+        "role": "heading"
+      },
+      "e50": {
+        "name": "貯蔵サイロ",
+        "role": "heading"
+      },
+      "e51": {
+        "name": "屋外タンク",
+        "role": "heading"
+      },
+      "e52": {
+        "name": "お問い合わせフロー",
+        "role": "heading"
+      },
+      "e53": {
+        "name": "ご相談",
+        "role": "heading"
+      },
+      "e54": {
+        "name": "確認・ご提案",
+        "role": "heading"
+      },
+      "e55": {
+        "name": "製作・調達",
+        "role": "heading"
+      },
+      "e56": {
+        "name": "納品・据付",
+        "role": "heading"
+      },
+      "e57": {
+        "name": "製品・製作のご相談",
+        "role": "heading"
+      },
+      "e58": {
+        "name": "耐熱ガラスを探している",
+        "role": "button"
+      },
+      "e59": {
+        "name": "工業炉の部品を相談したい",
+        "role": "button"
+      },
+      "e6": {
+        "name": "093-382-2110",
+        "role": "link"
+      },
+      "e60": {
+        "name": "図面から製作できますか？",
+        "role": "button"
+      },
+      "e61": {
+        "name": "まずはご相談下さい",
+        "role": "heading"
+      },
+      "e62": {
+        "name": "お問い合わせ",
+        "role": "link"
+      },
+      "e63": {
+        "name": "093-382-2110",
+        "role": "link"
+      },
+      "e64": {
+        "name": "商品相談の内容",
+        "role": "textbox"
+      },
+      "e65": {
+        "name": "相談を始める",
+        "role": "button"
+      },
+      "e7": {
+        "name": "サイトマップ",
+        "role": "heading"
+      },
+      "e8": {
+        "name": "事業・サービス",
+        "role": "link"
+      },
+      "e9": {
+        "name": "製品検索",
+        "role": "link"
+      }
+    },
+    "snapshot": "- link \"本文へ移動\" [ref=e1]\n- banner\n  - generic\n    - link \"アオキエンジ ホーム\" [ref=e16]\n      - StaticText \"アオキエンジ株式会社\"\n      - StaticText \"AOKI ENG CO., LTD.\"\n    - navigation \"メインナビゲーション\" [ref=e17]\n      - link \"事業・サービス\" [ref=e35]\n      - link \"製品検索\" [ref=e36]\n      - link \"製作実績\" [ref=e37]\n      - link \"会社案内\" [ref=e38]\n      - link \"お問い合わせ\" [ref=e39]\n- main\n  - generic\n    - image \"アオキエンジの製作・施工実績\"\n    - generic\n      - paragraph\n        - StaticText \"AOKI ENG CO., LTD.\"\n      - heading \"鋼構造物・機械装置の 設計・製作・据付\" [level=1, ref=e40]\n        - StaticText \"鋼構造物・機械装置の\"\n        - LineBreak \"\\n\"\n        - emphasis\n          - StaticText \"設計・製作・据付\"\n      - paragraph\n        - StaticText \"北九州・福岡の製作・工事のご相談に。\\n長年の経験と技術で、幅広いご要望に対応いたします。\"\n      - link \"事業・サービスを見る\" [ref=e41]\n      - link \"製作実績を見る\" [ref=e42]\n      - generic \"対応範囲\"\n        - StaticText \"設計\"\n        - StaticText \"製作\"\n        - StaticText \"輸送\"\n        - StaticText \"据付\"\n      - generic\n        - paragraph\n          - StaticText \"CONTACT\"\n        - heading \"製品・製作のご相談\" [level=2, ref=e57]\n        - paragraph\n          - StaticText \"商品名・型番・用途など、分かる範囲でご入力ください。\"\n        - form\n          - LabelText\n            - StaticText \"商品相談の内容\"\n          - textbox \"商品相談の内容\" [ref=e64]\n          - button \"相談を始める\" [disabled, ref=e65]\n        - StaticText \"入力例\"\n        - button \"耐熱ガラスを探している\" [ref=e58]\n        - button \"工業炉の部品を相談したい\" [ref=e59]\n        - button \"図面から製作できますか？\" [ref=e60]\n    - link \"SCROLL TO EXPLORE\" [ref=e43]\n  - region \"お知らせ\" [ref=e3]\n    - paragraph\n      - StaticText \"NEWS\"\n    - heading \"お知らせ\" [level=2, ref=e18]\n    - article\n      - time\n        - StaticText \"2026.10.21\"\n      - heading \"てすと\" [level=3, ref=e44]\n      - paragraph\n        - StaticText \"てすと\"\n  - paragraph\n    - StaticText \"OUR BUSINESS\"\n  - heading \"耐火物製品製造の受注から出荷までの全行程を一括管理。 長年の経験で培ったノウハウを駆使し、様々な製品・構造物に対応いたします。\" [level=2, ref=e19]\n    - StaticText \"耐火物製品製造の受注から出荷までの全行程を一括管理。\\n長年の経験で培ったノウハウを駆使し、様々な製品・構造物に対応いたします。\"\n  - generic \"主な製作・施工実績\"\n    - image \"耐火物製品\"\n    - image \"大型タンクの積込み\"\n    - image \"鋼製タンク\"\n    - image \"機械装置\"\n    - image \"太陽光発電設備\"\n  - paragraph\n    - StaticText \"WHAT WE DO\"\n  - heading \"事業領域\" [level=2, ref=e20]\n  - link \"事業・サービスを見る\" [ref=e21]\n  - link \"鋼構造物・機械装置 01 / STRUCTURES & MACHINERY 鋼構造物・機械装置 設計から製作、輸送、据付まで。現場に合う設備づくりを、一貫して支えます。 詳しく見る\" [ref=e22]\n    - image \"鋼構造物・機械装置\"\n    - StaticText \"0\"\n    - StaticText \"1\"\n    - StaticText \" / \"\n    - StaticText \"STRUCTURES & MACHINERY\"\n    - heading \"鋼構造物・機械装置\" [level=3, ref=e45]\n    - paragraph\n      - StaticText \"設計から製作、輸送、据付まで。現場に合う設備づくりを、一貫して支えます。\"\n    - StaticText \"詳しく見る\"\n  - link \"耐火材・炉内金物 02 / REFRACTORY & FURNACE 耐火材・炉内金物 工業炉を支える耐火材と炉内金物。用途に応じた製品選定から施工まで対応します。 詳しく見る\" [ref=e23]\n    - image \"耐火材・炉内金物\"\n    - StaticText \"0\"\n    - StaticText \"2\"\n    - StaticText \" / \"\n    - StaticText \"REFRACTORY & FURNACE\"\n    - heading \"耐火材・炉内金物\" [level=3, ref=e46]\n    - paragraph\n      - StaticText \"工業炉を支える耐火材と炉内金物。用途に応じた製品選定から施工まで対応します。\"\n    - StaticText \"詳しく見る\"\n  - link \"耐熱ガラス・鋳物 03 / INDUSTRIAL MATERIALS 耐熱ガラス・鋳物 必要な仕様から、必要な部材へ。耐熱ガラス、鋳物、スタッドなどをご相談いただけます。 詳しく見る\" [ref=e24]\n    - image \"耐熱ガラス・鋳物\"\n    - StaticText \"0\"\n    - StaticText \"3\"\n    - StaticText \" / \"\n    - StaticText \"INDUSTRIAL MATERIALS\"\n    - heading \"耐熱ガラス・鋳物\" [level=3, ref=e47]\n    - paragraph\n      - StaticText \"必要な仕様から、必要な部材へ。耐熱ガラス、鋳物、スタッドなどをご相談いただけます。\"\n    - StaticText \"詳しく見る\"\n  - link \"据付・設備工事 04 / INSTALLATION & CONSTRUCTION 据付・設備工事 機械設備の据付、土木建築、太陽光発電設備まで。ものづくりの現場を支えます。 詳しく見る\" [ref=e25]\n    - image \"据付・設備工事\"\n    - StaticText \"0\"\n    - StaticText \"4\"\n    - StaticText \" / \"\n    - StaticText \"INSTALLATION & CONSTRUCTION\"\n    - heading \"据付・設備工事\" [level=3, ref=e48]\n    - paragraph\n      - StaticText \"機械設備の据付、土木建築、太陽光発電設備まで。ものづくりの現場を支えます。\"\n    - StaticText \"詳しく見る\"\n  - paragraph\n    - StaticText \"SELECTED WORKS\"\n  - heading \"製作実績\" [level=2, ref=e26]\n  - link \"実績一覧を見る\" [ref=e27]\n  - link \"てすと１ てすと１ てすと１ てすと１\" [ref=e28]\n    - image \"てすと１\"\n    - StaticText \"てすと１\"\n    - heading \"てすと１\" [level=3, ref=e49]\n    - paragraph\n      - StaticText \"てすと１\"\n  - link \"貯蔵サイロ 鋼構造物 貯蔵サイロ 製作から輸送、船積み、現地据付まで対応。\" [ref=e29]\n    - image \"貯蔵サイロ\"\n    - StaticText \"鋼構造物\"\n    - heading \"貯蔵サイロ\" [level=3, ref=e50]\n    - paragraph\n      - StaticText \"製作から輸送、船積み、現地据付まで対応。\"\n  - link \"屋外タンク 鋼構造物 屋外タンク 用途に応じたタンクの製作・輸送・据付。\" [ref=e30]\n    - image \"屋外タンク\"\n    - StaticText \"鋼構造物\"\n    - heading \"屋外タンク\" [level=3, ref=e51]\n    - paragraph\n      - StaticText \"用途に応じたタンクの製作・輸送・据付。\"\n  - generic\n    - paragraph\n      - StaticText \"CONTACT FLOW\"\n    - heading \"お問い合わせフロー\" [level=2, ref=e52]\n    - StaticText \"01\"\n    - heading \"ご相談\" [level=3, ref=e53]\n    - paragraph\n      - StaticText \"製品名、型番、図面や用途など、わかる範囲でお聞かせください。\"\n    - StaticText \"02\"\n    - heading \"確認・ご提案\" [level=3, ref=e54]\n    - paragraph\n      - StaticText \"仕様と条件を確認し、担当者が対応方法やお見積りをご案内します。\"\n    - StaticText \"03\"\n    - heading \"製作・調達\" [level=3, ref=e55]\n    - paragraph\n      - StaticText \"必要な製品を製作・調達し、工程に沿って進めます。\"\n    - StaticText \"04\"\n    - heading \"納品・据付\" [level=3, ref=e56]\n    - paragraph\n      - StaticText \"輸送から現地据付まで、案件に応じて対応します。\"\n  - paragraph\n    - StaticText \"FOR YOUR BUSINESS\"\n  - heading \"チャット見積システムの導入相談\" [level=2, ref=e31]\n  - paragraph\n    - StaticText \"Webサイトでの条件整理から、担当者の確認を経た見積発行まで。御社の相談・見積業務に合わせて導入範囲を検討します。\"\n  - link \"仕組みと導入相談を見る →\" [ref=e32]\n  - paragraph\n    - StaticText \"PRODUCT SOURCING\"\n  - heading \"商品・工業用部材を探す\" [level=2, ref=e33]\n  - paragraph\n    - StaticText \"型番や用途から公開商品を検索できます。特殊な仕様・少量のご希望も、条件を伺って取扱可否を確認します。\"\n  - link \"製品を検索・相談する →\" [ref=e34]\n  - generic\n    - generic\n      - paragraph\n        - StaticText \"CONTACT\"\n      - heading \"まずはご相談下さい\" [level=2, ref=e61]\n      - paragraph\n        - StaticText \"製品のお探しものから、製作・施工のご相談まで。\"\n    - generic\n      - link \"お問い合わせ\" [ref=e62]\n      - link \"093-382-2110\" [ref=e63]\n    - StaticText \"→\"\n- contentinfo\n  - link \"アオキエンジ株式会社 AOKI ENG CO., LTD.\" [ref=e4]\n    - StaticText \"アオキエンジ株式会社\"\n    - StaticText \"AOKI ENG CO., LTD.\"\n  - paragraph\n    - StaticText \"鋼構造物及び機械装置の設計・製作・据付。\"\n    - LineBreak \"\\n\"\n    - StaticText \"耐火物製品から設備工事まで対応いたします。\"\n  - heading \"お問い合わせ\" [level=3, ref=e5]\n  - paragraph\n    - StaticText \"〒800-0037\"\n    - LineBreak \"\\n\"\n    - StaticText \"福岡県北九州市門司区原町別院1番26号\"\n  - link \"093-382-2110\" [ref=e6]\n  - heading \"サイトマップ\" [level=3, ref=e7]\n  - link \"事業・サービス\" [ref=e8]\n  - link \"製品検索\" [ref=e9]\n  - link \"製作実績\" [ref=e10]\n  - link \"会社案内\" [ref=e11]\n  - link \"お問い合わせ\" [ref=e12]\n  - link \"プライバシー\" [ref=e13]\n  - link \"チャット見積システムの導入相談\" [ref=e14]\n  - link \"管理画面\" [ref=e15]\n  - StaticText \"© \"\n  - StaticText \"2026\"\n  - StaticText \" AOKI ENG CO., LTD.\"\n  - StaticText \"FUKUOKA / JAPAN\"\n- button \"商品相談チャットを開く\" [expanded=false, ref=e2]\n  - StaticText \"商品について相談する\"",
+    "browserPageId": "fac50f72-f594-4882-91c1-d84b964445f6"
+  },
+  "_meta": {
+    "runtimeId": "2eb7d5be-c126-4cfd-8483-31d3f7adcc5e"
+  }
+}
