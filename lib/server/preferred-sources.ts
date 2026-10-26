@@ -11,7 +11,7 @@ import type {
   Supplier,
   SupplierKnowledge,
 } from '../contracts';
-import { byId, list, now } from './db';
+import { byId, db, list, now } from './db';
 import { modelIdentity, exactModelOnPage } from './product-model';
 import { withSupplierSiteAudit } from './supplier-site-audit';
 import { searchWeb } from './providers';
@@ -30,12 +30,14 @@ function website(raw: string) {
 
 export async function preferredSites(): Promise<PreferredSite[]> {
   const sites: PreferredSite[] = [];
+  const sources = await list<Source>('sources');
+  const sourceById = new Map(sources.map((source) => [source.id, source]));
   const add = (raw: string, rest: Omit<PreferredSite, 'url' | 'domain'>) => {
     const parsed = website(raw);
     if (parsed) sites.push({ ...parsed, ...rest });
   };
-  for (const row of (await list<SupplierKnowledge>('supplier_knowledge'))) {
-    const source = (await byId<Source>('sources', row.sourceId));
+  for (const row of await list<SupplierKnowledge>('supplier_knowledge')) {
+    const source = sourceById.get(row.sourceId);
     if (!row.approved || !source?.enabled) continue;
     const audit = withSupplierSiteAudit(row).siteAudit;
     add(row.website, {
@@ -49,7 +51,7 @@ export async function preferredSites(): Promise<PreferredSite[]> {
           : '登録済みの仕入先。商品・在庫・取引条件は別途確認',
     });
   }
-  for (const source of (await list<Source>('sources')).filter((s) => s.enabled)) {
+  for (const source of sources.filter((s) => s.enabled)) {
     // API/CSV endpoints are ingested as records, not treated as HTML product pages.
     if (source.kind === 'website')
       add(source.url, {
@@ -79,21 +81,24 @@ export async function preferredSites(): Promise<PreferredSite[]> {
   return sites;
 }
 export async function createSourceTrace(): Promise<SourceTrace> {
-  const registeredRevision = createHash('sha256')
-    .update(
-      JSON.stringify([
-        (await list('sources')),
-        (await list('documents')),
-        (await list('products')),
-        (await list('supplier_knowledge')),
-        (await list('suppliers')),
-      ]),
+  // Hash records at the database instead of transferring and JSON-parsing every
+  // document body just to check whether evidence changed. No cross-request cache:
+  // edits, deletions and disabled sources affect the very next read.
+  const revisions = await db()
+    .prepare(
+      ['sources', 'documents', 'products', 'supplier_knowledge', 'suppliers']
+        .map(
+          (table) =>
+            `SELECT '${table}' AS name, md5(coalesce(string_agg(id || ':' || md5(json), ',' ORDER BY id), '')) AS revision FROM ${table}`,
+        )
+        .join(' UNION ALL '),
     )
-    .digest('hex');
+    .all();
+  const registeredRevision = createHash('sha256').update(JSON.stringify(revisions)).digest('hex');
   return {
     version: 1,
     registeredRevision,
-    preferredSites: (await preferredSites()),
+    preferredSites: await preferredSites(),
     stages: [],
     observations: [],
   };
@@ -141,7 +146,7 @@ export function finishSourceStage(
 }
 export async function registeredModelRecords(model: string): Promise<SourceObservation[]> {
   const records: SourceObservation[] = [];
-  for (const p of (await list<Product>('products'))) {
+  for (const p of await list<Product>('products')) {
     const source = p.sourceId && (await byId<Source>('sources', p.sourceId));
     if (!source || !source.enabled || modelIdentity(p.model) !== modelIdentity(model)) continue;
     records.push({
@@ -163,7 +168,7 @@ export async function registeredModelRecords(model: string): Promise<SourceObser
       retrievedAt: p.updatedAt,
     });
   }
-  for (const doc of (await list<{
+  for (const doc of await list<{
     id: string;
     sourceId: string;
     title: string;
@@ -171,8 +176,8 @@ export async function registeredModelRecords(model: string): Promise<SourceObser
     url: string;
     createdAt: string;
     supplierCatalog?: unknown;
-  }>('documents'))) {
-    const source = (await byId<Source>('sources', doc.sourceId));
+  }>('documents')) {
+    const source = await byId<Source>('sources', doc.sourceId);
     // Listing indexes have their own record-level matching, freshness and access checks.
     if (doc.supplierCatalog || !source?.enabled || !exactModelOnPage(model, doc.content)) continue;
     const index = doc.content.toUpperCase().indexOf(model.toUpperCase());

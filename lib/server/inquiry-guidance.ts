@@ -1,7 +1,7 @@
 import type { ProductInquiryState } from '../contracts';
 
 export function informationQuestion(text: string) {
-  return /用途|特徴|材質|特性|使い分け|適用範囲|使用温度|使用圧力|どんな製品|どのような製品|何の製品|何を密封|何に使|何に用|選び|選ぶ|選定|候補|確認.*(?:条件|項目)|チェック項目|必要な(?:情報|条件)|何を確認/.test(
+  return /用途|特徴|材質|特性|仕様|使い分け|適用範囲|使用温度|使用圧力|どんな製品|どのような製品|何の製品|何を密封|何に使|何に用|選び|選ぶ|選定|候補|確認.*(?:条件|項目)|チェック項目|必要な(?:情報|条件)|何を確認/.test(
     text,
   );
 }
@@ -69,8 +69,14 @@ export function currentInquiryFacts(state: ProductInquiryState) {
     .filter(Boolean)
     .join('・');
 }
-export function selectionGuidance(state: ProductInquiryState, text: string) {
-  const subject = [state.designation, state.purpose, state.shape, text].filter(Boolean).join(' ');
+export function selectionGuidance(
+  state: ProductInquiryState,
+  text: string,
+  productNames: string[] = [],
+) {
+  const subject = [state.designation, state.purpose, state.shape, ...productNames, text]
+    .filter(Boolean)
+    .join(' ');
   const points = /ガラス|窓/.test(subject)
     ? [
         '連続使用温度・最高温度と加熱冷却の速さ',
@@ -92,5 +98,15 @@ export function selectionGuidance(state: ProductInquiryState, text: string) {
     /用途|何を密封|何に使/.test(text) && /ガスケット|パッキン/.test(subject)
       ? 'ガスケット一般は、配管・機器などの接合面を密封し、流体や気体の漏れを防ぐための部材です。個別製品の使用流体・温度・圧力は製品ごとに異なります。'
       : '';
-  return `${general}選定では、${points.map((p, i) => `${i + 1}. ${p}`).join('、')}を照合します。${currentInquiryFacts(state) ? `伺った条件は、${currentInquiryFacts(state)}です。` : ''}分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。`;
+  const comparison = /薬品|耐薬品|ゴム|使い分け/.test(text)
+    ? '薬品への使い分けは、PTFEやゴムという材質名だけでは判断できません。薬品名・混合物の成分・濃度・温度・接触時間をそろえ、各製品・ゴム材種の耐薬品性表を比較します。洗浄薬剤、膨潤・劣化、必要な密封性と締付条件も照合してください。表の条件が一致しない場合はメーカーへの確認が必要です。'
+    : '';
+  const dimensional =
+    !state.designation &&
+    !state.model &&
+    Object.keys(state.specifications || {}).length &&
+    /寸法.*(?:選べ|製品|商品|探)|(?:選べ|製品|商品).*寸法/.test(text)
+      ? 'ご指定の寸法に一致する標準品・加工対応品は、まだ確認できていません。標準寸法表と図面を照合し、標準品にない場合は打抜き・切断加工の可否、寸法公差、必要数量を確認する必要があります。'
+      : '';
+  return `${dimensional}${comparison}${general}選定では、${points.map((p, i) => `${i + 1}. ${p}`).join('、')}を照合します。${currentInquiryFacts(state) ? `伺った条件は、${currentInquiryFacts(state)}です。` : ''}分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。`;
 }

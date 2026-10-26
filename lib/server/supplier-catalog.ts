@@ -24,7 +24,7 @@ import { itemFieldsFromText } from './supplier-knowledge';
 import { searchWeb } from './providers';
 
 export type CatalogEntry = { name: string; model?: string };
-type CatalogDocument = {
+export type CatalogDocument = {
   id: string;
   sourceId: string;
   title: string;
@@ -335,6 +335,7 @@ export async function lookupProductName(
     signal?: AbortSignal;
     message?: string;
     registeredOnly?: boolean;
+    registeredData?: { documents: CatalogDocument[]; sources: Map<string, Source> };
   },
 ) {
   const { trace, settings } = input;
@@ -372,7 +373,9 @@ export async function lookupProductName(
       });
     }
   };
-  for (const doc of await list<CatalogDocument>('documents')) {
+  const documents = input.registeredData?.documents || await list<CatalogDocument>('documents');
+  const sources = input.registeredData?.sources || new Map((await list<Source>('sources')).map((s) => [s.id, s]));
+  for (const doc of documents) {
     if (
       !doc.supplierCatalog ||
       !trace.preferredSites.some(
@@ -383,7 +386,7 @@ export async function lookupProductName(
       )
     )
       continue;
-    const source = await byId<Source>('sources', doc.sourceId);
+    const source = sources.get(doc.sourceId);
     const age = Date.now() - Date.parse(doc.createdAt);
     if (
       !source?.enabled ||

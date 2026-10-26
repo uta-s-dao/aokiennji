@@ -1,7 +1,7 @@
 import { productCandidates } from './product-metadata';
 import { quoteWanted } from '../consultation-policy';
 import { productInquiry, usesProductInquiry } from './product-inquiry';
-import { lookupProductName, productNameLookupReply } from './supplier-catalog';
+import { lookupProductName, productNameLookupReply, type CatalogDocument } from './supplier-catalog';
 import { chatAttachmentInputs } from './chat-images';
 import { asksOneMissingPoint } from '../chat-policy';
 import { asyncFilter, asyncMap } from '@/lib/async-arrays';
@@ -1564,6 +1564,21 @@ export async function currentMessages(id: string): Promise<ChatMessage[]> {
   // Partial replies remain in the staff transcript; only completed replies
   // can be restored publicly or used as context for the next answer.
   const storedMessages=(await conversationMessages(id)) as StoredChatMessage[];
+  // One snapshot per restoration. Never reuse it across requests: source
+  // revocations and evidence deletions must take effect on the next GET.
+  const registeredData = storedMessages.some(m => m.productNameLookup) ? {
+    documents: await list<CatalogDocument & { detailOf?: string }>('documents'),
+    sources: new Map((await list<Source>('sources')).map(s => [s.id, s])),
+  } : undefined;
+  const lookups = new Map<string, ReturnType<typeof lookupProductName>>();
+  const restoredLookup = (subject: string) => {
+    let pending = lookups.get(subject);
+    if (!pending) {
+      pending = lookupProductName(subject, { trace: { ...restorationTrace, stages: [], observations: [] }, settings, context: { scope: 'chat' }, registeredOnly: true, registeredData });
+      lookups.set(subject, pending);
+    }
+    return pending;
+  };
   return await asyncMap(
     storedMessages
       .filter((m) => !m.incomplete)
@@ -1577,15 +1592,15 @@ export async function currentMessages(id: string): Promise<ChatMessage[]> {
       ),
     async (original) => {
       if (original.productNameLookup && (original.inquiryState?.model || original.inquiryState?.designation || original.inquiryState?.researchSubject)) {
-        const latest = await lookupProductName((original.inquiryState.model || original.inquiryState.designation || original.inquiryState.researchSubject)!, { trace: structuredClone(restorationTrace), settings: { ...settings, flags: { ...settings.flags, webSearch: false } }, context: { scope: 'chat' } });
+        const latest = await restoredLookup((original.inquiryState.model || original.inquiryState.designation || original.inquiryState.researchSubject)!);
         const lookup: NonNullable<ChatMessage['productNameLookup']> = latest.status === 'identified' ? { ...latest, investigation: original.productNameLookup.investigation } : original.productNameLookup.status === 'identified' ? latest : {...original.productNameLookup};
         if(lookup.candidates?.length) {
           const subject=(original.inquiryState.designation||original.inquiryState.model||original.inquiryState.researchSubject)!;
           const current=(await productCandidates(subject)).map(c=>c.product);
           const evidence=storedMessages.find(m=>m.id===original.id)?.sourceTrace?.investigation?.evidence||[];
-          const records=await list<{sourceId:string;url:string;createdAt:string}>('documents');
+          const records=registeredData!.documents;
           const validEvidence: typeof evidence=[];
-          for(const e of evidence) if(Date.now()-Date.parse(e.checkedAt)<86400000 && (!e.sourceId || ((await byId<Source>('sources',e.sourceId))?.enabled && records.some(d=>d.sourceId===e.sourceId&&d.url===e.url&&d.createdAt===e.checkedAt))))validEvidence.push(e);
+          for(const e of evidence) if(Date.now()-Date.parse(e.checkedAt)<86400000 && (!e.sourceId || (registeredData!.sources.get(e.sourceId)?.enabled && records.some(d=>d.sourceId===e.sourceId&&d.url===e.url&&d.createdAt===e.checkedAt))))validEvidence.push(e);
           lookup.candidates=lookup.candidates.filter(c=>current.some(p=>p.name===c.name&&p.model===c.model)||validEvidence.some(e=>e.entries.some(p=>p.name===c.name&&p.model===c.model)));
         }
         // Restoring history must not replace a grounded answer with the identity
@@ -1595,13 +1610,13 @@ export async function currentMessages(id: string): Promise<ChatMessage[]> {
         let retain = identities(lookup) === identities(original.productNameLookup)
           && original.groundingHash === groundingHash(original.products || [], original.knowledge, [], settings.flags, sourceContext);
         const facts = storedMessages.find(m=>m.id===original.id)?.sourceTrace?.answerFacts?.filter(f=>f.id.startsWith('product_passage_')) || [];
-        const documents = facts.length ? await list<{sourceId:string;url:string;detailOf?:string;content:string;createdAt:string}>('documents') : [];
+        const documents = facts.length ? registeredData!.documents : [];
         for (const fact of facts) {
           let valid = false;
           for (const doc of documents) {
             const age=Date.now()-Date.parse(doc.createdAt);
             if(!Number.isFinite(age) || age<0 || age>7*86400000 || !doc.content.replace(/\s+/g,' ').trim().includes(fact.text) || !preferredSiteFor(doc.detailOf || doc.url,restorationTrace)) continue;
-            const source=await byId<Source>('sources',doc.sourceId);
+            const source=registeredData!.sources.get(doc.sourceId);
             if(source?.enabled && (source.kind!=='supplier_catalog' || source.config.answerEnabled)) { valid=true;break; }
           }
           if(!valid || await containsPrivateSupplierIdentity(fact.text)) retain=false;

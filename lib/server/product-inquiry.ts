@@ -130,7 +130,7 @@ export async function productInquiry(input: {
         extra.productNameLookup.matches.length
           ? `掲載で確認した製品：${extra.productNameLookup.matches.map((p) => `${p.name}${p.model ? `（${p.model}）` : ''}`).join('、')}。`
           : content,
-        selectionGuidance(state, message),
+        selectionGuidance(state, message, extra.productNameLookup.matches.map(p => p.name)),
         '当社の販売・調達可否と現在庫は未確認です。まだ依頼は送信していません。',
       ]
         .filter(Boolean)
@@ -436,6 +436,10 @@ export async function productInquiry(input: {
   if (summaryQuestion(message))
     return reply(
       `伺った条件：${currentFacts() || '商品は特定前です'}。販売可否と在庫は、照合結果で確認できた範囲に限ります。`,
+    );
+  if (/型番だけ.*(?:足り|不足)|(?:どんな|どのような|何の)情報.*確認|何を照合/.test(message))
+    return reply(
+      `製品の照合には、メーカー名、型番の全文（末尾記号を含む）、製品名、銘板・袋・箱の表示や刻印を確認します。必要寸法・規格と、使用する流体・温度・圧力、取付条件も製品資料と照合します。${currentFacts() ? `すでに伺った条件：${currentFacts()}。` : ''}型番や表示が分からない場合は写真・寸法図と用途から候補を探せますが、推測で型番を確定せず、販売可否・在庫・仕様適合は別に確認します。`,
     );
   const acknowledgement = /見積.*(?:不要|まだ|いらな|要らな)/.test(message)
     ? '見積依頼は進めません。\n'

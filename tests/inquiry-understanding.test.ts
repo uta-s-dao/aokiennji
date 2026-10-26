@@ -393,14 +393,15 @@ it('answers food contact and washing evidence requirements without asserting app
   expect(r.message.handoff).toBeUndefined();
 });
 
-
 it('treats a dimensional selection request as specifications rather than a product name', async () => {
   model.mockResolvedValueOnce(
     parsed({
       designationKind: 'category',
       dimensions: '内径50mm・外径90mm・厚さ3mm',
       requestedInformation: 'identification',
-      quantity: 2, quantityUnit: '枚', quantityEvidence: '2枚',
+      quantity: 2,
+      quantityUnit: '枚',
+      quantityEvidence: '2枚',
     }),
   );
   const r = await answerChat(
@@ -412,4 +413,29 @@ it('treats a dimensional selection request as specifications rather than a produ
   expect(r.message.content).toContain('2枚');
   expect(r.message.content).not.toContain('この名称');
   expect(r.message.productNameLookup).toBeUndefined();
+});
+
+it('directly explains what to check beyond the model instead of repeating stock availability', async () => {
+  model.mockResolvedValueOnce(parsed({ model: '9007' }));
+  const r = await answerChat(
+    '型番9007だけでは足りない場合、どんな情報を確認したらよいですか？',
+    'model-preparation',
+  );
+  expect(r.message.content).toContain('末尾記号');
+  expect(r.message.content).toContain('銘板');
+  expect(r.message.content).toContain('使用する流体');
+  expect(r.message.content).toContain('型番：9007');
+});
+
+it('answers dimensional availability explicitly and explains drawing versus standard sizes', async () => {
+  model.mockResolvedValueOnce(
+    parsed({ designationKind: 'category', requestedInformation: 'selection' }),
+  );
+  const r = await answerChat(
+    'PTFE、内径50mm・外径90mm・厚さ3mmを2枚。この寸法で選べる製品はありますか？',
+    'dimensional-availability',
+  );
+  expect(r.message.content).toContain('まだ確認できていません');
+  expect(r.message.content).toContain('寸法公差');
+  expect(r.message.content).toContain('標準寸法表');
 });

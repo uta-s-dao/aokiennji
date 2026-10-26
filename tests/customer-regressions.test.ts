@@ -90,3 +90,43 @@ it('retries a transient non-JSON recovery failure with the same request once', a
   expect(await streamChat(input, vi.fn())).toEqual(result);
   expect(f.mock.calls[2][1]?.body).toBe(f.mock.calls[3][1]?.body);
 });
+
+it('extracts the matching product card without copying another model or the whole list', async () => {
+  const { productDocumentText, productExplanationQuery } =
+    await import('../lib/server/product-explanation');
+  const target = { name: '試験ガスケット', model: '9007' };
+  const text = productDocumentText(
+    `<main><article><a><h3>試験ガスケット</h3><p>9007-LC</p><p>異なる製品の特徴で、最高温度は架空値です。</p></a></article><article><a><h3>試験ガスケット</h3><p>TOMBO No.9007</p><p>この製品はPTFE製のガスケットで、薬品を扱う配管の接合部に使用します。</p></a></article></main>`,
+    [target],
+  );
+  expect(text).toContain('PTFE製');
+  expect(text).not.toContain('9007-LC');
+  expect(text).not.toContain('架空値');
+  expect(productExplanationQuery('薬品に対するゴムとの使い分けは？', [target])).toContain(
+    '耐薬品性',
+  );
+  expect(productExplanationQuery('仕様と厚さは？', [target])).toContain('標準寸法');
+});
+
+it('reads a product description whose heading is a table header inside its own product section', async () => {
+  const { productDocumentText } = await import('../lib/server/product-explanation');
+  const html = `<div class="products"><div class="article"><div class="title"><table><tr><th>試験ガスケット</th><td>TOMBO No.9007</td></tr></table></div><div><h4>特長</h4><p>この製品は試験用PTFEシートを所定の寸法に切断した部材で、配管の接合部に使用します。</p></div></div><div class="article"><div class="title"><table><tr><th>試験ガスケットLC</th><td>9007-LC</td></tr></table></div><p>別の製品の特徴です。薬品への適用条件は対象製品と異なります。</p></div></div>`;
+  const result = productDocumentText(html, [{ name: '試験ガスケット', model: '9007' }]);
+  expect(result).toContain('所定の寸法に切断');
+  expect(result).not.toContain('9007-LC');
+  expect(result).not.toContain('別の製品');
+});
+
+it('keeps a nearby temperature limitation with a source quote about performance', async () => {
+  const benefit = '試験ガスケットは耐薬品性に優れたPTFE製の部材です。';
+  const caution = '使用温度が100℃を超える場合は別の材質を確認してください。';
+  vi.mocked(salesModel).mockResolvedValue({ passages: [{ source: 0, quote: benefit }] });
+  const r = await selectProductPassages({
+    question: '特徴は？',
+    names: ['試験ガスケット'],
+    documents: [{ url: 'https://example.com/detail', content: benefit + caution }],
+    settings: DEFAULT_SETTINGS,
+    context: { scope: 'chat' },
+  });
+  expect(r[0].quote).toBe(benefit + caution);
+});

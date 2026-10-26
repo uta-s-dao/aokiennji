@@ -348,3 +348,140 @@ it('keeps the grounded explanation on history reload and drops it when its suppo
   await db().prepare('DELETE FROM documents WHERE id=?').run('technical-detail');
   expect((await currentMessages(answer.conversationId)).at(-1)!.content).not.toContain(quote);
 });
+
+it('continues to public technical search when the registered origin is unavailable', async () => {
+  await crawlSupplierCatalog(await site());
+  const quote =
+    'ナフロン® PTFE打抜きガスケットはPTFE製のガスケットで、薬品を扱う配管の接合部に使用します。';
+  network.mockImplementation(async (url) => {
+    if (url.startsWith('https://catalog.example/')) throw Error('registered_site_unavailable');
+    return {
+      status: 200,
+      url,
+      headers: new Headers({ 'content-type': 'text/html' }),
+      body: Buffer.from(
+        url.endsWith('/robots.txt')
+          ? 'User-agent: *\nAllow: /'
+          : `<title>${name}</title><main><h1>${name}</h1><p>TOMBO No.9007 ${quote}</p></main>`,
+      ),
+    };
+  });
+  search.mockResolvedValue([
+    {
+      title: name,
+      url: 'https://technical.example/products/9007',
+      retrievedAt: now(),
+      trust: 'discovery',
+      excerpt: '',
+      visibility: 'public',
+    },
+  ]);
+  model.mockResolvedValue({ passages: [{ source: 0, quote }] });
+  const { explainProduct } = await import('../lib/server/product-explanation');
+  const trace = await createSourceTrace();
+  const reply = await explainProduct({
+    question: '蒸気配管の使用温度と圧力の適用範囲は？',
+    lookup: { status: 'identified', matches: [{ name, model: '9007' }] },
+    settings: { ...settings, flags: { ...settings.flags, webSearch: true } },
+    trace,
+    context: { scope: 'chat' },
+  });
+  expect(search.mock.calls[0][0]).toContain('使用圧力');
+  expect(reply).toContain(quote);
+  expect(trace.observations.some((o) => o.reason === 'registered_site_unavailable')).toBe(true);
+  const detail = (
+    await list<{ url: string; detailOf?: string; content: string }>('documents')
+  ).find((d) => d.url === 'https://technical.example/products/9007');
+  expect(detail?.detailOf).toContain('catalog.example');
+  expect(detail?.content).toContain(quote);
+});
+
+it('uses public search for a recognized product even when no matching document was cached', async () => {
+  network.mockRejectedValue(Error('unavailable'));
+  const { explainProduct } = await import('../lib/server/product-explanation');
+  await explainProduct({
+    question: '特徴は？',
+    lookup: { status: 'identified', matches: [{ name, model: '9007' }] },
+    settings: { ...settings, flags: { ...settings.flags, webSearch: true } },
+    trace: await createSourceTrace(),
+    context: { scope: 'chat' },
+  });
+  expect(search).toHaveBeenCalledOnce();
+});
+
+it('changes the registered revision immediately for document edits, deletions and source revocation', async () => {
+  const { db } = await import('../lib/server/db');
+  const initial = (await createSourceTrace()).registeredRevision;
+  const doc = {
+    id: 'revision-proof',
+    sourceId: source.id,
+    title: name,
+    content: 'first',
+    url: 'https://catalog.example/revision',
+    createdAt: now(),
+  };
+  await save('documents', doc, { source_id: source.id, content: doc.content });
+  const created = (await createSourceTrace()).registeredRevision;
+  expect(created).not.toBe(initial);
+  await save(
+    'documents',
+    { ...doc, content: 'changed' },
+    { source_id: source.id, content: 'changed' },
+  );
+  expect((await createSourceTrace()).registeredRevision).not.toBe(created);
+  await db().prepare('DELETE FROM documents WHERE id=?').run(doc.id);
+  expect((await createSourceTrace()).registeredRevision).toBe(initial);
+  await save('sources', { ...source, enabled: false });
+  expect((await createSourceTrace()).registeredRevision).not.toBe(initial);
+});
+
+it('loads catalog documents once for an entire history restoration', async () => {
+  await crawlSupplierCatalog(await site());
+  model.mockResolvedValueOnce(interpretation(name));
+  const first = await answerChat(name, 'batched-restore');
+  model.mockResolvedValueOnce({ ...interpretation(''), model: '', designation: '' });
+  await answerChat(
+    '型番はそのまま、いまの条件をまとめてください。',
+    'batched-restore',
+    first.conversationId,
+  );
+  const { database } = await import('../lib/server/database');
+  const spy = vi.spyOn(database, 'prepare');
+  try {
+    await currentMessages(first.conversationId);
+    expect(spy.mock.calls.filter(([query]) => query === 'SELECT json FROM documents')).toHaveLength(
+      1,
+    );
+    expect(
+      spy.mock.calls.filter(([query]) => query === 'SELECT json FROM sources WHERE id=?'),
+    ).toHaveLength(0);
+  } finally {
+    spy.mockRestore();
+  }
+});
+
+it('excludes robots-blocked detail sites from the alternative search instead of returning to them', async () => {
+  await crawlSupplierCatalog(await site());
+  network.mockImplementation(async (url) => ({
+    status: url.includes('blocked.example') ? 403 : 200,
+    url,
+    headers: new Headers({ 'content-type': 'text/html' }),
+    body: Buffer.from(
+      url.endsWith('/robots.txt')
+        ? 'User-agent: *\nAllow: /'
+        : page.replace(
+            `<td>${name}</td>`,
+            `<td><a href="https://blocked.example/product">${name}</a></td>`,
+          ),
+    ),
+  }));
+  const { explainProduct } = await import('../lib/server/product-explanation');
+  await explainProduct({
+    question: '材質と特徴は？',
+    lookup: { status: 'identified', matches: [{ name, model: '9007' }] },
+    settings: { ...settings, flags: { ...settings.flags, webSearch: true } },
+    trace: await createSourceTrace(),
+    context: { scope: 'chat' },
+  });
+  expect(search.mock.calls[0][3]?.excludedDomains).toContain('blocked.example');
+});
