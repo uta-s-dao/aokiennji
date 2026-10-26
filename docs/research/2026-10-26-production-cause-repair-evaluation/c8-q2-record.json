@@ -1,0 +1,18 @@
+{
+  "case": 8,
+  "number": 2,
+  "question": "明日必ず届くと約束できますか？今は問い合わせ送信せず、確認だけしたいです。",
+  "response": null,
+  "send_operations": 1,
+  "resends": 0,
+  "errors": [],
+  "input_full_verified": true,
+  "sent_full_verified": true,
+  "status": "pending",
+  "initial_operation_seconds": 4.730838492978364,
+  "sent_monotonic": 279181.725448806,
+  "observation_wait_seconds": 5.797001365979668,
+  "completed": true,
+  "completion_snapshot": "c8-q2-complete.json",
+  "conversation_snapshot": "- generic\n  - link \"本文へ移動\" [ref=e1]\n  - dialog \"商品相談チャット\"\n    - banner\n      - strong\n        - StaticText \"商品相談アシスタント\"\n      - StaticText \"自動応答 · アオキエンジ株式会社\"\n      - button \"過去の相談\" [ref=e2]\n      - button \"新しい相談を始める\" [ref=e3]\n      - button \"チャットを閉じる\" [ref=e4]\n    - generic\n      - log \"相談の会話\"\n        - article\n          - StaticText \"ナフロン® PTFE打抜きガスケットを10枚ほしいです。価格、現在の在庫、福岡までの最短納期は分かりますか？\"\n        - article\n          - StaticText \"A\"\n          - StaticText \"アオキエンジ\"\n          - StaticText \"希望数量は10枚として承りました。\\n「ナフロン® PTFE打抜きガスケット」をお探しですね。\\n登録仕入先の商品掲載で、この名称に一致する情報を確認しました。\\n掲載商品名：ナフロン® PTFE打抜きガスケット（掲載型番：9007）\\n掲載確認日：2026-10-26。掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。\\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\\n価格・納期も未確認です。到着日の確約はできません。寸法・仕様、必要数量、お届け先と希望日、在庫確保・配送条件の確認が必要です。\"\n        - article\n          - StaticText \"明日必ず届くと約束できますか？今は問い合わせ送信せず、確認だけしたいです。\"\n        - article\n          - StaticText \"A\"\n          - StaticText \"アオキエンジ\"\n          - StaticText \"「ナフロン® PTFE打抜きガスケット」をお探しですね。\\n登録仕入先の商品掲載で、この名称に一致する情報を確認しました。\\n掲載商品名：ナフロン® PTFE打抜きガスケット（掲載型番：9007）\\n掲載確認日：2026-10-26。掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。\\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\\n価格・納期も未確認です。到着日の確約はできません。寸法・仕様、必要数量、お届け先と希望日、在庫確保・配送条件の確認が必要です。\"\n      - button \"最新のメッセージへ\" [ref=e5]\n    - contentinfo\n      - form\n        - button \"ファイルを添付\" [expanded=false, ref=e7]\n        - textbox \"相談内容\" [ref=e8]\n        - button \"メッセージを送信\" [disabled, ref=e9]\n      - StaticText \"登録情報をもとにご案内します\"\n      - link \"当社へのお問い合わせ\" [ref=e6]\n        - StaticText \"相談を依頼する\""
+}

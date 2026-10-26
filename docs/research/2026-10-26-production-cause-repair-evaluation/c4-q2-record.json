@@ -1,0 +1,18 @@
+{
+  "case": 4,
+  "number": 2,
+  "question": "材質はPTFEのままで、厚さだけ2mmに訂正します。いまの希望条件をまとめてください。",
+  "response": null,
+  "send_operations": 1,
+  "resends": 0,
+  "errors": [],
+  "input_full_verified": true,
+  "sent_full_verified": true,
+  "status": "pending",
+  "initial_operation_seconds": 8.678836453997064,
+  "sent_monotonic": 278903.665114904,
+  "observation_wait_seconds": 71.40922134701395,
+  "completed": true,
+  "completion_snapshot": "c4-q2-complete.json",
+  "conversation_snapshot": "- generic\n  - link \"本文へ移動\" [ref=e1]\n  - dialog \"商品相談チャット\"\n    - banner\n      - strong\n        - StaticText \"商品相談アシスタント\"\n      - StaticText \"自動応答 · アオキエンジ株式会社\"\n      - button \"過去の相談\" [ref=e2]\n      - button \"新しい相談を始める\" [ref=e3]\n      - button \"チャットを閉じる\" [ref=e4]\n    - log \"相談の会話\"\n      - article\n        - StaticText \"PTFE製で、内径50mm・外径90mm・厚さ3mmのガスケットを2枚探しています。この寸法で選べる製品はありますか？\"\n      - article\n        - StaticText \"A\"\n        - StaticText \"アオキエンジ\"\n        - StaticText \"希望数量は2枚として承りました。\\nご指定の寸法に一致する標準品・加工対応品は、まだ確認できていません。標準寸法表と図面を照合し、標準品にない場合は打抜き・切断加工の可否、寸法公差、必要数量を確認する必要があります。選定では、1. 接触する流体・薬品の名称と濃度、2. 連続・最高使用温度と圧力、3. 内径・外径・厚さ、フランジ規格と締付条件を照合します。伺った条件は、材質：PTFE・用途：ガスケット・仕様：内径50mm・外径90mm・厚さ3mm・数量：2枚です。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。\"\n      - article\n        - StaticText \"材質はPTFEのままで、厚さだけ2mmに訂正します。いまの希望条件をまとめてください。\"\n      - article\n        - StaticText \"A\"\n        - StaticText \"アオキエンジ\"\n        - StaticText \"伺った条件：材質：PTFE・用途：ガスケット・仕様：内径50mm・外径90mm・厚さ2mm・数量：2枚。販売可否と在庫は、照合結果で確認できた範囲に限ります。\"\n    - contentinfo\n      - form\n        - button \"ファイルを添付\" [expanded=false, ref=e6]\n        - textbox \"相談内容\" [ref=e7]\n        - button \"メッセージを送信\" [disabled, ref=e8]\n      - StaticText \"登録情報をもとにご案内します\"\n      - link \"当社へのお問い合わせ\" [ref=e5]\n        - StaticText \"相談を依頼する\""
+}

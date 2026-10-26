@@ -1,0 +1,46 @@
+{
+  "id": "4f9ca722-36fc-4a6f-b3bb-169758fe4bbc",
+  "ok": true,
+  "result": {
+    "origin": "https://aoki-enji.official-b.workers.dev/",
+    "refs": {
+      "e1": {
+        "name": "本文へ移動",
+        "role": "link"
+      },
+      "e2": {
+        "name": "過去の相談",
+        "role": "button"
+      },
+      "e3": {
+        "name": "新しい相談を始める",
+        "role": "button"
+      },
+      "e4": {
+        "name": "チャットを閉じる",
+        "role": "button"
+      },
+      "e5": {
+        "name": "当社へのお問い合わせ",
+        "role": "link"
+      },
+      "e6": {
+        "name": "ファイルを添付",
+        "role": "button"
+      },
+      "e7": {
+        "name": "相談内容",
+        "role": "textbox"
+      },
+      "e8": {
+        "name": "メッセージを送信",
+        "role": "button"
+      }
+    },
+    "snapshot": "- generic\n  - link \"本文へ移動\" [ref=e1]\n  - dialog \"商品相談チャット\"\n    - banner\n      - strong\n        - StaticText \"商品相談アシスタント\"\n      - StaticText \"自動応答 · アオキエンジ株式会社\"\n      - button \"過去の相談\" [ref=e2]\n      - button \"新しい相談を始める\" [ref=e3]\n      - button \"チャットを閉じる\" [ref=e4]\n    - log \"相談の会話\"\n      - article\n        - StaticText \"ナフロン® PTFE打抜きガスケットを10枚ほしいです。価格、現在の在庫、福岡までの最短納期は分かりますか？\"\n      - article\n        - StaticText \"A\"\n        - StaticText \"アオキエンジ\"\n        - StaticText \"希望数量は10枚として承りました。\\n「ナフロン® PTFE打抜きガスケット」をお探しですね。\\n登録仕入先の商品掲載で、この名称に一致する情報を確認しました。\\n掲載商品名：ナフロン® PTFE打抜きガスケット（掲載型番：9007）\\n掲載確認日：2026-10-26。掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。\\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\\n価格・納期も未確認です。到着日の確約はできません。伺った条件：商品名：ナフロン® PTFE打抜きガスケット・材質：PTFE・数量：10枚・お届け先：福岡。寸法・規格を特定したうえで、10枚分の在庫確保、出荷可能日と出荷締切、福岡向けの配送便・到着見込みを確認する必要があります。数量とお届け先の再提出は不要です。\"\n      - article\n        - StaticText \"明日必ず届くと約束できますか？今は問い合わせ送信せず、確認だけしたいです。\"\n      - article\n        - StaticText \"A\"\n        - StaticText \"アオキエンジ\"\n        - StaticText \"到着日の確約はできません。10枚分の在庫確保、発送可能日と出荷締切、福岡向けの配送便と到着見込みを確認する必要があります。伺った条件：商品名：ナフロン® PTFE打抜きガスケット・材質：PTFE・数量：10枚・お届け先：福岡。まだ問い合わせや注文は送信していません。\"\n    - contentinfo\n      - form\n        - button \"ファイルを添付\" [expanded=false, ref=e6]\n        - textbox \"相談内容\" [ref=e7]\n        - button \"メッセージを送信\" [disabled, ref=e8]\n      - StaticText \"登録情報をもとにご案内します\"\n      - link \"当社へのお問い合わせ\" [ref=e5]\n        - StaticText \"相談を依頼する\"",
+    "browserPageId": "048a8efc-4079-407d-b986-43400558626d"
+  },
+  "_meta": {
+    "runtimeId": "dddb65bd-11cd-43aa-96a4-61bfca057593"
+  }
+}

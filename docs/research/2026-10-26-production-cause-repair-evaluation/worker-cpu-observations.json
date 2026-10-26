@@ -1,0 +1,38 @@
+[
+  {
+    "path": "/api/chat/session",
+    "cpuTime": 53,
+    "wallTime": 146,
+    "outcome": "ok",
+    "scriptVersion": {
+      "id": "cff50607-a995-4bbd-9c0d-cf384e8a911d"
+    }
+  },
+  {
+    "path": "/api/monitor/report",
+    "cpuTime": 33,
+    "wallTime": 100,
+    "outcome": "ok",
+    "scriptVersion": {
+      "id": "cff50607-a995-4bbd-9c0d-cf384e8a911d"
+    }
+  },
+  {
+    "path": "/api/chat",
+    "cpuTime": 506,
+    "wallTime": 13272,
+    "outcome": "ok",
+    "scriptVersion": {
+      "id": "cff50607-a995-4bbd-9c0d-cf384e8a911d"
+    }
+  },
+  {
+    "path": "/api/chat/session",
+    "cpuTime": 15,
+    "wallTime": 212,
+    "outcome": "ok",
+    "scriptVersion": {
+      "id": "cff50607-a995-4bbd-9c0d-cf384e8a911d"
+    }
+  }
+]

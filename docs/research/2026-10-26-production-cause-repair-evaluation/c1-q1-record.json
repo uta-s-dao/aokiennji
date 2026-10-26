@@ -1,0 +1,18 @@
+{
+  "case": 1,
+  "number": 1,
+  "question": "SGM® ガスケットはどのような用途の製品ですか？型番が分からないので候補を教えてください。",
+  "response": null,
+  "send_operations": 1,
+  "resends": 0,
+  "errors": [],
+  "input_full_verified": true,
+  "sent_full_verified": true,
+  "status": "pending",
+  "initial_operation_seconds": 8.716282100009266,
+  "sent_monotonic": 277661.339151978,
+  "observation_wait_seconds": 22.1682887969655,
+  "completed": true,
+  "completion_snapshot": "c1-q1-complete.json",
+  "conversation_snapshot": "- generic\n  - link \"本文へ移動\" [ref=e1]\n  - dialog \"商品相談チャット\"\n    - banner\n      - strong\n        - StaticText \"商品相談アシスタント\"\n      - StaticText \"自動応答 · アオキエンジ株式会社\"\n      - button \"新しい相談を始める\" [ref=e2]\n      - button \"チャットを閉じる\" [ref=e3]\n    - generic\n      - log \"相談の会話\"\n        - article\n          - StaticText \"SGM® ガスケットはどのような用途の製品ですか？型番が分からないので候補を教えてください。\"\n        - article\n          - StaticText \"A\"\n          - StaticText \"アオキエンジ\"\n          - StaticText \"「SGM® ガスケットはどのような用途の製品ですか？型番が分からないので候補を教えてください。」をお探しですね。\\n今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。\\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\\nガスケット一般は、配管・機器などの接合面を密封し、流体や気体の漏れを防ぐための部材です。個別製品の使用流体・温度・圧力は製品ごとに異なります。選定では、1. 接触する流体・薬品の名称と濃度、2. 連続・最高使用温度と圧力、3. 内径・外径・厚さ、フランジ規格と締付条件を照合します。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。\\n当社の販売・調達可否と現在庫は未確認です。まだ依頼は送信していません。\"\n      - button \"最新のメッセージへ\" [ref=e4]\n    - contentinfo\n      - form\n        - button \"ファイルを添付\" [expanded=false, ref=e6]\n        - textbox \"相談内容\" [ref=e7]\n        - button \"メッセージを送信\" [disabled, ref=e8]\n      - StaticText \"登録情報をもとにご案内します\"\n      - link \"当社へのお問い合わせ\" [ref=e5]\n        - StaticText \"相談を依頼する\""
+}

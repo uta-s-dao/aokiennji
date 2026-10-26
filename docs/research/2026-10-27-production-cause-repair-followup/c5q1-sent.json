@@ -1,0 +1,46 @@
+{
+  "id": "8290bb55-1f03-41c7-8d25-86524db7f7fa",
+  "ok": true,
+  "result": {
+    "origin": "https://aoki-enji.official-b.workers.dev/",
+    "refs": {
+      "e1": {
+        "name": "本文へ移動",
+        "role": "link"
+      },
+      "e2": {
+        "name": "過去の相談",
+        "role": "button"
+      },
+      "e3": {
+        "name": "新しい相談を始める",
+        "role": "button"
+      },
+      "e4": {
+        "name": "チャットを閉じる",
+        "role": "button"
+      },
+      "e5": {
+        "name": "当社へのお問い合わせ",
+        "role": "link"
+      },
+      "e6": {
+        "name": "ファイルを添付",
+        "role": "button"
+      },
+      "e7": {
+        "name": "相談内容",
+        "role": "textbox"
+      },
+      "e8": {
+        "name": "メッセージを送信",
+        "role": "button"
+      }
+    },
+    "snapshot": "- generic\n  - link \"本文へ移動\" [ref=e1]\n  - dialog \"商品相談チャット\"\n    - banner\n      - strong\n        - StaticText \"商品相談アシスタント\"\n      - StaticText \"自動応答 · アオキエンジ株式会社\"\n      - button \"過去の相談\" [disabled, ref=e2]\n      - button \"新しい相談を始める\" [disabled, ref=e3]\n      - button \"チャットを閉じる\" [ref=e4]\n    - log \"相談の会話\"\n      - article\n        - StaticText \"会社の所在地と事業内容を教えてください。\"\n      - status\n        - StaticText \"内容を確認しています\"\n    - contentinfo\n      - form\n        - button \"ファイルを添付\" [expanded=false, disabled, ref=e6]\n        - textbox \"相談内容\" [ref=e7]\n        - button \"メッセージを送信\" [disabled, ref=e8]\n      - StaticText \"登録情報をもとにご案内します\"\n      - link \"当社へのお問い合わせ\" [ref=e5]\n        - StaticText \"相談を依頼する\"",
+    "browserPageId": "048a8efc-4079-407d-b986-43400558626d"
+  },
+  "_meta": {
+    "runtimeId": "dddb65bd-11cd-43aa-96a4-61bfca057593"
+  }
+}
