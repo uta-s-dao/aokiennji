@@ -355,9 +355,40 @@ it('does not replace a request for selection information with a summary or hando
   expect(r.message.handoff).toBeUndefined();
 });
 
-it('answers both company location and business even when the address policy also matches',async()=>{
- const r=await answerChat('会社の所在地と事業内容を教えてください。','company-combined');
- expect(r.message.content).toContain('北九州市');
- expect(r.message.content).toContain('設計');
- expect(r.message.content).toContain('据付');
+it('answers both company location and business even when the address policy also matches', async () => {
+  const r = await answerChat('会社の所在地と事業内容を教えてください。', 'company-combined');
+  expect(r.message.content).toContain('北九州市');
+  expect(r.message.content).toContain('設計');
+  expect(r.message.content).toContain('据付');
+});
+
+it('explains the limits and preparation of photo identification before attempting product discovery', async () => {
+  const r = await answerChat(
+    '写真しかありません。写真を見せれば型番や材質を確定できますか？',
+    'photo-limits',
+  );
+  expect(r.message.content).toContain('写真だけで型番や材質を確定できるとは限りません');
+  expect(r.message.content).toContain('刻印');
+  expect(r.message.productNameLookup).toBeUndefined();
+  expect(model).not.toHaveBeenCalled();
+});
+it('answers food contact and washing evidence requirements without asserting approval', async () => {
+  model.mockResolvedValueOnce(
+    parsed({ designationKind: 'category', requestedInformation: 'selection' }),
+  );
+  const first = await answerChat(
+    '食品用のガスケットを探しています。PTFEなら使えますか？',
+    'food-contact',
+  );
+  expect(first.message.content).toContain('材質名だけでは');
+  model.mockResolvedValueOnce(parsed({ requestedInformation: 'requirements' }));
+  const r = await answerChat(
+    '洗浄時の薬剤も使います。食品接触と洗浄の両方で必要な証明と条件は？',
+    'food-contact',
+    first.conversationId,
+  );
+  expect(r.message.content).toContain('証明');
+  expect(r.message.content).toContain('濃度');
+  expect(r.message.content).toContain('接触温度');
+  expect(r.message.handoff).toBeUndefined();
 });

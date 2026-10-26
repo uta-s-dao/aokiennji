@@ -70,12 +70,29 @@ export async function streamChat(
   // Establish ownership before starting work: losing the first answer must not
   // also lose the only session cookie capable of recovering it.
   await api('/api/chat/session', { method: 'POST' });
-  const recover = () =>
-    api<import('@/lib/contracts').ChatResponse>('/api/chat', {
-      method: 'POST',
-      body: JSON.stringify(input),
-      signal: AbortSignal.timeout(190000),
-    });
+  const recover = async () => {
+    const deadline = Date.now() + 60000;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await api<import('@/lib/contracts').ChatResponse>('/api/chat', {
+          method: 'POST',
+          body: JSON.stringify(input),
+          signal: AbortSignal.timeout(Math.max(1, deadline - Date.now())),
+        });
+      } catch (error) {
+        if (
+          attempt ||
+          Date.now() >= deadline ||
+          !(error instanceof ApiError) ||
+          (error.status !== 0 && error.status < 500) ||
+          error.code === 'chat_still_running'
+        )
+          throw error;
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
+    throw new Error('回答を確認できませんでした。再試行してください。');
+  };
   let response: Response;
   try {
     response = await fetch('/api/chat', {
@@ -89,6 +106,7 @@ export async function streamChat(
     return recover();
   }
   if (!response.ok) {
+    if (response.status >= 500) return recover();
     const error = await response.json().catch(() => ({}));
     throw new Error(error.error?.message || '回答を取得できませんでした。');
   }

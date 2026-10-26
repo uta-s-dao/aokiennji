@@ -1576,8 +1576,8 @@ export async function currentMessages(id: string): Promise<ChatMessage[]> {
         }) => message,
       ),
     async (original) => {
-      if (original.productNameLookup && (original.inquiryState?.designation || original.inquiryState?.model || original.inquiryState?.researchSubject)) {
-        const latest = await lookupProductName((original.inquiryState.designation || original.inquiryState.model || original.inquiryState.researchSubject)!, { trace: structuredClone(restorationTrace), settings: { ...settings, flags: { ...settings.flags, webSearch: false } }, context: { scope: 'chat' } });
+      if (original.productNameLookup && (original.inquiryState?.model || original.inquiryState?.designation || original.inquiryState?.researchSubject)) {
+        const latest = await lookupProductName((original.inquiryState.model || original.inquiryState.designation || original.inquiryState.researchSubject)!, { trace: structuredClone(restorationTrace), settings: { ...settings, flags: { ...settings.flags, webSearch: false } }, context: { scope: 'chat' } });
         const lookup: NonNullable<ChatMessage['productNameLookup']> = latest.status === 'identified' ? { ...latest, investigation: original.productNameLookup.investigation } : original.productNameLookup.status === 'identified' ? latest : {...original.productNameLookup};
         if(lookup.candidates?.length) {
           const subject=(original.inquiryState.designation||original.inquiryState.model||original.inquiryState.researchSubject)!;
@@ -1606,7 +1606,7 @@ export async function currentMessages(id: string): Promise<ChatMessage[]> {
           }
           if(!valid || await containsPrivateSupplierIdentity(fact.text)) retain=false;
         }
-        return { ...original, productNameLookup: lookup, content: retain ? original.content : productNameLookupReply((original.inquiryState.designation || original.inquiryState.model || original.inquiryState.researchSubject)!, lookup) };
+        return { ...original, productNameLookup: lookup, content: retain ? original.content : productNameLookupReply((original.inquiryState.model || original.inquiryState.designation || original.inquiryState.researchSubject)!, lookup) };
       }
       if (original.salesState) {
         const selection = original.selection

@@ -74,3 +74,19 @@ it('rejects invented technical quotes even when the model supplies a valid sourc
     { quote: '架空材は水配管用の密封材です。', url: 'https://example.com/product' },
   ]);
 });
+
+it('retries a transient non-JSON recovery failure with the same request once', async () => {
+  const result = {
+    conversationId: 'recovered',
+    message: { id: 'a', role: 'assistant', content: '回答' },
+  };
+  const f = vi
+    .spyOn(globalThis, 'fetch')
+    .mockResolvedValueOnce(Response.json({ data: null }))
+    .mockResolvedValueOnce(new Response('data: {"type":"status","data":"確認中"}\n\n'))
+    .mockResolvedValueOnce(new Response('Service unavailable', { status: 503 }))
+    .mockResolvedValueOnce(Response.json({ data: result }));
+  const input = { requestId: crypto.randomUUID(), message: '相談' };
+  expect(await streamChat(input, vi.fn())).toEqual(result);
+  expect(f.mock.calls[2][1]?.body).toBe(f.mock.calls[3][1]?.body);
+});

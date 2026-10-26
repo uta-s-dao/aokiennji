@@ -97,7 +97,9 @@ export default function ChatWidget({
       document.removeEventListener('keydown', escape, true);
     };
   }, [attachmentMenu]);
-  useEffect(() => { if (!open) setAttachmentMenu(false); }, [open]);
+  useEffect(() => {
+    if (!open) setAttachmentMenu(false);
+  }, [open]);
   const cameraPicker = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!photo || !photo.type.startsWith('image/')) {
@@ -369,15 +371,30 @@ export default function ChatWidget({
         }
         const res = await streamChat(request, setPartialReply);
         setPhoto(null);
-        const received = await api<{ messages: ChatMessage[] }>(
-          `/api/chat/${encodeURIComponent(res.conversationId)}`,
-        );
+        // The completed response is already accepted. A history refresh must
+        // neither erase it nor lose the conversation used by the next turn.
+        setConversationId(res.conversationId);
+        let received: { messages: ChatMessage[] } | undefined;
+        try {
+          received = await api<{ messages: ChatMessage[] }>(
+            `/api/chat/${encodeURIComponent(res.conversationId)}`,
+            { signal: AbortSignal.timeout(12000) },
+          );
+        } catch {
+          // Render the accepted turn if this optional read is unavailable.
+        }
         pendingSend.current = null;
         try {
           sessionStorage.removeItem('aoki-chat-pending');
         } catch {}
-        setConversationId(res.conversationId);
-        setMessages(received.messages);
+        if (received) setMessages(received.messages);
+        else
+          setMessages((prev) => [
+            ...prev
+              .filter((m) => m.id !== res.message.id)
+              .map((m) => (m.id === temp.id ? { ...m, attachmentIds: request.attachmentIds } : m)),
+            res.message,
+          ]);
       } catch (e) {
         setMessages((prev) => prev.filter((m) => m.id !== temp.id));
         if (!preserveDraft) setDraft((current) => current || message);
