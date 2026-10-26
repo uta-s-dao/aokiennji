@@ -1,7 +1,7 @@
 import { ApiError } from './auth';
 import { MICRO_YEN } from './billing-config';
 
-export const PRICE_VERSION = '2026-10-25-v2';
+export const PRICE_VERSION = '2026-10-26-v3';
 // USD per million tokens. Unknown models/modalities fail closed.
 const rates: Record<string, { input: number; cached: number; output: number; context: number }> = {
   'openai:gpt-4.1': { input: 2, cached: 0.5, output: 8, context: 1_047_576 },
@@ -34,6 +34,8 @@ export function pricingPolicy() {
       ...Object.keys(rates),
       'exa:auto',
       'tavily:basic',
+      'jev:jev-1.14.0',
+      'jev:jev-1.13.0',
       ...(process.env.AI_JEV_MAX_CALL_USD && process.env.AI_JEV_PRICE_VERSION
         ? ['jev:contract']
         : []),
@@ -102,6 +104,22 @@ export function quoteCall(provider: string, model: string, bodyText: string): Pr
   } else if (provider === 'tavily') {
     if (body.search_depth !== 'basic' || body.auto_parameters !== false) throw invalid();
     q.fixedUsd = 0.008;
+  } else if (provider === 'jev' && ['jev-1.14.0', 'jev-1.13.0'].includes(model)) {
+    // TypeSafe Models, verified 2026-10-26: $0.042/M input tokens; output is free.
+    // No long-context header is sent. Reserve the whole documented request ceiling.
+    if (
+      body.model !== model ||
+      !body.questions ||
+      typeof body.questions !== 'object' ||
+      Array.isArray(body.questions)
+    )
+      throw invalid();
+    q.inputRate = 0.042;
+    q.cachedRate = 0.042;
+    q.outputRate = 0;
+    q.inputBound = 65536;
+    q.outputBound = 65536;
+    if (Buffer.byteLength(bodyText) + 8192 > q.inputBound) throw invalid();
   } else if (provider === 'jev') {
     const max = Number(process.env.AI_JEV_MAX_CALL_USD);
     if (!Number.isFinite(max) || max <= 0 || max > 10 || !process.env.AI_JEV_PRICE_VERSION)
@@ -116,10 +134,16 @@ export function quoteCall(provider: string, model: string, bodyText: string): Pr
       // Documented high-detail tile/patch limits for these models are below
       // 16,384 tokens/image. Keep a conservative reserve, never price base64 as text.
       // https://developers.openai.com/api/docs/guides/images-vision
-      if (provider !== 'openai' || !['gpt-4.1', 'gpt-4.1-mini', 'gpt-5-mini'].includes(model) ||
-          value.detail !== 'high' || typeof value.image_url !== 'string' ||
-          !/^data:image\/webp;base64,[A-Za-z0-9+/=]+$/.test(value.image_url) ||
-          value.image_url.length > 7 * 1024 * 1024 || ++imageCount > 3) throw invalid();
+      if (
+        provider !== 'openai' ||
+        !['gpt-4.1', 'gpt-4.1-mini', 'gpt-5-mini'].includes(model) ||
+        value.detail !== 'high' ||
+        typeof value.image_url !== 'string' ||
+        !/^data:image\/webp;base64,[A-Za-z0-9+/=]+$/.test(value.image_url) ||
+        value.image_url.length > 7 * 1024 * 1024 ||
+        ++imageCount > 3
+      )
+        throw invalid();
       return { type: 'bounded_chat_image' };
     });
     if (
@@ -180,7 +204,7 @@ export function actualCost(
 ): number | null {
   if (!httpSuccess) return null;
   // Jev's configured amount is only an upper bound, not a reported charge.
-  if (q.provider === 'jev') return null;
+  if (q.provider === 'jev' && q.fixedUsd) return null;
   if (q.fixedUsd) return q.reserved;
   if (!usage || (q.toolBound && tools === null)) return null;
   const cached = usage.cachedInputTokens || 0;

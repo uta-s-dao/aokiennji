@@ -1,0 +1,46 @@
+{
+  "id": "b1375348-6515-4531-adc5-5ccec72aac01",
+  "ok": true,
+  "result": {
+    "origin": "https://aoki-enji.official-b.workers.dev/",
+    "refs": {
+      "e1": {
+        "name": "本文へ移動",
+        "role": "link"
+      },
+      "e2": {
+        "name": "過去の相談",
+        "role": "button"
+      },
+      "e3": {
+        "name": "新しい相談を始める",
+        "role": "button"
+      },
+      "e4": {
+        "name": "チャットを閉じる",
+        "role": "button"
+      },
+      "e5": {
+        "name": "当社へのお問い合わせ",
+        "role": "link"
+      },
+      "e6": {
+        "name": "ファイルを添付",
+        "role": "button"
+      },
+      "e7": {
+        "name": "相談内容",
+        "role": "textbox"
+      },
+      "e8": {
+        "name": "メッセージを送信",
+        "role": "button"
+      }
+    },
+    "snapshot": "- generic\n  - link \"本文へ移動\" [ref=e1]\n  - dialog \"商品相談チャット\"\n    - banner\n      - strong\n        - StaticText \"商品相談アシスタント\"\n      - StaticText \"自動応答 · アオキエンジ株式会社\"\n      - button \"過去の相談\" [ref=e2]\n      - button \"新しい相談を始める\" [ref=e3]\n      - button \"チャットを閉じる\" [ref=e4]\n    - log \"相談の会話\"\n      - article\n        - StaticText \"手元にガスケットの写真しかありません。写真を見せれば型番や材質を確定できますか？\"\n      - article\n        - StaticText \"A\"\n        - StaticText \"アオキエンジ\"\n        - StaticText \"「手元にガスケットの写真しかありません。写真を見せれば型番や材質を確定できますか？」をお探しですね。\\n今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。\\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\\nメーカー名、またはラベルや資料にある商品名・型番を教えてください。\"\n    - contentinfo\n      - form\n        - button \"ファイルを添付\" [expanded=false, ref=e6]\n        - textbox \"相談内容\" [ref=e7]\n        - button \"メッセージを送信\" [disabled, ref=e8]\n      - StaticText \"登録情報をもとにご案内します\"\n      - link \"当社へのお問い合わせ\" [ref=e5]\n        - StaticText \"相談を依頼する\"",
+    "browserPageId": "3d6ae23d-165e-4923-b522-123bf66435eb"
+  },
+  "_meta": {
+    "runtimeId": "2eb7d5be-c126-4cfd-8483-31d3f7adcc5e"
+  }
+}

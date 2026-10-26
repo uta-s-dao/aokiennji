@@ -29,6 +29,43 @@ export default function AdminSourceTrace({ trace }: { trace: SourceTrace }) {
         <p>直前の調査を再利用：{trace.reusedFromNoteId}（下記は元の取得日時）</p>
       )}
       {trace.conclusion && <p className="preline">{trace.conclusion}</p>}
+      {trace.investigation && (
+        <details>
+          <summary>Jevによる調査判断（{trace.investigation.actions.length}回）</summary>
+          <p>調査対象：{trace.investigation.subject}</p>
+          <p>終了理由：{trace.investigation.stopReason || '調査中'}</p>
+          <ol className="research-bullets">
+            {trace.investigation.actions.map((action, i) => (
+              <li key={i}>
+                <strong>
+                  {action.action.startsWith('url_')
+                    ? 'ページ取得'
+                    : action.action.startsWith('doc_')
+                      ? '社内資料を読む'
+                      : action.action === 'search' || action.action === 'public_search'
+                        ? '追加検索'
+                        : action.action.startsWith('candidate_')
+                          ? '商品候補の選択（未確定）'
+                          : action.action.startsWith('ask_')
+                            ? '顧客への追加質問'
+                            : '調査終了'}
+                </strong>
+                <p>{action.target || action.label}</p>
+                {action.batchTargets?.map((url) => (
+                  <p key={url}>同じ判断で取得：{url}</p>
+                ))}
+                <p>
+                  結果：{action.outcome}・{datetime(action.at)}
+                  {action.confidence !== undefined
+                    ? `・判断の確信度：${Math.round(action.confidence * 100)}%`
+                    : ''}
+                </p>
+              </li>
+            ))}
+          </ol>
+          {trace.investigation.question && <p>追加質問：{trace.investigation.question}</p>}
+        </details>
+      )}
       <ol className="research-bullets">
         {trace.stages.map((stage, i) => (
           <li key={i}>

@@ -1,6 +1,8 @@
 import type { Source } from '../contracts';
 import { db, list, uid } from './db';
 import { syncSource } from './ingestion';
+import { enrichDueProductMetadata } from './product-metadata';
+import { refreshIndexedSupplierCatalog } from './supplier-catalog';
 import { deliverReceiptNotifications } from './receipt-notifications';
 
 export const WEB_JOBS = ['sync', 'notifications', 'cleanup'] as const;
@@ -69,7 +71,9 @@ export async function runJob(job: Job, slot: string, work: () => Promise<JobOutc
   return locked.acquired ? locked.value : { skipped: 'already_running' as const };
 }
 async function syncDueSource(): Promise<JobOutcome> {
-  // One source per invocation bounds network work; oldest attempts go first, including failures.
+  // One metadata item and one source per invocation; neither queue starves the other.
+  const enriched = await enrichDueProductMetadata();
+  // Oldest source attempts go first, including failures.
   const attempts = await db()
     .prepare(
       `SELECT source_id,max(json::jsonb->>'createdAt') AS attempted
@@ -91,13 +95,17 @@ async function syncDueSource(): Promise<JobOutcome> {
         (attempted.get(a.id) || '').localeCompare(attempted.get(b.id) || '') ||
         a.id.localeCompare(b.id),
     );
-  if (!sources[0]) return { status: 'success', detail: { processed: 0 } };
+  if (!sources[0]) {
+    const catalog = await refreshIndexedSupplierCatalog();
+    return {status:catalog.status==='failed'?'failed' as const:enriched.status==='deferred'?'deferred' as const:'success' as const,detail:{...catalog.detail,processed:catalog.detail.processed+enriched.detail.processed,metadataProcessed:enriched.detail.processed}};
+  }
   const result = await syncSource(sources[0].id);
   return {
-    status: result.errors.length ? 'failed' : 'success',
+    status: result.errors.length ? 'failed' : enriched.status==='deferred'?'deferred':'success',
     detail: {
       processed: 1,
       remaining: sources.length - 1,
+      metadataProcessed: enriched.detail.processed,
       imported: result.imported,
       updated: result.updated,
       documents: result.documents,

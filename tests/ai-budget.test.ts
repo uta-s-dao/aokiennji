@@ -68,9 +68,7 @@ it('settles once, preserves reservations on missing usage, timeout and over-boun
 it('keeps a cancelled call reserved and blocks a retry at the call boundary', async () => {
   const quote = quoteCall('openai', 'gpt-4.1-mini', textBody);
   await budgetState();
-  await db()
-    .prepare('UPDATE ai_budget_policy SET limit_microyen=? WHERE id=1')
-    .run(quote.reserved);
+  await db().prepare('UPDATE ai_budget_policy SET limit_microyen=? WHERE id=1').run(quote.reserved);
   const input = {
     provider: 'openai' as const,
     purpose: 'response' as const,
@@ -90,7 +88,9 @@ it('keeps a cancelled call reserved and blocks a retry at the call boundary', as
   expect(report.spentYen).toBe(0);
   expect(report.reservedYen).toBe(quote.reserved / 1e6);
   expect(report.stopped).toBe(true);
-  expect(report.notifications.some((notification) => notification.kind === 'insufficient')).toBe(true);
+  expect(report.notifications.some((notification) => notification.kind === 'insufficient')).toBe(
+    true,
+  );
 });
 it('settles into the original month and starts a new Japanese month without releasing old holds', async () => {
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -234,4 +234,25 @@ it('retries notification delivery with a stable key and serializes concurrent wo
     network.mock.calls.map((c) => (c[1]?.headers as Record<string, string>)['Idempotency-Key']),
   ).toEqual(['aoki-budget-one', 'aoki-budget-one']);
   expect((await db().prepare('SELECT status FROM budget_notifications').get()).status).toBe('sent');
+});
+
+it('reserves documented versioned Jev pricing and settles reported input usage without a made-up contract price', () => {
+  const body = JSON.stringify({
+    model: 'jev-1.14.0',
+    state: 'test',
+    questions: { next: { type: 'choice', instructions: 'Choose', criteria: { done: 'Done' } } },
+  });
+  vi.stubEnv('AI_JEV_MAX_CALL_USD', '');
+  vi.stubEnv('AI_JEV_PRICE_VERSION', '');
+  const q = quoteCall('jev', 'jev-1.14.0', body);
+  expect(q.inputRate).toBe(0.042);
+  expect(q.outputRate).toBe(0);
+  expect(q.reserved).toBeGreaterThan(0);
+  expect(
+    actualCost(q, { inputTokens: 200, outputTokens: 1, cachedInputTokens: 0 }, 0, true),
+  ).toBeGreaterThan(0);
+  expect(
+    actualCost(q, { inputTokens: 70000, outputTokens: 1, cachedInputTokens: 0 }, 0, true),
+  ).toBeNull();
+  expect(() => quoteCall('jev', 'jev-future', body)).toThrow();
 });

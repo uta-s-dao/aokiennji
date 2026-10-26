@@ -96,6 +96,15 @@ export default function AdminProducts() {
       setSaving(false);
     }
   }
+  async function rebuildMetadata(p: Product) {
+    try {
+      await api(`/api/admin/products/${p.id}/search-metadata`, { method: 'POST' });
+      notice.success('検索用情報の再作成を予約しました。定期同期で処理します。');
+      await load();
+    } catch (e) {
+      notice.fail(errorMessage(e));
+    }
+  }
   async function remove(p: Product) {
     if (!confirm(`「${p.name}」を削除しますか？`)) return;
     try {
@@ -155,6 +164,23 @@ export default function AdminProducts() {
                     <small>
                       {p.manufacturer} {p.model}
                     </small>
+                    <small>
+                      検索用情報：
+                      {p.searchMetadata?.status === 'ready'
+                        ? '作成済み'
+                        : p.searchMetadata?.status === 'pending'
+                          ? '作成待ち'
+                          : p.searchMetadata?.status === 'failed'
+                            ? '再試行待ち'
+                            : '未作成'}
+                    </small>
+                    <button
+                      type="button"
+                      onClick={() => rebuildMetadata(p)}
+                      aria-label={`${p.name}の検索用情報を再作成`}
+                    >
+                      検索用情報を再作成
+                    </button>
                   </td>
                   <td>
                     <span className={`availability ${p.availability}`}>

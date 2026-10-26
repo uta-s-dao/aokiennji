@@ -1,0 +1,46 @@
+{
+  "id": "7646f24c-8658-46eb-b3a6-25c65d13a500",
+  "ok": true,
+  "result": {
+    "origin": "https://aoki-enji.official-b.workers.dev/",
+    "refs": {
+      "e1": {
+        "name": "本文へ移動",
+        "role": "link"
+      },
+      "e2": {
+        "name": "過去の相談",
+        "role": "button"
+      },
+      "e3": {
+        "name": "新しい相談を始める",
+        "role": "button"
+      },
+      "e4": {
+        "name": "チャットを閉じる",
+        "role": "button"
+      },
+      "e5": {
+        "name": "当社へのお問い合わせ",
+        "role": "link"
+      },
+      "e6": {
+        "name": "ファイルを添付",
+        "role": "button"
+      },
+      "e7": {
+        "name": "相談内容",
+        "role": "textbox"
+      },
+      "e8": {
+        "name": "メッセージを送信",
+        "role": "button"
+      }
+    },
+    "snapshot": "- generic\n  - link \"本文へ移動\" [ref=e1]\n  - dialog \"商品相談チャット\"\n    - banner\n      - strong\n        - StaticText \"商品相談アシスタント\"\n      - StaticText \"自動応答 · アオキエンジ株式会社\"\n      - button \"過去の相談\" [ref=e2]\n      - button \"新しい相談を始める\" [ref=e3]\n      - button \"チャットを閉じる\" [ref=e4]\n    - log \"相談の会話\"\n      - article\n        - StaticText \"食品が通る配管に使うガスケットを探しています。PTFEなら食品用として使えますか？\"\n      - article\n        - StaticText \"A\"\n        - StaticText \"アオキエンジ\"\n        - StaticText \"選定では、1. 接触する流体・薬品の名称と濃度、2. 連続・最高使用温度と圧力、3. 内径・外径・厚さ、フランジ規格と締付条件を照合します。伺った条件は、材質：PTFE・用途：食品が通る配管に使うガスケットです。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。\"\n      - article\n        - StaticText \"洗浄時には薬剤も使います。食品への接触と洗浄の両方について、購入前に必要な証明や条件を教えてください。\"\n      - article\n        - StaticText \"A\"\n        - StaticText \"アオキエンジ\"\n        - StaticText \"商品を示す情報として「食品が通る配管に使うガスケット」を受け取っています。メーカー名も分かれば添えてください。まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。\"\n    - contentinfo\n      - form\n        - button \"ファイルを添付\" [expanded=false, ref=e6]\n        - textbox \"相談内容\" [ref=e7]\n        - button \"メッセージを送信\" [disabled, ref=e8]\n      - StaticText \"登録情報をもとにご案内します\"\n      - link \"当社へのお問い合わせ\" [ref=e5]\n        - StaticText \"相談を依頼する\"",
+    "browserPageId": "3d6ae23d-165e-4923-b522-123bf66435eb"
+  },
+  "_meta": {
+    "runtimeId": "2eb7d5be-c126-4cfd-8483-31d3f7adcc5e"
+  }
+}

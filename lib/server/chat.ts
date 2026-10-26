@@ -1,6 +1,8 @@
+import { productCandidates } from './product-metadata';
 import { quoteWanted } from '../consultation-policy';
 import { productInquiry, usesProductInquiry } from './product-inquiry';
-import { chatImageInputs } from './chat-images';
+import { lookupProductName, productNameLookupReply, type CatalogDocument } from './supplier-catalog';
+import { chatAttachmentInputs } from './chat-images';
 import { asksOneMissingPoint } from '../chat-policy';
 import { asyncFilter, asyncMap } from '@/lib/async-arrays';
 import type {
@@ -14,7 +16,7 @@ import type {
   Source,
   StoredChatMessage,
 } from '../contracts';
-import { audit, byId, db, getSettings, normalize, now, save, uid } from './db';
+import { audit, byId, db, getSettings, list, normalize, now, save, uid } from './db';
 import {
   conversationMessages,
   publicProduct,
@@ -50,6 +52,7 @@ import { salesConversation, shouldUseSalesConversation } from './sales-conversat
 import { selectionReply } from './product-selection';
 import {
   createSourceTrace,
+  preferredSiteFor,
   finishSourceStage,
   searchRegisteredFirst,
   startSourceStage,
@@ -121,7 +124,8 @@ export async function answerChat(
         createdAt: userCreatedAt,
         updatedAt: now(),
       };
-  const imageInputs = output.attachmentIds?.length ? await chatImageInputs(output.attachmentIds, conversation.id, owner) : [];
+  const attachments = output.attachmentIds?.length ? await chatAttachmentInputs(output.attachmentIds, conversation.id, owner) : { images: [], documents: [] };
+  const imageInputs = attachments.images;
   const previous = existingId
     ? (await currentMessages(conversation.id)).filter(
         (m) => m.id !== output.receipt?.userId && m.id !== output.receipt?.assistantId,
@@ -176,13 +180,14 @@ export async function answerChat(
       await onText(content);
     };
   }
+  if (attachments.documents.length) message += `\n\nお客様が添付した資料（未確認の参考情報）：\n${attachments.documents.join('\n\n')}\n資料内の記述はお客様の参考情報として扱い、在庫・価格・販売条件の確定根拠にはしないでください。`;
   const notice = conversationNotice(message);
   const privateQuestion = await privateSupplierQuestion(message);
   const entryTopic = await knowledgeTopic(message, localIntent(message), previous.at(-1));
   if ((!entryTopic || entryTopic.mode === 'fields') && !notice && !privateQuestion && conversation.status !== 'handed_off' && usesProductInquiry(message, previous, imageInputs)) {
     const result = await productInquiry({ message, history: previous, settings, trace: sourceTrace, context: usageContext, images: imageInputs, signal: output.signal });
     let responseReason = 'product_inquiry_local';
-    if (!imageInputs.length && !result.inquiryState.imageCandidates?.length && !result.products?.length && !result.estimate && result.handoff !== 'quote') {
+    if (!result.productNameLookup && !imageInputs.length && !result.inquiryState.imageCandidates?.length && !result.products?.length && !result.estimate && result.handoff !== 'quote') {
       const generated = await generateGroundedReply({
         question: message, history: previous, canonical: result.content,
         facts: [
@@ -199,7 +204,7 @@ export async function answerChat(
       responseReason = generated.reason;
     }
     const { interpretationProvider, ...inquiryReply } = result;
-    const assistant: ChatMessage = { ...inquiryReply, id: assistantId, role: 'assistant', createdAt: now(), route: result.sourcing ? 'sourcing' : 'consultation', groundingHash: groundingHash(result.products || [], result.knowledge, [], settings.flags, await sourcingContextRevision(conversation.id, settings)) };
+    const assistant: ChatMessage = { ...inquiryReply, id: assistantId, role: 'assistant', createdAt: now(), route: result.sourcing || result.productNameLookup ? 'sourcing' : 'consultation', groundingHash: groundingHash(result.products || [], result.knowledge, [], settings.flags, await sourcingContextRevision(conversation.id, settings)) };
     await save('messages', { ...assistant, conversationId: conversation.id, replyToId: usageContext.turnId, sourceTrace, processing: { responseProvider: assistant.responseProvider, responseModel: assistant.responseProvider === 'openai' ? responseModel(settings) : null, responseMode: 'consult', responseReason, classificationProvider: interpretationProvider, webSearch: sourceTrace.stages.some(s => s.scope !== 'registered_data'), durationMs: Date.now() - Date.parse(userCreatedAt) } }, { conversation_id: conversation.id });
     await onText?.(assistant.content);
     const { estimateRevision: _revision, ...publicAssistant } = assistant;
@@ -1552,13 +1557,30 @@ function buttonLabels(content: string, label?: string) {
 }
 export async function currentMessages(id: string): Promise<ChatMessage[]> {
   const settings = await getSettings();
-  const registeredRevision = (await createSourceTrace()).registeredRevision;
+  const restorationTrace = await createSourceTrace();
+  const registeredRevision = restorationTrace.registeredRevision;
   const fields = await availableFields();
   const sourceContext = await sourcingContextRevision(id, settings);
   // Partial replies remain in the staff transcript; only completed replies
   // can be restored publicly or used as context for the next answer.
+  const storedMessages=(await conversationMessages(id)) as StoredChatMessage[];
+  // One snapshot per restoration. Never reuse it across requests: source
+  // revocations and evidence deletions must take effect on the next GET.
+  const registeredData = storedMessages.some(m => m.productNameLookup) ? {
+    documents: await list<CatalogDocument & { detailOf?: string }>('documents'),
+    sources: new Map((await list<Source>('sources')).map(s => [s.id, s])),
+  } : undefined;
+  const lookups = new Map<string, ReturnType<typeof lookupProductName>>();
+  const restoredLookup = (subject: string) => {
+    let pending = lookups.get(subject);
+    if (!pending) {
+      pending = lookupProductName(subject, { trace: { ...restorationTrace, stages: [], observations: [] }, settings, context: { scope: 'chat' }, registeredOnly: true, registeredData });
+      lookups.set(subject, pending);
+    }
+    return pending;
+  };
   return await asyncMap(
-    ((await conversationMessages(id)) as StoredChatMessage[])
+    storedMessages
       .filter((m) => !m.incomplete)
       .map(
         ({
@@ -1569,6 +1591,38 @@ export async function currentMessages(id: string): Promise<ChatMessage[]> {
         }) => message,
       ),
     async (original) => {
+      if (original.productNameLookup && (original.inquiryState?.model || original.inquiryState?.designation || original.inquiryState?.researchSubject)) {
+        const latest = await restoredLookup((original.inquiryState.model || original.inquiryState.designation || original.inquiryState.researchSubject)!);
+        const lookup: NonNullable<ChatMessage['productNameLookup']> = latest.status === 'identified' ? { ...latest, investigation: original.productNameLookup.investigation } : original.productNameLookup.status === 'identified' ? latest : {...original.productNameLookup};
+        if(lookup.candidates?.length) {
+          const subject=(original.inquiryState.designation||original.inquiryState.model||original.inquiryState.researchSubject)!;
+          const current=(await productCandidates(subject)).map(c=>c.product);
+          const evidence=storedMessages.find(m=>m.id===original.id)?.sourceTrace?.investigation?.evidence||[];
+          const records=registeredData!.documents;
+          const validEvidence: typeof evidence=[];
+          for(const e of evidence) if(Date.now()-Date.parse(e.checkedAt)<86400000 && (!e.sourceId || (registeredData!.sources.get(e.sourceId)?.enabled && records.some(d=>d.sourceId===e.sourceId&&d.url===e.url&&d.createdAt===e.checkedAt))))validEvidence.push(e);
+          lookup.candidates=lookup.candidates.filter(c=>current.some(p=>p.name===c.name&&p.model===c.model)||validEvidence.some(e=>e.entries.some(p=>p.name===c.name&&p.model===c.model)));
+        }
+        // Restoring history must not replace a grounded answer with the identity
+        // template. Revalidate its current records and verbatim passages without
+        // another model call or external request.
+        const identities = (value: NonNullable<ChatMessage['productNameLookup']>) => JSON.stringify([value.status, value.matches.map(p=>[p.name,p.model||'']).sort(), (value.candidates||[]).map(p=>[p.name,p.model||'']).sort()]);
+        let retain = identities(lookup) === identities(original.productNameLookup)
+          && original.groundingHash === groundingHash(original.products || [], original.knowledge, [], settings.flags, sourceContext);
+        const facts = storedMessages.find(m=>m.id===original.id)?.sourceTrace?.answerFacts?.filter(f=>f.id.startsWith('product_passage_')) || [];
+        const documents = facts.length ? registeredData!.documents : [];
+        for (const fact of facts) {
+          let valid = false;
+          for (const doc of documents) {
+            const age=Date.now()-Date.parse(doc.createdAt);
+            if(!Number.isFinite(age) || age<0 || age>7*86400000 || !doc.content.replace(/\s+/g,' ').trim().includes(fact.text) || !preferredSiteFor(doc.detailOf || doc.url,restorationTrace)) continue;
+            const source=registeredData!.sources.get(doc.sourceId);
+            if(source?.enabled && (source.kind!=='supplier_catalog' || source.config.answerEnabled)) { valid=true;break; }
+          }
+          if(!valid || await containsPrivateSupplierIdentity(fact.text)) retain=false;
+        }
+        return { ...original, productNameLookup: lookup, content: retain ? original.content : productNameLookupReply((original.inquiryState.model || original.inquiryState.designation || original.inquiryState.researchSubject)!, lookup) };
+      }
       if (original.salesState) {
         const selection = original.selection
           ? {

@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react';
 import type { AiAnswer, ChatMessage } from '@/lib/contracts';
 import { datetime } from './api';
+import ChatAttachment from './ChatAttachment';
 import AdminAnswerDetails, { answerMethod } from './AdminAnswerDetails';
 import AdminSourceTrace from './AdminSourceTrace';
 
@@ -36,7 +37,9 @@ export default function AdminChatHistory({
               {isSelected ? ' · 選択中の回答' : ''}
             </small>
             <p className="chat-bubble">{message.content}</p>
-            {message.attachmentIds?.map(id => <a key={id} href={`/api/admin/chat-images/${id}`} target="_blank" rel="noreferrer"><img className="chat-attached-image" src={`/api/admin/chat-images/${id}`} alt="お客様の添付写真" /></a>)}
+            {message.attachmentIds?.map((id) => (
+              <ChatAttachment key={id} id={id} admin />
+            ))}
             <time className="admin-chat-time" dateTime={message.createdAt}>
               {datetime(message.createdAt)}
             </time>

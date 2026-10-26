@@ -1,0 +1,42 @@
+{
+  "id": "4f42cdb2-4a24-48c3-9178-af327cbc796f",
+  "ok": true,
+  "result": {
+    "origin": "https://aoki-enji.official-b.workers.dev/",
+    "refs": {
+      "e1": {
+        "name": "本文へ移動",
+        "role": "link"
+      },
+      "e2": {
+        "name": "新しい相談を始める",
+        "role": "button"
+      },
+      "e3": {
+        "name": "チャットを閉じる",
+        "role": "button"
+      },
+      "e4": {
+        "name": "当社へのお問い合わせ",
+        "role": "link"
+      },
+      "e5": {
+        "name": "ファイルを添付",
+        "role": "button"
+      },
+      "e6": {
+        "name": "相談内容",
+        "role": "textbox"
+      },
+      "e7": {
+        "name": "メッセージを送信",
+        "role": "button"
+      }
+    },
+    "snapshot": "- generic\n  - link \"本文へ移動\" [ref=e1]\n  - dialog \"商品相談チャット\"\n    - banner\n      - strong\n        - StaticText \"商品相談アシスタント\"\n      - StaticText \"自動応答 · アオキエンジ株式会社\"\n      - button \"新しい相談を始める\" [ref=e2]\n      - button \"チャットを閉じる\" [ref=e3]\n    - log \"相談の会話\"\n      - article\n        - StaticText \"型番は分かりません。工業炉ののぞき窓に使う透明な耐熱ガラスを探しています。何を確認すれば候補を選べますか？\"\n      - article\n        - StaticText \"A\"\n        - StaticText \"アオキエンジ\"\n        - StaticText \"選定では、1. 連続使用温度・最高温度と加熱冷却の速さ、2. 窓の寸法・厚さと取付方法、圧力の有無、3. 接触する雰囲気・薬品と必要な透明性を照合します。伺った条件は、用途：工業炉ののぞき窓に使うです。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。\"\n    - contentinfo\n      - form\n        - button \"ファイルを添付\" [expanded=false, ref=e5]\n        - textbox \"相談内容\" [ref=e6]\n        - button \"メッセージを送信\" [disabled, ref=e7]\n      - StaticText \"登録情報をもとにご案内します\"\n      - link \"当社へのお問い合わせ\" [ref=e4]\n        - StaticText \"相談を依頼する\"",
+    "browserPageId": "3d6ae23d-165e-4923-b522-123bf66435eb"
+  },
+  "_meta": {
+    "runtimeId": "2eb7d5be-c126-4cfd-8483-31d3f7adcc5e"
+  }
+}

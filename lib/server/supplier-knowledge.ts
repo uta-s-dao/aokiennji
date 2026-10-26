@@ -252,8 +252,9 @@ export async function importSupplierKnowledge(
 
 export async function availableFields(): Promise<string[]> {
   const fields = new Set<string>();
+  const sources = new Map((await list<Source>('sources')).map((s) => [s.id, s]));
   for (const row of await list<SupplierKnowledge>('supplier_knowledge')) {
-    const source = await byId<Source>('sources', row.sourceId);
+    const source = sources.get(row.sourceId);
     if (
       !row.approved ||
       source?.kind !== 'supplier_catalog' ||

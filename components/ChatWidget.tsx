@@ -1,5 +1,9 @@
 'use client';
 import {
+  Plus,
+  Camera,
+  ImagePlus,
+  FileText,
   ArrowDown,
   ArrowUp,
   ArrowUpRight,
@@ -17,6 +21,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import type { CSSProperties } from 'react';
 import type { ChatMessage, Conversation, PublicConfig } from '@/lib/contracts';
 import Link from 'next/link';
+import ChatAttachment from './ChatAttachment';
+import { CHAT_PHOTO_ACCEPT, CHAT_FILE_ACCEPT, chatAttachmentError } from '@/lib/chat-attachments';
 import { trackConversion } from '@/lib/analytics';
 import { api, datetime, errorMessage, streamChat } from './api';
 import {
@@ -62,20 +68,60 @@ export default function ChatWidget({
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState('');
   const photoPicker = useRef<HTMLInputElement>(null);
+  const filePicker = useRef<HTMLInputElement>(null);
+  const [attachmentMenu, setAttachmentMenu] = useState(false);
+  const attachmentControls = useRef<HTMLDivElement>(null);
+  const attachmentButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!attachmentMenu) return;
+    attachmentControls.current?.querySelector('button')?.focus();
+    function dismiss(event: PointerEvent) {
+      if (
+        !attachmentControls.current?.contains(event.target as Node) &&
+        !attachmentButton.current?.contains(event.target as Node)
+      )
+        setAttachmentMenu(false);
+    }
+    function escape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        setAttachmentMenu(false);
+        attachmentButton.current?.focus();
+      }
+    }
+    document.addEventListener('pointerdown', dismiss);
+    document.addEventListener('keydown', escape, true);
+    return () => {
+      document.removeEventListener('pointerdown', dismiss);
+      document.removeEventListener('keydown', escape, true);
+    };
+  }, [attachmentMenu]);
+  useEffect(() => {
+    if (!open) setAttachmentMenu(false);
+  }, [open]);
   const cameraPicker = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    if (!photo) { setPhotoPreview(''); return; }
+    if (!photo || !photo.type.startsWith('image/')) {
+      setPhotoPreview('');
+      return;
+    }
     const url = URL.createObjectURL(photo);
     setPhotoPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [photo]);
   function choosePhoto(file?: File) {
     if (!file) return;
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
-      setError('JPEG・PNG・WebPの写真を5MB以下で選んでください。'); return;
+    const error = chatAttachmentError(file);
+    setAttachmentMenu(false);
+    if (error) {
+      setError(error);
+      setFailedMessage(null);
+      return;
     }
     pendingSend.current = null;
-    setPhoto(file); setError('');
+    setPhoto(file);
+    setError('');
   }
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -266,9 +312,20 @@ export default function ChatWidget({
 
   const send = useCallback(
     async (value?: string, preserveDraft = false) => {
-      const message = (value ?? draft).trim() || (photo ? '写真の商品を確認したいです。' : '');
+      const message =
+        (value ?? draft).trim() ||
+        (photo
+          ? photo.type.startsWith('image/')
+            ? '写真の商品を確認したいです。'
+            : '添付資料の商品について相談したいです。'
+          : '');
       if (!message || sending.current || restoring || !enabled) return;
-      const request: { message: string; conversationId?: string; requestId: string; attachmentIds?: string[] } =
+      const request: {
+        message: string;
+        conversationId?: string;
+        requestId: string;
+        attachmentIds?: string[];
+      } =
         pendingSend.current?.message === message &&
         pendingSend.current.conversationId === conversationId
           ? pendingSend.current
@@ -294,23 +351,50 @@ export default function ChatWidget({
       try {
         if (photo && !request.attachmentIds?.length) {
           await api('/api/chat/session', { method: 'POST' });
-          const uploaded = await api<{ id: string; conversationId: string }>(`/api/chat/images${request.conversationId ? `?conversationId=${encodeURIComponent(request.conversationId)}` : ''}`, { method: 'POST', body: photo, headers: { 'Content-Type': photo.type } });
+          const uploaded = await api<{ id: string; conversationId: string }>(
+            `/api/chat/images${request.conversationId ? `?conversationId=${encodeURIComponent(request.conversationId)}` : ''}`,
+            {
+              method: 'POST',
+              body: photo,
+              headers: {
+                'Content-Type': photo.type || 'application/octet-stream',
+                'X-File-Name': encodeURIComponent(photo.name),
+              },
+            },
+          );
           request.attachmentIds = [uploaded.id];
           request.conversationId = uploaded.conversationId;
           setConversationId(uploaded.conversationId);
-          try { sessionStorage.setItem('aoki-chat-pending', JSON.stringify(request)); } catch {}
+          try {
+            sessionStorage.setItem('aoki-chat-pending', JSON.stringify(request));
+          } catch {}
         }
         const res = await streamChat(request, setPartialReply);
         setPhoto(null);
-        const received = await api<{ messages: ChatMessage[] }>(
-          `/api/chat/${encodeURIComponent(res.conversationId)}`,
-        );
+        // The completed response is already accepted. A history refresh must
+        // neither erase it nor lose the conversation used by the next turn.
+        setConversationId(res.conversationId);
+        let received: { messages: ChatMessage[] } | undefined;
+        try {
+          received = await api<{ messages: ChatMessage[] }>(
+            `/api/chat/${encodeURIComponent(res.conversationId)}`,
+            { signal: AbortSignal.timeout(12000) },
+          );
+        } catch {
+          // Render the accepted turn if this optional read is unavailable.
+        }
         pendingSend.current = null;
         try {
           sessionStorage.removeItem('aoki-chat-pending');
         } catch {}
-        setConversationId(res.conversationId);
-        setMessages(received.messages);
+        if (received) setMessages(received.messages);
+        else
+          setMessages((prev) => [
+            ...prev
+              .filter((m) => m.id !== res.message.id)
+              .map((m) => (m.id === temp.id ? { ...m, attachmentIds: request.attachmentIds } : m)),
+            res.message,
+          ]);
       } catch (e) {
         setMessages((prev) => prev.filter((m) => m.id !== temp.id));
         if (!preserveDraft) setDraft((current) => current || message);
@@ -509,8 +593,12 @@ export default function ChatWidget({
                             <span>A</span>アオキエンジ
                           </div>
                         )}
-                        <div className="chat-bubble">{m.content}
-                          {m.attachmentIds?.map(id => <a key={id} href={`/api/chat/images/${id}`} target="_blank" rel="noreferrer"><img className="chat-attached-image" src={`/api/chat/images/${id}`} alt="添付した商品写真" /></a>)}</div>
+                        <div className="chat-bubble">
+                          {m.content}
+                          {m.attachmentIds?.map((id) => (
+                            <ChatAttachment key={id} id={id} />
+                          ))}
+                        </div>
                       </article>
                     ))}
                   </div>
@@ -567,8 +655,11 @@ export default function ChatWidget({
                           <span>A</span>アオキエンジ
                         </div>
                       )}
-                      <div className="chat-bubble">{m.content}
-                        {m.attachmentIds?.map(id => <a key={id} href={`/api/chat/images/${id}`} target="_blank" rel="noreferrer"><img className="chat-attached-image" src={`/api/chat/images/${id}`} alt="添付した商品写真" /></a>)}
+                      <div className="chat-bubble">
+                        {m.content}
+                        {m.attachmentIds?.map((id) => (
+                          <ChatAttachment key={id} id={id} />
+                        ))}
                       </div>
                       {m.role === 'assistant' &&
                       m.products?.length &&
@@ -738,29 +829,127 @@ export default function ChatWidget({
               )}
             </div>
             <footer className="chat-compose">
-              <div className="chat-photo-controls">
-                <input hidden ref={photoPicker} type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { choosePhoto(e.target.files?.[0]); e.target.value = ''; }} />
-                <input hidden ref={cameraPicker} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={(e) => { choosePhoto(e.target.files?.[0]); e.target.value = ''; }} />
-                <button type="button" disabled={busy || restoring} onClick={() => photoPicker.current?.click()}>写真を選ぶ</button>
-                <button type="button" disabled={busy || restoring} onClick={() => cameraPicker.current?.click()}>カメラで撮る</button>
-                <small>カメラが使えない場合は写真を選べます。5MBまで。送信した写真は、読取機能が利用可能な場合にAIへ送られます。</small>
-              </div>
-              {photoPreview && <div className="chat-photo-preview">
-                <img src={photoPreview} alt="送信前の写真" />
-                <button type="button" disabled={busy} onClick={() => { setPhoto(null); pendingSend.current = null; }}>写真を削除</button>
-                <button type="button" disabled={busy} onClick={() => cameraPicker.current?.click()}>撮り直す</button>
-              </div>}
+              <input
+                hidden
+                ref={photoPicker}
+                type="file"
+                accept={CHAT_PHOTO_ACCEPT}
+                aria-label="写真を選択"
+                onChange={(e) => {
+                  choosePhoto(e.target.files?.[0]);
+                  e.target.value = '';
+                }}
+              />
+              <input
+                hidden
+                ref={cameraPicker}
+                type="file"
+                accept={CHAT_PHOTO_ACCEPT}
+                capture="environment"
+                aria-label="カメラで撮影"
+                onChange={(e) => {
+                  choosePhoto(e.target.files?.[0]);
+                  e.target.value = '';
+                }}
+              />
+              <input
+                hidden
+                ref={filePicker}
+                type="file"
+                accept={CHAT_FILE_ACCEPT}
+                aria-label="ファイルを選択"
+                onChange={(e) => {
+                  choosePhoto(e.target.files?.[0]);
+                  e.target.value = '';
+                }}
+              />
+              {attachmentMenu && (
+                <div
+                  className="chat-attachment-menu"
+                  id="chat-attachment-options"
+                  ref={attachmentControls}
+                  role="group"
+                  aria-label="添付方法"
+                >
+                  <button
+                    type="button"
+                    disabled={busy || restoring}
+                    onClick={() => {
+                      setAttachmentMenu(false);
+                      cameraPicker.current?.click();
+                    }}
+                  >
+                    <Camera size={18} />
+                    カメラで撮影
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy || restoring}
+                    onClick={() => {
+                      setAttachmentMenu(false);
+                      photoPicker.current?.click();
+                    }}
+                  >
+                    <ImagePlus size={18} />
+                    写真を選択
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy || restoring}
+                    onClick={() => {
+                      setAttachmentMenu(false);
+                      filePicker.current?.click();
+                    }}
+                  >
+                    <FileText size={18} />
+                    ファイルを選択
+                  </button>
+                  <small>添付内容は回答のためAIで読み取る場合があります。</small>
+                </div>
+              )}
+              {photo && (
+                <div className="chat-photo-preview">
+                  {photoPreview ? (
+                    <img src={photoPreview} alt="送信前の写真" />
+                  ) : (
+                    <FileText size={28} aria-hidden="true" />
+                  )}
+                  <span className="chat-file-name">{photo.name}</span>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    aria-label={photoPreview ? '写真を削除' : 'ファイルを削除'}
+                    onClick={() => {
+                      setPhoto(null);
+                      pendingSend.current = null;
+                    }}
+                  >
+                    削除
+                  </button>
+                  {photoPreview && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => cameraPicker.current?.click()}
+                    >
+                      撮り直す
+                    </button>
+                  )}
+                </div>
+              )}
               {error && (
                 <div className="form-error" role="alert">
                   {error}{' '}
-                  <button
-                    type="button"
-                    className="link-button"
-                    disabled={busy || restoring}
-                    onClick={() => send(failedMessage ?? undefined, draft !== failedMessage)}
-                  >
-                    再試行
-                  </button>
+                  {failedMessage && (
+                    <button
+                      type="button"
+                      className="link-button"
+                      disabled={busy || restoring}
+                      onClick={() => send(failedMessage ?? undefined, draft !== failedMessage)}
+                    >
+                      再試行
+                    </button>
+                  )}
                 </div>
               )}
               <form
@@ -769,6 +958,18 @@ export default function ChatWidget({
                   send();
                 }}
               >
+                <button
+                  ref={attachmentButton}
+                  className="chat-add-attachment"
+                  type="button"
+                  aria-label="ファイルを添付"
+                  aria-expanded={attachmentMenu}
+                  aria-controls={attachmentMenu ? 'chat-attachment-options' : undefined}
+                  disabled={busy || restoring}
+                  onClick={() => setAttachmentMenu((value) => !value)}
+                >
+                  <Plus size={22} />
+                </button>
                 <textarea
                   ref={input}
                   rows={1}

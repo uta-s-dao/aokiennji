@@ -1,0 +1,52 @@
+{
+  "data": {
+    "viewer": {
+      "accounts": [
+        {
+          "workersInvocationsAdaptive": [
+            {
+              "dimensions": {
+                "status": "success"
+              },
+              "quantiles": {
+                "cpuTimeP50": 33783,
+                "cpuTimeP99": 398999
+              },
+              "sum": {
+                "errors": 0,
+                "requests": 1199
+              }
+            },
+            {
+              "dimensions": {
+                "status": "exceededResources"
+              },
+              "quantiles": {
+                "cpuTimeP50": 10000,
+                "cpuTimeP99": 420392
+              },
+              "sum": {
+                "errors": 127,
+                "requests": 127
+              }
+            },
+            {
+              "dimensions": {
+                "status": "clientDisconnected"
+              },
+              "quantiles": {
+                "cpuTimeP50": 14726,
+                "cpuTimeP99": 1425391
+              },
+              "sum": {
+                "errors": 0,
+                "requests": 6
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "errors": null
+}

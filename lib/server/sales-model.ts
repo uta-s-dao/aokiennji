@@ -8,6 +8,7 @@ import { safeFetch } from './safe-fetch';
 // chooses the stage and writes stock/quotation statements.
 export async function salesModel<T>(input: {
   settings: AppSettings;
+  requestShape?: Record<string,unknown>;
   model?: string;
   context: AiUsageContext;
   instructions: string;
@@ -36,7 +37,7 @@ export async function salesModel<T>(input: {
     purpose: input.purpose,
     body,
     context: input.context,
-    requestShape: { scope: 'staged_sales', format: 'json_schema' },
+    requestShape: { scope: 'staged_sales', format: 'json_schema', ...input.requestShape },
   }));
   try {
     const response = await safeFetch('https://api.openai.com/v1/responses', {

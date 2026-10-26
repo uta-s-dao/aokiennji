@@ -22,7 +22,8 @@ export async function documentCandidates(
     content: string;
     url: string;
     createdAt: string;
-  }>('documents')).slice(0, 100)) {
+    supplierCatalog?: unknown;
+  }>('documents')).filter(d => !d.supplierCatalog).slice(0, 100)) {
     const source = (await byId<Source>('sources', doc.sourceId));
     if (!source?.enabled) continue;
     const text = normalize(doc.content);

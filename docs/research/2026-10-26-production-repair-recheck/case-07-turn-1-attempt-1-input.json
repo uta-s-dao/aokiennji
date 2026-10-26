@@ -1,0 +1,66 @@
+{
+  "id": "e415c7e0-25e0-42d2-87d0-fbc10f3cc3c1",
+  "ok": true,
+  "result": {
+    "origin": "https://aoki-enji.official-b.workers.dev/",
+    "refs": {
+      "e1": {
+        "name": "本文へ移動",
+        "role": "link"
+      },
+      "e10": {
+        "name": "前回の相談を見る（2026/10/26 18:35:34）",
+        "role": "button"
+      },
+      "e11": {
+        "name": "ファイルを添付",
+        "role": "button"
+      },
+      "e12": {
+        "name": "相談内容",
+        "role": "textbox"
+      },
+      "e13": {
+        "name": "メッセージを送信",
+        "role": "button"
+      },
+      "e2": {
+        "name": "過去の相談",
+        "role": "button"
+      },
+      "e3": {
+        "name": "新しい相談を始める",
+        "role": "button"
+      },
+      "e4": {
+        "name": "チャットを閉じる",
+        "role": "button"
+      },
+      "e5": {
+        "name": "当社へのお問い合わせ",
+        "role": "link"
+      },
+      "e6": {
+        "name": "こんにちは。 何をお探しですか？",
+        "role": "heading"
+      },
+      "e7": {
+        "name": "耐熱ガラスを探している",
+        "role": "button"
+      },
+      "e8": {
+        "name": "図面から製作できますか？",
+        "role": "button"
+      },
+      "e9": {
+        "name": "どんなことを相談できますか？",
+        "role": "button"
+      }
+    },
+    "snapshot": "- generic\n  - link \"本文へ移動\" [ref=e1]\n  - dialog \"商品相談チャット\"\n    - banner\n      - strong\n        - StaticText \"商品相談アシスタント\"\n      - StaticText \"自動応答 · アオキエンジ株式会社\"\n      - button \"過去の相談\" [ref=e2]\n      - button \"新しい相談を始める\" [ref=e3]\n      - button \"チャットを閉じる\" [ref=e4]\n    - log \"相談の会話\"\n      - paragraph\n        - StaticText \"AOKI ENG / PRODUCT SUPPORT\"\n      - heading \"こんにちは。 何をお探しですか？\" [level=2, ref=e6]\n        - StaticText \"こんにちは。\"\n        - LineBreak \"\\n\"\n        - StaticText \"何をお探しですか？\"\n      - paragraph\n        - StaticText \"お探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\"\n      - button \"耐熱ガラスを探している\" [ref=e7]\n      - button \"図面から製作できますか？\" [ref=e8]\n      - button \"どんなことを相談できますか？\" [ref=e9]\n      - button \"前回の相談を見る（2026/10/26 18:35:34）\" [ref=e10]\n        - StaticText \"前回の相談を見る（2026/10/26 18:35:34）\"\n    - contentinfo\n      - form\n        - button \"ファイルを添付\" [expanded=false, ref=e11]\n        - textbox \"相談内容\" [ref=e12]: SGM® ガスケットを20枚検討しています。まず商品が特定できるか確認してください。\n          - StaticText \"SGM® ガスケットを20枚検討しています。まず商品が特定できるか確認してください。\"\n        - button \"メッセージを送信\" [ref=e13]\n      - StaticText \"登録情報をもとにご案内します\"\n      - link \"当社へのお問い合わせ\" [ref=e5]\n        - StaticText \"相談を依頼する\"",
+    "browserPageId": "3d6ae23d-165e-4923-b522-123bf66435eb"
+  },
+  "_meta": {
+    "runtimeId": "2eb7d5be-c126-4cfd-8483-31d3f7adcc5e"
+  }
+}

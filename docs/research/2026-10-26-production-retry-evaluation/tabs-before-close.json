@@ -1,0 +1,23 @@
+{
+  "id": "edc20027-7c3c-47cb-b5d0-9b6cde376c27",
+  "ok": true,
+  "result": {
+    "tabs": [
+      {
+        "browserPageId": "fac50f72-f594-4882-91c1-d84b964445f6",
+        "index": 0,
+        "url": "https://aoki-enji.official-b.workers.dev/",
+        "title": "北九州・福岡の鋼構造物・機械装置の設計・製作・据付 | アオキエンジ株式会社",
+        "active": true,
+        "loadError": null,
+        "certificateFailure": null,
+        "worktreeId": "51c57a6d-4ec9-4ad7-90fb-7fb7f53f6c26::C:\\Users\\uta\\orca\\chatbot-retry-probe-20261026",
+        "profileId": "ca92d46e-5e93-4863-8796-1aa59171402f",
+        "profileLabel": "aoki-independent-retry-20261026"
+      }
+    ]
+  },
+  "_meta": {
+    "runtimeId": "2eb7d5be-c126-4cfd-8483-31d3f7adcc5e"
+  }
+}

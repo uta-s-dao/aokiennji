@@ -1,0 +1,18 @@
+{
+  "case": 7,
+  "number": 1,
+  "question": "手元にガスケットの写真しかありません。写真を見せれば型番や材質を確定できますか？",
+  "response": null,
+  "send_operations": 1,
+  "resends": 0,
+  "errors": [],
+  "input_full_verified": true,
+  "sent_full_verified": true,
+  "status": "pending",
+  "initial_operation_seconds": 6.929726011992898,
+  "sent_monotonic": 279141.419121327,
+  "observation_wait_seconds": 2.9556370450300165,
+  "completed": true,
+  "completion_snapshot": "c7-q1-complete.json",
+  "conversation_snapshot": "- generic\n  - link \"本文へ移動\" [ref=e1]\n  - dialog \"商品相談チャット\"\n    - banner\n      - strong\n        - StaticText \"商品相談アシスタント\"\n      - StaticText \"自動応答 · アオキエンジ株式会社\"\n      - button \"過去の相談\" [ref=e2]\n      - button \"新しい相談を始める\" [ref=e3]\n      - button \"チャットを閉じる\" [ref=e4]\n    - log \"相談の会話\"\n      - article\n        - StaticText \"手元にガスケットの写真しかありません。写真を見せれば型番や材質を確定できますか？\"\n      - article\n        - StaticText \"A\"\n        - StaticText \"アオキエンジ\"\n        - StaticText \"写真は表示や形状から識別候補を探す手掛かりですが、写真だけで型番や材質を確定できるとは限りません。メーカー名・型番・材質記号の刻印や銘板、部品表を照合します。現物は全体の縦・横・厚さ、ガスケットなら内径・外径・厚さ、穴径と穴の中心距離を単位付きで控えてください。使用流体、温度・圧力、取付箇所も照合に役立ちます。分からない材質や文字は推測せず、未確認として扱います。準備だけでも相談でき、写真の送信や正式な依頼はまだ行いません。\"\n    - contentinfo\n      - form\n        - button \"ファイルを添付\" [expanded=false, ref=e6]\n        - textbox \"相談内容\" [ref=e7]\n        - button \"メッセージを送信\" [disabled, ref=e8]\n      - StaticText \"登録情報をもとにご案内します\"\n      - link \"当社へのお問い合わせ\" [ref=e5]\n        - StaticText \"相談を依頼する\""
+}

@@ -1,0 +1,47 @@
+{
+  "origin": "https://aoki-enji.official-b.workers.dev/",
+  "refs": {
+    "e1": {
+      "name": "本文へ移動",
+      "role": "link"
+    },
+    "e10": {
+      "name": "メッセージを送信",
+      "role": "button"
+    },
+    "e2": {
+      "name": "過去の相談",
+      "role": "button"
+    },
+    "e3": {
+      "name": "新しい相談を始める",
+      "role": "button"
+    },
+    "e4": {
+      "name": "チャットを閉じる",
+      "role": "button"
+    },
+    "e5": {
+      "name": "最新のメッセージへ",
+      "role": "button"
+    },
+    "e6": {
+      "name": "当社へのお問い合わせ",
+      "role": "link"
+    },
+    "e7": {
+      "name": "再試行",
+      "role": "button"
+    },
+    "e8": {
+      "name": "ファイルを添付",
+      "role": "button"
+    },
+    "e9": {
+      "name": "相談内容",
+      "role": "textbox"
+    }
+  },
+  "snapshot": "- generic\n  - link \"本文へ移動\" [ref=e1]\n  - dialog \"商品相談チャット\"\n    - banner\n      - strong\n        - StaticText \"商品相談アシスタント\"\n      - StaticText \"自動応答 · アオキエンジ株式会社\"\n      - button \"過去の相談\" [ref=e2]\n      - button \"新しい相談を始める\" [ref=e3]\n      - button \"チャットを閉じる\" [ref=e4]\n    - generic\n      - log \"相談の会話\"\n        - article\n          - StaticText \"ナフロン® PTFE打抜きガスケットを10枚ほしいです。価格、現在の在庫、福岡までの最短納期は分かりますか？\"\n        - article\n          - StaticText \"A\"\n          - StaticText \"アオキエンジ\"\n          - StaticText \"「PTFE打抜きガスケット」をお探しですね。\\n登録情報・調査したページから候補を見つけました。対象の確定と仕様適合は未確認です。\\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\\n用途・仕様から見つかった候補（同一商品・適合は未確認）：ナフロン® PTFE打抜きガスケット（9007）。この中に近いものはありますか？\\n調査の上限に達したため、確認できた範囲でご案内しています。\\n価格・納期も未確認です。到着日の確約はできません。寸法・仕様、必要数量、お届け先と希望日、在庫確保・配送条件の確認が必要です。\"\n      - button \"最新のメッセージへ\" [ref=e5]\n    - contentinfo\n      - alert\n        - StaticText \"サーバーからの応答を読み取れませんでした。\"\n        - button \"再試行\" [ref=e7]\n      - form\n        - button \"ファイルを添付\" [expanded=false, ref=e8]\n        - textbox \"相談内容\" [ref=e9]: 明日届くと確約できますか？確認できないことは確約せず、何を確認する必要があるか教えてください。\n          - StaticText \"明日届くと確約できますか？確認できないことは確約せず、何を確認する必要があるか教えてください。\"\n        - button \"メッセージを送信\" [ref=e10]\n      - StaticText \"登録情報をもとにご案内します\"\n      - link \"当社へのお問い合わせ\" [ref=e6]\n        - StaticText \"相談を依頼する\"",
+  "browserPageId": "adb826e0-187e-43d5-9421-12ae8d4dcdea"
+}

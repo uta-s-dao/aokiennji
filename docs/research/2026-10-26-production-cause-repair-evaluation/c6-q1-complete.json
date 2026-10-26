@@ -1,0 +1,45 @@
+{
+  "result": {
+    "origin": "https://aoki-enji.official-b.workers.dev/",
+    "refs": {
+      "e1": {
+        "name": "本文へ移動",
+        "role": "link"
+      },
+      "e2": {
+        "name": "過去の相談",
+        "role": "button"
+      },
+      "e3": {
+        "name": "新しい相談を始める",
+        "role": "button"
+      },
+      "e4": {
+        "name": "チャットを閉じる",
+        "role": "button"
+      },
+      "e5": {
+        "name": "最新のメッセージへ",
+        "role": "button"
+      },
+      "e6": {
+        "name": "当社へのお問い合わせ",
+        "role": "link"
+      },
+      "e7": {
+        "name": "ファイルを添付",
+        "role": "button"
+      },
+      "e8": {
+        "name": "相談内容",
+        "role": "textbox"
+      },
+      "e9": {
+        "name": "メッセージを送信",
+        "role": "button"
+      }
+    },
+    "snapshot": "- generic\n  - link \"本文へ移動\" [ref=e1]\n  - dialog \"商品相談チャット\"\n    - banner\n      - strong\n        - StaticText \"商品相談アシスタント\"\n      - StaticText \"自動応答 · アオキエンジ株式会社\"\n      - button \"過去の相談\" [ref=e2]\n      - button \"新しい相談を始める\" [ref=e3]\n      - button \"チャットを閉じる\" [ref=e4]\n    - generic\n      - log \"相談の会話\"\n        - article\n          - StaticText \"食品が通る配管に使うガスケットを探しています。PTFEなら食品用として使えますか？\"\n        - article\n          - StaticText \"A\"\n          - StaticText \"アオキエンジ\"\n          - StaticText \"PTFEなどの材質名だけでは、食品接触用途への適合を確定できません。対象製品・品番と、使用する国・用途に対応した食品接触適合の情報やメーカーの証明・試験資料を照合してください。食品の種類、接触温度と時間、繰返し使用の有無を整理し、洗浄については薬剤名・濃度・温度・時間・頻度も製品の耐薬品性資料と照合します。必要な証明の種類は対象市場や用途で異なるため、適合資料の対象製品と使用条件の範囲をメーカーの資料で確認する必要があります。伺った条件：材質：PTFE・用途：食品が通る配管に使う。当該製品の適合や証明書の取得は未確認で、まだ依頼は送信していません。\"\n      - button \"最新のメッセージへ\" [ref=e5]\n    - contentinfo\n      - form\n        - button \"ファイルを添付\" [expanded=false, ref=e7]\n        - textbox \"相談内容\" [ref=e8]\n        - button \"メッセージを送信\" [disabled, ref=e9]\n      - StaticText \"登録情報をもとにご案内します\"\n      - link \"当社へのお問い合わせ\" [ref=e6]\n        - StaticText \"相談を依頼する\"",
+    "browserPageId": "cdd64265-e242-49ce-b224-087038407dae"
+  }
+}

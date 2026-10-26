@@ -29,13 +29,23 @@ export function pageMetadata(
       title,
       description,
       url,
-      images: [{ url: `${siteOrigin()}/images/tank.jpg`, alt: 'アオキエンジの屋外タンク製作実績' }],
+      images: [
+        {
+          url: `${siteOrigin()}/images/brand/company-share.png`,
+          width: 1200,
+          height: 630,
+          type: 'image/png',
+          alt: 'アオキエンジ株式会社 | 鋼構造物・機械装置の設計・製作・据付',
+        },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: [`${siteOrigin()}/images/tank.jpg`],
+      images: [
+        { url: `${siteOrigin()}/images/brand/company-share.png`, alt: 'アオキエンジ株式会社' },
+      ],
     },
   };
 }
@@ -47,6 +57,8 @@ export function organizationSchema() {
     name: company.name,
     alternateName: company.englishName,
     url: siteOrigin(),
+    logo: `${siteOrigin()}/icon.png`,
+    image: `${siteOrigin()}/images/brand/company-share.png`,
     telephone: '+81-93-382-2110',
     faxNumber: '+81-93-382-2175',
     address: {

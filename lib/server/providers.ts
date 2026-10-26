@@ -357,6 +357,7 @@ export async function searchWeb(
     context?: AiUsageContext;
     signal?: AbortSignal;
     onSearch?: (search: SearchTelemetry) => unknown;
+    excludedDomains?: string[];
   } = {},
 ): Promise<Evidence[]> {
   if (!settings.flags.webSearch || settings.searchProvider === 'none') return [];
@@ -372,7 +373,7 @@ export async function searchWeb(
     });
   }
   if (settings.searchProvider === 'openai')
-    return (await searchOpenai(query, domains, options.context, options.signal, options.onSearch));
+    return (await searchOpenai(query, domains, options.context, options.signal, options.onSearch, options.excludedDomains));
   const key = process.env[settings.searchProvider === 'exa' ? 'EXA_API_KEY' : 'TAVILY_API_KEY'];
   if (!key) throw Error('Web検索の接続キーが未設定です');
   const provider = settings.searchProvider;
@@ -381,6 +382,7 @@ export async function searchWeb(
             type: 'auto',
             numResults: 5,
             ...(domains.length ? { includeDomains: domains } : {}),
+            ...(options.excludedDomains?.length ? { excludeDomains: options.excludedDomains } : {}),
             contents: { highlights: true },
           } : {
             query: query.slice(0, 500),
@@ -389,6 +391,7 @@ export async function searchWeb(
             max_results: 5,
             include_answer: false,
             ...(domains.length ? { include_domains: domains } : {}),
+            ...(options.excludedDomains?.length ? { exclude_domains: options.excludedDomains } : {}),
           };
   const costId = randomUUID();
   const quote = await startPaidCall(costId, provider, provider === 'exa' ? 'auto' : 'basic',
@@ -433,6 +436,7 @@ export async function searchWeb(
       continue;
     }
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) continue;
+    if (options.excludedDomains?.some(d => url.hostname === d || url.hostname.endsWith(`.${d}`))) continue;
     if (
       domains.length &&
       !domains.some((d) => url.hostname === d || url.hostname.endsWith(`.${d}`))

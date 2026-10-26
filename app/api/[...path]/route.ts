@@ -1,3 +1,4 @@
+import { prepareProductMetadata } from '@/lib/server/product-metadata';
 import { chatRequest } from '@/lib/server/chat-request';
 import { uploadChatImage, readChatImage, CHAT_IMAGE_MAX_BYTES } from '@/lib/server/chat-images';
 import { queueReceiptNotification } from '@/lib/server/receipt-notifications';
@@ -164,9 +165,14 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
       await requireFlag('chat');
       await rateLimit(`chat-images:${clientKey(req)}`, 12, 60000);
       const owner = await anonOwner(req);
-      if (!owner) throw new ApiError(401, 'chat_session_required', '相談を開始してから写真を送信してください。');
+      if (!owner)
+        throw new ApiError(
+          401,
+          'chat_session_required',
+          '相談を開始してからファイルを送信してください。',
+        );
       const reader = req.body?.getReader();
-      if (!reader) throw new ApiError(400, 'image', '写真を選んでください。');
+      if (!reader) throw new ApiError(400, 'image', 'ファイルを選んでください。');
       const chunks: Uint8Array[] = [];
       let size = 0;
       try {
@@ -174,16 +180,53 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
           const { value, done } = await reader.read();
           if (done) break;
           size += value.byteLength;
-          if (size > CHAT_IMAGE_MAX_BYTES) { await reader.cancel(); throw new ApiError(413, 'image_size', '写真は5MB以下にしてください。'); }
+          if (size > CHAT_IMAGE_MAX_BYTES) {
+            await reader.cancel();
+            throw new ApiError(
+              413,
+              'image_size',
+              'ファイルが5MBを超えています。5MB以下のファイルを選んでください。',
+            );
+          }
           chunks.push(value);
         }
-      } finally { reader.releaseLock(); }
+      } finally {
+        reader.releaseLock();
+      }
       const cid = req.nextUrl.searchParams.get('conversationId') || undefined;
-      return ok(await uploadChatImage(Buffer.concat(chunks), owner, cid));
+      let name: string | undefined;
+      try {
+        name = decodeURIComponent(req.headers.get('x-file-name') || 'photo');
+      } catch {
+        throw new ApiError(400, 'file_name', 'ファイル名を確認できません。');
+      }
+      return ok(
+        await uploadChatImage(
+          Buffer.concat(chunks),
+          owner,
+          cid,
+          name,
+          req.headers.get('content-type') || 'application/octet-stream',
+        ),
+      );
     }
-    if ((p[0] === 'chat' && p[1] === 'images' && p.length === 3 || p[0] === 'admin' && p[1] === 'chat-images' && p.length === 3) && method === 'GET') {
+    if (
+      ((p[0] === 'chat' && p[1] === 'images' && p.length === 3) ||
+        (p[0] === 'admin' && p[1] === 'chat-images' && p.length === 3)) &&
+      method === 'GET'
+    ) {
       const image = await readChatImage(p[2], await anonOwner(req), p[0] === 'admin');
-      return new NextResponse(new Uint8Array(image.bytes), { headers: { 'Content-Type': 'image/webp', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'" } });
+      if (req.nextUrl.searchParams.get('metadata') === '1')
+        return ok({ fileName: image.fileName, contentType: image.contentType });
+      return new NextResponse(new Uint8Array(image.bytes), {
+        headers: {
+          'Content-Type': image.contentType,
+          'Content-Disposition': `${image.contentType.startsWith('image/') ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(image.fileName).replace(/'/g, '%27')}`,
+          'Cache-Control': 'private, no-store',
+          'X-Content-Type-Options': 'nosniff',
+          'Content-Security-Policy': "default-src 'none'",
+        },
+      });
     }
     if (path === 'chat' && method === 'POST') {
       await requireFlag('chat');
@@ -437,6 +480,13 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
       return ok((await list<AuditEvent>('audit_events')).toReversed().slice(0, 300));
     if (p[0] === 'admin' && p[1] === 'products') {
       if (method === 'GET' && p.length === 2) return ok(await list<Product>('products'));
+      if (method === 'POST' && p.length === 4 && p[3] === 'search-metadata') {
+        const old = await found<Product>('products',p[2]);
+        const product=prepareProductMetadata(old);
+        await save('products',product,{source_id:product.sourceId,supplier_id:product.supplierId,model_key:productIdentity(product)});
+        await audit('product.metadata_queued',product.id,'検索用情報の再作成を予約しました');
+        return ok(product);
+      }
       if (method === 'POST' || method === 'PUT') {
         const input = productSchema.parse(await body(req));
         const old = method === 'PUT' ? await found<Product>('products', p[2]) : undefined;
@@ -462,12 +512,12 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
           input.sourceId = id;
         }
         if (input.supplierId) await found<Supplier>('suppliers', input.supplierId);
-        const product: Product = {
+        const product: Product = prepareProductMetadata({
           ...input,
           id: old?.id || uid(),
           createdAt: old?.createdAt || now(),
           updatedAt: now(),
-        };
+        }, old);
         await save('products', product, {
           source_id: product.sourceId,
           supplier_id: product.supplierId,

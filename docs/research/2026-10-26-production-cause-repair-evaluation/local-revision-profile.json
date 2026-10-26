@@ -1,0 +1,12 @@
+{
+  "environment": "local Node with isolated Supabase; not Workers CPU",
+  "samples": 12,
+  "before": {
+    "cpuMedianMs": 1.985,
+    "wallMedianMs": 3.1416429999999878
+  },
+  "after": {
+    "cpuMedianMs": 0.861,
+    "wallMedianMs": 1.7937130000000252
+  }
+}
