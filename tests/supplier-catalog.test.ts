@@ -294,3 +294,25 @@ it('keeps listing indexes out of generic document and model evidence', async () 
     ),
   ).toBe(false);
 });
+
+it('reverse matches an indexed exact model and TOMBO prefix without confusing suffix variants', async () => {
+  await crawlSupplierCatalog(await site());
+  const trace = await createSourceTrace();
+  for (const query of ['9007', 'TOMBO No.9007']) {
+    const r = await lookupProductName(query, { trace, settings, context: { scope: 'chat' } });
+    expect(r.status).toBe('identified');
+    expect(r.matches.map((e) => e.model)).toEqual(['9007']);
+  }
+});
+
+it('uses an explicit model label even if the interpreter classifies its value as an unknown name', async () => {
+  await crawlSupplierCatalog(await site());
+  model.mockResolvedValueOnce({
+    ...interpretation('9007'),
+    designationKind: 'unknown',
+    manufacturer: 'ニチアス',
+    model: '',
+  });
+  const result = await answerChat('ニチアスの型番9007は何の製品ですか？', 'explicit-model');
+  expect(result.message.productNameLookup?.matches).toEqual([{ name, model: '9007' }]);
+});

@@ -123,10 +123,24 @@ export interface ProductInput {
   isDemo: boolean;
 }
 export interface ProductSearchMetadata {
- version: 1; inputHash: string; status: 'pending'|'ready'|'failed'; normalizedName: string; normalizedModel: string; keywords: string[];
- aliases: string[]; relatedTerms: string[];
- attributes: {kind:'material'|'dimensions'|'standard'|'application';value:string;field:'name'|'model'|'manufacturer'|'category'|'description'|'specifications';quote:string}[];
- attempts:number;updatedAt:string;retryAt?:string;model?:string;
+  version: 1;
+  inputHash: string;
+  status: 'pending' | 'ready' | 'failed';
+  normalizedName: string;
+  normalizedModel: string;
+  keywords: string[];
+  aliases: string[];
+  relatedTerms: string[];
+  attributes: {
+    kind: 'material' | 'dimensions' | 'standard' | 'application';
+    value: string;
+    field: 'name' | 'model' | 'manufacturer' | 'category' | 'description' | 'specifications';
+    quote: string;
+  }[];
+  attempts: number;
+  updatedAt: string;
+  retryAt?: string;
+  model?: string;
 }
 export interface Product extends ProductInput {
   searchMetadata?: ProductSearchMetadata;
@@ -240,6 +254,8 @@ export interface ProductSourcing {
   };
 }
 export interface ProductInquiryState {
+  material?: string;
+  specifications?: Record<string, string>;
   researchSubject?: string;
   guidance?: 'measurement';
   purpose?: string;
@@ -257,10 +273,22 @@ export interface ProductInquiryState {
   model?: string;
   manufacturer?: string;
   quantity?: number;
-  imageCandidates?: { manufacturer: string; value: string; kind: 'order_model' | 'part_number' | 'drawing_number' | 'unknown'; target: string; readable: boolean }[];
+  imageCandidates?: {
+    manufacturer: string;
+    value: string;
+    kind: 'order_model' | 'part_number' | 'drawing_number' | 'unknown';
+    target: string;
+    readable: boolean;
+  }[];
 }
 export interface ChatMessage {
-  productNameLookup?: { candidates?: { name: string; model?: string }[]; investigation?: { steps: number; stopReason: string; question?: string }; checkedAt?: string; status: 'identified' | 'not_found' | 'not_searched' | 'failed'; matches: { name: string; model?: string }[] };
+  productNameLookup?: {
+    candidates?: { name: string; model?: string }[];
+    investigation?: { steps: number; stopReason: string; question?: string };
+    checkedAt?: string;
+    status: 'identified' | 'not_found' | 'not_searched' | 'failed';
+    matches: { name: string; model?: string }[];
+  };
   attachmentIds?: string[];
   inquiryState?: ProductInquiryState;
   id: string;

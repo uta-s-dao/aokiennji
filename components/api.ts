@@ -70,6 +70,12 @@ export async function streamChat(
   // Establish ownership before starting work: losing the first answer must not
   // also lose the only session cookie capable of recovering it.
   await api('/api/chat/session', { method: 'POST' });
+  const recover = () =>
+    api<import('@/lib/contracts').ChatResponse>('/api/chat', {
+      method: 'POST',
+      body: JSON.stringify(input),
+      signal: AbortSignal.timeout(190000),
+    });
   let response: Response;
   try {
     response = await fetch('/api/chat', {
@@ -79,22 +85,25 @@ export async function streamChat(
       body: JSON.stringify(input),
       signal: AbortSignal.timeout(190000),
     });
-  } catch (error) {
-    throw new Error(
-      error instanceof DOMException && error.name === 'TimeoutError'
-        ? '回答に時間がかかっています。もう一度お試しいただくか、お問い合わせをご利用ください。'
-        : '通信できませんでした。接続を確認して再度お試しください。',
-    );
+  } catch {
+    return recover();
   }
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(error.error?.message || '回答を取得できませんでした。');
   }
-  if (!response.body) throw new Error('回答を読み取れませんでした。');
+  if (!response.body) return recover();
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
   let result: import('@/lib/contracts').ChatResponse | undefined;
+  const consume = (line: string) => {
+    if (!line.startsWith('data:')) return;
+    const event = JSON.parse(line.slice(5).trimStart());
+    if (event.type === 'text') onText(event.data);
+    if (event.type === 'result') result = event.data;
+    if (event.type === 'error') throw new Error(event.data);
+  };
   try {
     while (true) {
       const { value, done } = await reader.read();
@@ -104,16 +113,16 @@ export async function streamChat(
       while ((index = buffer.indexOf('\n')) >= 0) {
         const line = buffer.slice(0, index).trimEnd();
         buffer = buffer.slice(index + 1);
-        if (!line.startsWith('data: ')) continue;
-        const event = JSON.parse(line.slice(6));
-        if (event.type === 'text') onText(event.data);
-        if (event.type === 'result') result = event.data;
-        if (event.type === 'error') throw new Error(event.data);
+        consume(line);
       }
     }
+    buffer += decoder.decode();
+    if (buffer.trim()) consume(buffer.trimEnd());
+  } catch {
+    return recover();
   } finally {
     await reader.cancel().catch(() => {});
   }
-  if (!result) throw new Error('回答が途中で切れました。もう一度お試しください。');
+  if (!result) return recover();
   return result;
 }

@@ -33,6 +33,8 @@ type CatalogDocument = {
   createdAt: string;
   supplierCatalog: { version: 1; entries: CatalogEntry[] };
 };
+export const catalogModelKey = (s: string) =>
+  catalogNameKey(s).replace(/^(?:TOMBO(?:NO\.?)?|NO\.?)/, '');
 export const catalogNameKey = (s: string) =>
   s
     .normalize('NFKC')
@@ -332,6 +334,7 @@ export async function lookupProductName(
     context: AiUsageContext;
     signal?: AbortSignal;
     message?: string;
+    registeredOnly?: boolean;
   },
 ) {
   const { trace, settings } = input;
@@ -349,8 +352,11 @@ export async function lookupProductName(
     origin: 'registered_data' | 'preferred_sites' = 'registered_data',
   ) => {
     const matches =
-      doc.supplierCatalog?.entries.filter((e) => catalogNameKey(e.name) === catalogNameKey(name)) ||
-      [];
+      doc.supplierCatalog?.entries.filter(
+        (e) =>
+          catalogNameKey(e.name) === catalogNameKey(name) ||
+          (!!e.model && catalogModelKey(e.model) === catalogModelKey(name)),
+      ) || [];
     for (const match of matches) {
       found.push(match);
       if (!checkedAt || doc.createdAt < checkedAt) checkedAt = doc.createdAt;
@@ -397,6 +403,7 @@ export async function lookupProductName(
       ...new Map(found.map((e) => [`${catalogNameKey(e.name)}\0${e.model || ''}`, e])).values(),
     ],
   });
+  if (input.registeredOnly) return result(found.length ? 'identified' : 'not_searched');
   const resumeRequested =
     input.context.conversationId &&
     input.message &&
