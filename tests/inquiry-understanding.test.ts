@@ -439,3 +439,14 @@ it('answers dimensional availability explicitly and explains drawing versus stan
   expect(r.message.content).toContain('寸法公差');
   expect(r.message.content).toContain('標準寸法表');
 });
+
+it('answers a fabrication and installation follow-up directly rather than repeating the address', async () => {
+  const first = await answerChat('会社の所在地と事業内容を教えてください。', 'company-followup');
+  const next = await answerChat('図面から製作して現地で据付する相談もできますか？', 'company-followup', first.conversationId);
+  expect(next.message.content).toContain('ご相談ができます');
+  expect(next.message.content).toContain('搬入条件');
+  expect(next.message.content).toContain('具体的な対応可否');
+  expect(next.message.content).not.toContain('所在地は');
+  expect(next.message.content).not.toBe(first.message.content);
+  expect(model).not.toHaveBeenCalled();
+});

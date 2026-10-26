@@ -48,6 +48,11 @@ const candidate = z.object({
   readable: z.boolean(),
 });
 const reading = z.object({ candidates: z.array(candidate).max(8) });
+function companyQuestionReply(message: string) {
+  if (/図面|設計|製作|据付/.test(message) && /相談|対応|お願い|できます|可能/.test(message) && !/所在地|住所/.test(message))
+    return 'はい、図面をもとにした製作から現地据付までのご相談ができます。公開している事業には、鋼構造物・機械装置の設計・製作・輸送・据付が含まれます。具体的な対応可否と範囲は図面・仕様と現場条件を確認して判断します。図面、必要数量、材質・寸法、据付場所・搬入条件、希望工程や時期を分かる範囲で整理してください。まだ相談依頼は送信していません。';
+  return `${company.name}の所在地は${company.address}です。\n${companyFact()}\n具体的な製作・据付の対応範囲は、図面・仕様と現場条件を確認して判断します。`;
+}
 export function usesProductInquiry(message: string, history: ChatMessage[], images: string[] = []) {
   if (images.length || companyQuestion(message)) return true;
   if (
@@ -160,9 +165,7 @@ export async function productInquiry(input: {
     };
   };
   if (companyQuestion(message))
-    return reply(
-      `${company.name}の所在地は${company.address}です。\n${companyFact()}\n具体的な製作・据付の対応範囲は、図面・仕様と現場条件を確認して判断します。`,
-    );
+    return reply(companyQuestionReply(message));
   if (
     /(?:家庭用|家電|炊飯器|洗濯機|冷蔵庫).*(?:修理|相談|扱|対象)|(?:対象外|相談範囲)/.test(
       message,
@@ -236,9 +239,7 @@ export async function productInquiry(input: {
   const understanding = await understandInquiry(input);
   if (understanding) interpretationProvider = 'openai';
   if (understanding?.requestedInformation === 'company')
-    return reply(
-      `${company.name}の所在地は${company.address}です。\n${companyFact()}\n具体的な対応範囲は図面・仕様と現場条件を確認して判断します。`,
-    );
+    return reply(companyQuestionReply(message));
   if (understanding?.requestedInformation === 'scope')
     return reply(
       `公開している事業は、${companyFact()}。今回の対象について個別の対応可否を示す確認済み情報はありません。このチャットで受付や修理対応を確約することはできません。`,
