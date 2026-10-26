@@ -1,0 +1,1164 @@
+{
+  "pageId": "3d6ae23d-165e-4923-b522-123bf66435eb",
+  "worktreeId": "d38e0848-2ddb-4ce3-80ac-a1392738e5db::C:\\Users\\uta\\orca\\chatbot-customer-recheck-20261026",
+  "profileId": "a991b5fa-2e3d-4420-b300-e3a5ac976947",
+  "status": "completed",
+  "sendOperations": 45,
+  "confirmedCustomerMessages": 25,
+  "answers": 17,
+  "cases": [
+    {
+      "id": 1,
+      "turns": [
+        {
+          "question": "型番は分かりません。工業炉ののぞき窓に使う透明な耐熱ガラスを探しています。何を確認すれば候補を選べますか？",
+          "inputFullTextVerified": true,
+          "sendOperations": 1,
+          "customerMessageConfirmed": true,
+          "answer": "A\nアオキエンジ\n選定では、1. 連続使用温度・最高温度と加熱冷却の速さ、2. 窓の寸法・厚さと取付方法、圧力の有無、3. 接触する雰囲気・薬品と必要な透明性を照合します。伺った条件は、用途：工業炉ののぞき窓に使うです。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。",
+          "observations": [],
+          "waitSecondsObserved": 7.37,
+          "conversationVisibleText": "型番は分かりません。工業炉ののぞき窓に使う透明な耐熱ガラスを探しています。何を確認すれば候補を選べますか？\nA\nアオキエンジ\n選定では、1. 連続使用温度・最高温度と加熱冷却の速さ、2. 窓の寸法・厚さと取付方法、圧力の有無、3. 接触する雰囲気・薬品と必要な透明性を照合します。伺った条件は、用途：工業炉ののぞき窓に使うです。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。",
+          "verdict": "合格",
+          "reason": "温度履歴・寸法・取付・圧力・雰囲気・透明性の具体的確認項目を示し、適合を断定しない。",
+          "contentVerdict": "合格",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-01-turn-1-answer.json",
+            "case-01-turn-1-input.json",
+            "case-01-turn-1-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": ""
+        },
+        {
+          "question": "炉内は700℃くらいで、窓は100mm角、厚さ5mmを考えています。この条件で選べるか、追加で必要な条件を教えてください。",
+          "inputFullTextVerified": true,
+          "sendOperations": 1,
+          "customerMessageConfirmed": true,
+          "answer": "A\nアオキエンジ\n選定では、1. 連続使用温度・最高温度と加熱冷却の速さ、2. 窓の寸法・厚さと取付方法、圧力の有無、3. 接触する雰囲気・薬品と必要な透明性を照合します。伺った条件は、用途：工業炉ののぞき窓に使う・仕様：厚さ5mm・角寸法100mm角・使用温度700°Cです。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。",
+          "observations": [],
+          "waitSecondsObserved": 7.38,
+          "conversationVisibleText": "型番は分かりません。工業炉ののぞき窓に使う透明な耐熱ガラスを探しています。何を確認すれば候補を選べますか？\nA\nアオキエンジ\n選定では、1. 連続使用温度・最高温度と加熱冷却の速さ、2. 窓の寸法・厚さと取付方法、圧力の有無、3. 接触する雰囲気・薬品と必要な透明性を照合します。伺った条件は、用途：工業炉ののぞき窓に使うです。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。\n炉内は700℃くらいで、窓は100mm角、厚さ5mmを考えています。この条件で選べるか、追加で必要な条件を教えてください。\nA\nアオキエンジ\n選定では、1. 連続使用温度・最高温度と加熱冷却の速さ、2. 窓の寸法・厚さと取付方法、圧力の有無、3. 接触する雰囲気・薬品と必要な透明性を照合します。伺った条件は、用途：工業炉ののぞき窓に使う・仕様：厚さ5mm・角寸法100mm角・使用温度700°Cです。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。",
+          "verdict": "合格",
+          "reason": "700℃・100mm角・5mmを保持し、追加条件と製品資料への照合を案内。",
+          "contentVerdict": "合格",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-01-turn-2-answer.json",
+            "case-01-turn-2-input.json",
+            "case-01-turn-2-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": ""
+        }
+      ],
+      "verdict": "合格",
+      "additional": false
+    },
+    {
+      "id": 2,
+      "turns": [
+        {
+          "question": "SGM® ガスケットはどのような用途の製品ですか？型番が分からないので候補を教えてください。",
+          "inputFullTextVerified": true,
+          "sendOperations": 1,
+          "customerMessageConfirmed": true,
+          "answer": "「SGM® ガスケット」をお探しですね。\n登録仕入先の商品掲載で、この名称に一致する情報を確認しました。\n掲載商品名：SGM® ガスケット（掲載型番：9096-SGM）\n掲載確認日：2026-10-26。掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+          "observations": [
+            "4.84秒時点は内容を確認しています表示。記録処理が完了と早期判定したため、後から完成回答を再取得。正確な完成待ち時間は未計測。"
+          ],
+          "waitSecondsObserved": null,
+          "conversationVisibleText": "- generic\n  - link \"本文へ移動\" [ref=e1]\n  - dialog \"商品相談チャット\"\n    - banner\n      - strong\n        - StaticText \"商品相談アシスタント\"\n      - StaticText \"自動応答 · アオキエンジ株式会社\"\n      - button \"過去の相談\" [ref=e2]\n      - button \"新しい相談を始める\" [ref=e3]\n      - button \"チャットを閉じる\" [ref=e4]\n    - generic\n      - log \"相談の会話\"\n        - article\n          - StaticText \"SGM® ガスケットはどのような用途の製品ですか？型番が分からないので候補を教えてください。\"\n        - article\n          - StaticText \"A\"\n          - StaticText \"アオキエンジ\"\n          - StaticText \"「SGM® ガスケット」をお探しですね。\\n登録仕入先の商品掲載で、この名称に一致する情報を確認しました。\\n掲載商品名：SGM® ガスケット（掲載型番：9096-SGM）\\n掲載確認日：2026-10-26。掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。\\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\"\n      - button \"最新のメッセージへ\" [ref=e5]\n    - contentinfo\n      - form\n        - button \"ファイルを添付\" [expanded=false, ref=e7]\n        - textbox \"相談内容\" [ref=e8]: 蒸気配管用です。使用温度と圧力の適用範囲は公開情報で分かりますか？不明なら不明と教えてください。\n          - StaticText \"蒸気配管用です。使用温度と圧力の適用範囲は公開情報で分かりますか？不明なら不明と教えてください。\"\n        - button \"メッセージを送信\" [ref=e9]\n      - StaticText \"登録情報をもとにご案内します\"\n      - link \"当社へのお問い合わせ\" [ref=e6]\n        - StaticText \"相談を依頼する\"",
+          "waitDescription": "4.84秒時点は作成中、後続の画面確認で完成を観察",
+          "verdict": "不合格",
+          "reason": "SGMの候補名は提示したが、どのような用途かの説明も、用途が未確認との明示もない。",
+          "contentVerdict": "不合格",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-02-turn-1-answer.json",
+            "case-02-turn-1-input.json",
+            "case-02-turn-1-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": ""
+        },
+        {
+          "question": "蒸気配管用です。使用温度と圧力の適用範囲は公開情報で分かりますか？不明なら不明と教えてください。",
+          "inputFullTextVerified": true,
+          "sendOperations": 2,
+          "customerMessageConfirmed": true,
+          "answer": "A\nアオキエンジ\n「SGM® ガスケット」をお探しですね。\n登録仕入先の商品掲載で、この名称に一致する情報を確認しました。\n掲載商品名：SGM® ガスケット（掲載型番：9096-SGM）\n掲載確認日：2026-10-26。掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+          "observations": [
+            "最初のクリック時は前回答の作成中で会話欄に未反映。完了表示を確認後に1回だけ再試行。"
+          ],
+          "waitSecondsObserved": 17.25,
+          "conversationVisibleText": "SGM® ガスケットはどのような用途の製品ですか？型番が分からないので候補を教えてください。\nA\nアオキエンジ\n「SGM® ガスケット」をお探しですね。\n登録仕入先の商品掲載で、この名称に一致する情報を確認しました。\n掲載商品名：SGM® ガスケット（掲載型番：9096-SGM）\n掲載確認日：2026-10-26。掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\n蒸気配管用です。使用温度と圧力の適用範囲は公開情報で分かりますか？不明なら不明と教えてください。\nA\nアオキエンジ\n「SGM® ガスケット」をお探しですね。\n登録仕入先の商品掲載で、この名称に一致する情報を確認しました。\n掲載商品名：SGM® ガスケット（掲載型番：9096-SGM）\n掲載確認日：2026-10-26。掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+          "verdict": "不合格",
+          "reason": "蒸気配管の使用温度・圧力の公開適用範囲に回答せず、商品掲載案内を繰り返す。範囲不明との明示と確認資料・方法も不足。",
+          "contentVerdict": "不合格",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-02-turn-2-answer.json",
+            "case-02-turn-2-input.json",
+            "case-02-turn-2-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": ""
+        }
+      ],
+      "verdict": "不合格",
+      "additional": false
+    },
+    {
+      "id": 3,
+      "turns": [
+        {
+          "question": "ナフロン® PTFE打抜きガスケットを探しています。材質と特徴を教えてください。見積はまだ不要です。",
+          "inputFullTextVerified": true,
+          "sendOperations": 1,
+          "customerMessageConfirmed": true,
+          "answer": "A\nアオキエンジ\n「ナフロン® PTFE打抜きガスケット」をお探しですね。\n登録仕入先の商品掲載で、この名称に一致する情報を確認しました。\n掲載商品名：ナフロン® PTFE打抜きガスケット（掲載型番：9007）\n掲載確認日：2026-10-26。掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+          "observations": [],
+          "waitSecondsObserved": 14.77,
+          "conversationVisibleText": "ナフロン® PTFE打抜きガスケットを探しています。材質と特徴を教えてください。見積はまだ不要です。\nA\nアオキエンジ\n「ナフロン® PTFE打抜きガスケット」をお探しですね。\n登録仕入先の商品掲載で、この名称に一致する情報を確認しました。\n掲載商品名：ナフロン® PTFE打抜きガスケット（掲載型番：9007）\n掲載確認日：2026-10-26。掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+          "verdict": "不合格",
+          "reason": "商品名・型番だけで材質の説明と特徴がない。確認できない仕様の範囲も説明しない。",
+          "contentVerdict": "不合格",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-03-turn-1-answer.json",
+            "case-03-turn-1-input.json",
+            "case-03-turn-1-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": ""
+        },
+        {
+          "question": "この製品と一般的なゴム製ガスケットでは、薬品への使い分けはどう確認すればよいですか？",
+          "inputFullTextVerified": true,
+          "sendOperations": 1,
+          "customerMessageConfirmed": true,
+          "answer": "A\nアオキエンジ\n選定では、1. 接触する流体・薬品の名称と濃度、2. 連続・最高使用温度と圧力、3. 内径・外径・厚さ、フランジ規格と締付条件を照合します。伺った条件は、商品名：ナフロン® PTFE打抜きガスケット・材質：PTFEです。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。",
+          "observations": [],
+          "waitSecondsObserved": 7.46,
+          "conversationVisibleText": "ナフロン® PTFE打抜きガスケットを探しています。材質と特徴を教えてください。見積はまだ不要です。\nA\nアオキエンジ\n「ナフロン® PTFE打抜きガスケット」をお探しですね。\n登録仕入先の商品掲載で、この名称に一致する情報を確認しました。\n掲載商品名：ナフロン® PTFE打抜きガスケット（掲載型番：9007）\n掲載確認日：2026-10-26。掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\nこの製品と一般的なゴム製ガスケットでは、薬品への使い分けはどう確認すればよいですか？\nA\nアオキエンジ\n選定では、1. 接触する流体・薬品の名称と濃度、2. 連続・最高使用温度と圧力、3. 内径・外径・厚さ、フランジ規格と締付条件を照合します。伺った条件は、商品名：ナフロン® PTFE打抜きガスケット・材質：PTFEです。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。",
+          "verdict": "合格",
+          "reason": "薬品名・濃度・温度・圧力・締付等を確認し製品資料と照合する方法を提示。ゴムとPTFEを無条件で適合断定しない。",
+          "contentVerdict": "合格",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-03-turn-2-answer.json",
+            "case-03-turn-2-input.json",
+            "case-03-turn-2-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": ""
+        }
+      ],
+      "verdict": "不合格",
+      "additional": false
+    },
+    {
+      "id": 4,
+      "turns": [
+        {
+          "question": "ニチアスの型番9007は何の製品ですか？名称と確認できる仕様を教えてください。",
+          "inputFullTextVerified": true,
+          "sendOperations": 1,
+          "customerMessageConfirmed": true,
+          "answer": "A\nアオキエンジ\n「型番9007」をお探しですね。\n登録商品を照合しましたが、登録済みの商品掲載索引にも一致する情報がありません。外部サイトの検索は現在無効のため、まだ検索していません。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+          "observations": [],
+          "waitSecondsObserved": 17.27,
+          "conversationVisibleText": "ニチアスの型番9007は何の製品ですか？名称と確認できる仕様を教えてください。\nA\nアオキエンジ\n「型番9007」をお探しですね。\n登録商品を照合しましたが、登録済みの商品掲載索引にも一致する情報がありません。外部サイトの検索は現在無効のため、まだ検索していません。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+          "verdict": "不合格",
+          "reason": "商品名の相談で9007を提示したのに、型番9007では掲載索引にも一致なしと回答。名称と確認仕様を案内できず、同じ画面評価内で照合結果が不整合。",
+          "contentVerdict": "不合格",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-04-turn-1-answer.json",
+            "case-04-turn-1-input.json",
+            "case-04-turn-1-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": ""
+        }
+      ],
+      "verdict": "不合格",
+      "additional": false
+    },
+    {
+      "id": 5,
+      "turns": [
+        {
+          "question": "PTFE製で、内径50mm・外径90mm・厚さ3mmのガスケットを2枚探しています。この寸法で選べる製品はありますか？",
+          "inputFullTextVerified": true,
+          "sendOperations": 2,
+          "customerMessageConfirmed": true,
+          "answer": null,
+          "observations": [
+            "初回送信直後は会話欄に質問を確認したが、後に質問が消え、サーバーからの応答を読み取れませんでした、と表示。完成回答なし。1回だけ再試行する。",
+            "120秒までに完成回答なし"
+          ],
+          "attempts": [
+            {
+              "status": "error",
+              "error": "サーバーからの応答を読み取れませんでした。",
+              "customerVisibleInitially": true,
+              "customerVisibleAfterError": false,
+              "wait": "60秒超の確認時にエラー観察、厳密な発生時刻未測定"
+            },
+            {
+              "waitSecondsObserved": 122.01,
+              "error": null,
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "PTFE製で、内径50mm・外径90mm・厚さ3mmのガスケットを2枚探しています。この寸法で選べる製品はありますか？\n内容を確認しています"
+            }
+          ],
+          "verdict": "不合格",
+          "reason": "初回は応答読取エラー、再試行も122.01秒で作成中。完成回答なし。選定内容の正誤は保留。",
+          "contentVerdict": "保留",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-05-turn-1-60seconds.json",
+            "case-05-turn-1-attempt-2-answer.json",
+            "case-05-turn-1-attempt-2-input.json",
+            "case-05-turn-1-attempt-2-sent.json",
+            "case-05-turn-1-input.json",
+            "case-05-turn-1-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": "未回答時は初期の一時表示と後の消失・未確認をattemptsとsnapshotで区別。初回一時表示の確認を取り消さず集計。",
+          "waitSecondsObserved": null,
+          "waitDescription": "60秒超の確認時にエラー観察、厳密な発生時刻未測定 / 122.01秒"
+        },
+        {
+          "question": "材質はPTFEのままで、厚さだけ2mmに訂正します。いまの希望条件をまとめてください。",
+          "inputFullTextVerified": true,
+          "sendOperations": 2,
+          "customerMessageConfirmed": true,
+          "answer": "A\nアオキエンジ\n伺った条件：材質：PTFE・仕様：厚さ2mm。販売可否と在庫は、照合結果で確認できた範囲に限ります。",
+          "observations": [
+            "前問が作成中で訂正の初回クリックは未反映。同じpage再読込で回復後に1回だけ再試行。"
+          ],
+          "attempts": [
+            {
+              "status": "not reflected",
+              "customerMessageConfirmed": false
+            },
+            {
+              "waitSecondsObserved": 7.4,
+              "error": null,
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "材質はPTFEのままで、厚さだけ2mmに訂正します。いまの希望条件をまとめてください。\nA\nアオキエンジ\n伺った条件：材質：PTFE・仕様：厚さ2mm。販売可否と在庫は、照合結果で確認できた範囲に限ります。"
+            }
+          ],
+          "waitSecondsObserved": 7.4,
+          "conversationVisibleText": "材質はPTFEのままで、厚さだけ2mmに訂正します。いまの希望条件をまとめてください。\nA\nアオキエンジ\n伺った条件：材質：PTFE・仕様：厚さ2mm。販売可否と在庫は、照合結果で確認できた範囲に限ります。",
+          "verdict": "不合格",
+          "reason": "材質PTFEと厚さ2mmは反映したが内径50mm・外径90mm・2枚が要約にない。前問失敗と再読込の影響があり、通常の記憶訂正能力そのものは保留。",
+          "contentVerdict": "不合格",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-05-turn-2-attempt-1-input.json",
+            "case-05-turn-2-attempt-1-sent.json",
+            "case-05-turn-2-attempt-2-answer.json",
+            "case-05-turn-2-attempt-2-input.json",
+            "case-05-turn-2-attempt-2-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": ""
+        }
+      ],
+      "verdict": "不合格",
+      "additional": false
+    },
+    {
+      "id": 6,
+      "turns": [
+        {
+          "question": "ナフロン® PTFE打抜きガスケットを10枚ほしいです。価格、現在の在庫、福岡までの最短納期は分かりますか？",
+          "inputFullTextVerified": true,
+          "sendOperations": 1,
+          "customerMessageConfirmed": true,
+          "answer": "A\nアオキエンジ\n「ナフロン® PTFE打抜きガスケット」をお探しですね。\n登録仕入先の商品掲載で、この名称に一致する情報を確認しました。\n掲載商品名：ナフロン® PTFE打抜きガスケット（掲載型番：9007）\n掲載確認日：2026-10-26。掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+          "observations": [],
+          "attempts": [
+            {
+              "waitSecondsObserved": 7.32,
+              "error": null,
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "ナフロン® PTFE打抜きガスケットを10枚ほしいです。価格、現在の在庫、福岡までの最短納期は分かりますか？\nA\nアオキエンジ\n「ナフロン® PTFE打抜きガスケット」をお探しですね。\n登録仕入先の商品掲載で、この名称に一致する情報を確認しました。\n掲載商品名：ナフロン® PTFE打抜きガスケット（掲載型番：9007）\n掲載確認日：2026-10-26。掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。"
+            }
+          ],
+          "waitSecondsObserved": 7.32,
+          "conversationVisibleText": "ナフロン® PTFE打抜きガスケットを10枚ほしいです。価格、現在の在庫、福岡までの最短納期は分かりますか？\nA\nアオキエンジ\n「ナフロン® PTFE打抜きガスケット」をお探しですね。\n登録仕入先の商品掲載で、この名称に一致する情報を確認しました。\n掲載商品名：ナフロン® PTFE打抜きガスケット（掲載型番：9007）\n掲載確認日：2026-10-26。掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。",
+          "verdict": "不合格",
+          "reason": "現在庫未確認は明示したが価格と福岡への最短納期への回答がなく、それらの不明範囲・確認条件も不足。",
+          "contentVerdict": "不合格",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-06-turn-1-attempt-1-answer.json",
+            "case-06-turn-1-attempt-1-input.json",
+            "case-06-turn-1-attempt-1-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": ""
+        },
+        {
+          "question": "明日届くと確約できますか？確認できないことは確約せず、何を確認する必要があるか教えてください。",
+          "inputFullTextVerified": true,
+          "sendOperations": 2,
+          "customerMessageConfirmed": true,
+          "answer": null,
+          "observations": [
+            "サーバーからの応答を読み取れませんでした。 再試行",
+            "サーバーからの応答を読み取れませんでした。 再試行"
+          ],
+          "attempts": [
+            {
+              "waitSecondsObserved": 4.87,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "ナフロン® PTFE打抜きガスケットを10枚ほしいです。価格、現在の在庫、福岡までの最短納期は分かりますか？\nA\nアオキエンジ\n「ナフロン® PTFE打抜きガスケット」をお探しですね。\n登録仕入先の商品掲載で、この名称に一致する情報を確認しました。\n掲載商品名：ナフロン® PTFE打抜きガスケット（掲載型番：9007）\n掲載確認日：2026-10-26。掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。"
+            },
+            {
+              "waitSecondsObserved": 2.37,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": false,
+              "conversationVisibleText": "ナフロン® PTFE打抜きガスケットを10枚ほしいです。価格、現在の在庫、福岡までの最短納期は分かりますか？\nA\nアオキエンジ\n「ナフロン® PTFE打抜きガスケット」をお探しですね。\n登録仕入先の商品掲載で、この名称に一致する情報を確認しました。\n掲載商品名：ナフロン® PTFE打抜きガスケット（掲載型番：9007）\n掲載確認日：2026-10-26。掲載型番は製品の識別情報です。必要な寸法・仕様への適合は未確認です。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。"
+            }
+          ],
+          "verdict": "不合格",
+          "reason": "応答読取エラーで完成回答なし。翌日着の根拠のない確約は観察していないが、必要確認事項を得られず。",
+          "contentVerdict": "保留",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-06-turn-2-attempt-1-answer.json",
+            "case-06-turn-2-attempt-1-input.json",
+            "case-06-turn-2-attempt-1-sent.json",
+            "case-06-turn-2-attempt-2-answer.json",
+            "case-06-turn-2-attempt-2-input.json",
+            "case-06-turn-2-attempt-2-sent.json"
+          ],
+          "finalCustomerMessageVisible": false,
+          "finalVisibilityNote": "未回答時は初期の一時表示と後の消失・未確認をattemptsとsnapshotで区別。初回一時表示の確認を取り消さず集計。",
+          "waitSecondsObserved": null,
+          "waitDescription": "4.87秒 / 2.37秒"
+        }
+      ],
+      "verdict": "不合格",
+      "additional": false
+    },
+    {
+      "id": 7,
+      "turns": [
+        {
+          "question": "SGM® ガスケットを20枚検討しています。まず商品が特定できるか確認してください。",
+          "inputFullTextVerified": true,
+          "sendOperations": 2,
+          "customerMessageConfirmed": true,
+          "answer": null,
+          "observations": [
+            "120秒までに完成回答なし",
+            "サーバーからの応答を読み取れませんでした。 再試行"
+          ],
+          "attempts": [
+            {
+              "waitSecondsObserved": 121.95,
+              "error": null,
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "SGM® ガスケットを20枚検討しています。まず商品が特定できるか確認してください。\n内容を確認しています"
+            },
+            {
+              "waitSecondsObserved": 2.36,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": false,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            }
+          ],
+          "verdict": "不合格",
+          "reason": "120秒超で完成回答なし。再試行ではエラー表示、商品特定結果を得られず。",
+          "contentVerdict": "保留",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-07-turn-1-60seconds.json",
+            "case-07-turn-1-attempt-1-answer.json",
+            "case-07-turn-1-attempt-1-input.json",
+            "case-07-turn-1-attempt-1-sent.json",
+            "case-07-turn-1-attempt-2-answer.json",
+            "case-07-turn-1-attempt-2-input.json",
+            "case-07-turn-1-attempt-2-sent.json"
+          ],
+          "finalCustomerMessageVisible": false,
+          "finalVisibilityNote": "未回答時は初期の一時表示と後の消失・未確認をattemptsとsnapshotで区別。初回一時表示の確認を取り消さず集計。",
+          "waitSecondsObserved": null,
+          "waitDescription": "121.95秒 / 2.36秒"
+        },
+        {
+          "question": "訂正します。SGMではなくナフロン® PTFE打抜きガスケットで、数量も3枚です。古い商品と数量は取り消し、現在の希望を復唱してください。",
+          "inputFullTextVerified": true,
+          "sendOperations": 2,
+          "customerMessageConfirmed": false,
+          "answer": null,
+          "observations": [
+            "サーバーからの応答を読み取れませんでした。 再試行",
+            "サーバーからの応答を読み取れませんでした。 再試行"
+          ],
+          "attempts": [
+            {
+              "waitSecondsObserved": 2.33,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": false,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            },
+            {
+              "waitSecondsObserved": 2.36,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": false,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            }
+          ],
+          "verdict": "保留",
+          "reason": "初回・再試行とも会話欄への新しい顧客発言を確認できず、訂正を読んだ回答を評価できない。エラー表示は回答ではない。",
+          "contentVerdict": "保留",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-07-turn-2-attempt-1-answer.json",
+            "case-07-turn-2-attempt-1-input.json",
+            "case-07-turn-2-attempt-1-sent.json",
+            "case-07-turn-2-attempt-2-answer.json",
+            "case-07-turn-2-attempt-2-input.json",
+            "case-07-turn-2-attempt-2-sent.json"
+          ],
+          "finalCustomerMessageVisible": false,
+          "finalVisibilityNote": "未回答時は初期の一時表示と後の消失・未確認をattemptsとsnapshotで区別。初回一時表示の確認を取り消さず集計。",
+          "waitSecondsObserved": null,
+          "waitDescription": "2.33秒 / 2.36秒"
+        }
+      ],
+      "verdict": "不合格",
+      "additional": false
+    },
+    {
+      "id": 8,
+      "turns": [
+        {
+          "question": "見積も問い合わせ送信も不要です。耐熱ガラスを選ぶために、こちらで整理しておく情報だけを教えてください。",
+          "inputFullTextVerified": true,
+          "sendOperations": 2,
+          "customerMessageConfirmed": false,
+          "answer": null,
+          "observations": [
+            "サーバーからの応答を読み取れませんでした。 再試行",
+            "サーバーからの応答を読み取れませんでした。 再試行"
+          ],
+          "attempts": [
+            {
+              "waitSecondsObserved": 2.38,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": false,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            },
+            {
+              "waitSecondsObserved": 2.37,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": false,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            }
+          ],
+          "verdict": "保留",
+          "reason": "2操作とも会話欄への発言を確認できず。送信成功・回答なしで、チェック項目の内容を判定できない。",
+          "contentVerdict": "保留",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-08-turn-1-attempt-1-answer.json",
+            "case-08-turn-1-attempt-1-input.json",
+            "case-08-turn-1-attempt-1-sent.json",
+            "case-08-turn-1-attempt-2-answer.json",
+            "case-08-turn-1-attempt-2-input.json",
+            "case-08-turn-1-attempt-2-sent.json"
+          ],
+          "finalCustomerMessageVisible": false,
+          "finalVisibilityNote": "未回答時は初期の一時表示と後の消失・未確認をattemptsとsnapshotで区別。初回一時表示の確認を取り消さず集計。",
+          "waitSecondsObserved": null,
+          "waitDescription": "2.38秒 / 2.37秒"
+        },
+        {
+          "question": "連絡先は渡しません。商品選定前のチェック項目を3つ程度、ここで回答できますか？",
+          "inputFullTextVerified": true,
+          "sendOperations": 2,
+          "customerMessageConfirmed": false,
+          "answer": null,
+          "observations": [
+            "サーバーからの応答を読み取れませんでした。 再試行",
+            "サーバーからの応答を読み取れませんでした。 再試行"
+          ],
+          "attempts": [
+            {
+              "waitSecondsObserved": 2.36,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": false,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            },
+            {
+              "waitSecondsObserved": 2.39,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": false,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            }
+          ],
+          "verdict": "保留",
+          "reason": "2操作とも会話欄への発言を確認できず。連絡先不要の案内ができるか内容判定不能。",
+          "contentVerdict": "保留",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-08-turn-2-attempt-1-answer.json",
+            "case-08-turn-2-attempt-1-input.json",
+            "case-08-turn-2-attempt-1-sent.json",
+            "case-08-turn-2-attempt-2-answer.json",
+            "case-08-turn-2-attempt-2-input.json",
+            "case-08-turn-2-attempt-2-sent.json"
+          ],
+          "finalCustomerMessageVisible": false,
+          "finalVisibilityNote": "未回答時は初期の一時表示と後の消失・未確認をattemptsとsnapshotで区別。初回一時表示の確認を取り消さず集計。",
+          "waitSecondsObserved": null,
+          "waitDescription": "2.36秒 / 2.39秒"
+        }
+      ],
+      "verdict": "保留",
+      "additional": false
+    },
+    {
+      "id": 9,
+      "turns": [
+        {
+          "question": "アオキエンジはどこにある会社で、どんな事業をしていますか？",
+          "inputFullTextVerified": true,
+          "sendOperations": 2,
+          "customerMessageConfirmed": false,
+          "answer": null,
+          "observations": [
+            "サーバーからの応答を読み取れませんでした。 再試行",
+            "サーバーからの応答を読み取れませんでした。 再試行"
+          ],
+          "attempts": [
+            {
+              "waitSecondsObserved": 2.35,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": false,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            },
+            {
+              "waitSecondsObserved": 2.47,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": false,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            }
+          ],
+          "verdict": "保留",
+          "reason": "入力全文と有効な送信ボタンは確認したが、2操作後とも会話欄への発言は未確認。会社案内の回答品質は判定不能。",
+          "contentVerdict": "保留",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-09-turn-1-attempt-1-answer.json",
+            "case-09-turn-1-attempt-1-input.json",
+            "case-09-turn-1-attempt-1-sent.json",
+            "case-09-turn-1-attempt-2-answer.json",
+            "case-09-turn-1-attempt-2-input.json",
+            "case-09-turn-1-attempt-2-sent.json"
+          ],
+          "finalCustomerMessageVisible": false,
+          "finalVisibilityNote": "未回答時は初期の一時表示と後の消失・未確認をattemptsとsnapshotで区別。初回一時表示の確認を取り消さず集計。",
+          "waitSecondsObserved": null,
+          "waitDescription": "2.35秒 / 2.47秒"
+        },
+        {
+          "question": "図面から機械装置を製作して、現場への据付まで相談できますか？",
+          "inputFullTextVerified": true,
+          "sendOperations": 2,
+          "customerMessageConfirmed": false,
+          "answer": null,
+          "observations": [
+            "サーバーからの応答を読み取れませんでした。 再試行",
+            "サーバーからの応答を読み取れませんでした。 再試行"
+          ],
+          "attempts": [
+            {
+              "waitSecondsObserved": 2.34,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": false,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            },
+            {
+              "waitSecondsObserved": 2.4,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": false,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            }
+          ],
+          "verdict": "保留",
+          "reason": "2操作後とも会話欄への発言は未確認で、図面製作・据付に関する回答は得られず。",
+          "contentVerdict": "保留",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-09-turn-2-attempt-1-answer.json",
+            "case-09-turn-2-attempt-1-input.json",
+            "case-09-turn-2-attempt-1-sent.json",
+            "case-09-turn-2-attempt-2-answer.json",
+            "case-09-turn-2-attempt-2-input.json",
+            "case-09-turn-2-attempt-2-sent.json"
+          ],
+          "finalCustomerMessageVisible": false,
+          "finalVisibilityNote": "未回答時は初期の一時表示と後の消失・未確認をattemptsとsnapshotで区別。初回一時表示の確認を取り消さず集計。",
+          "waitSecondsObserved": null,
+          "waitDescription": "2.34秒 / 2.4秒"
+        }
+      ],
+      "verdict": "保留",
+      "additional": false
+    },
+    {
+      "id": 10,
+      "turns": [
+        {
+          "question": "あの白いシートはありますか？",
+          "inputFullTextVerified": true,
+          "sendOperations": 2,
+          "customerMessageConfirmed": true,
+          "answer": null,
+          "observations": [
+            "サーバーからの応答を読み取れませんでした。 再試行",
+            "サーバーからの応答を読み取れませんでした。 再試行"
+          ],
+          "attempts": [
+            {
+              "waitSecondsObserved": 2.37,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": false,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            },
+            {
+              "waitSecondsObserved": 4.88,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            }
+          ],
+          "verdict": "不合格",
+          "reason": "会話欄に一度は発言を確認したが応答読取エラーで完成回答なし。曖昧な名称への質問対応は内容評価保留。",
+          "contentVerdict": "保留",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-10-turn-1-attempt-1-answer.json",
+            "case-10-turn-1-attempt-1-input.json",
+            "case-10-turn-1-attempt-1-sent.json",
+            "case-10-turn-1-attempt-2-answer.json",
+            "case-10-turn-1-attempt-2-input.json",
+            "case-10-turn-1-attempt-2-sent.json"
+          ],
+          "finalCustomerMessageVisible": false,
+          "finalVisibilityNote": "未回答時は初期の一時表示と後の消失・未確認をattemptsとsnapshotで区別。初回一時表示の確認を取り消さず集計。",
+          "waitSecondsObserved": null,
+          "waitDescription": "2.37秒 / 4.88秒"
+        },
+        {
+          "question": "配管のフランジの間に挟んで漏れを止めるものです。名称も型番も不明ですが、特定するために何を伝えればよいですか？",
+          "inputFullTextVerified": true,
+          "sendOperations": 2,
+          "customerMessageConfirmed": true,
+          "answer": null,
+          "observations": [
+            "サーバーからの応答を読み取れませんでした。 再試行",
+            "サーバーからの応答を読み取れませんでした。 再試行"
+          ],
+          "attempts": [
+            {
+              "waitSecondsObserved": 2.42,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": false,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            },
+            {
+              "waitSecondsObserved": 4.93,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            }
+          ],
+          "verdict": "不合格",
+          "reason": "具体的用途を追加した発言でも応答読取エラー、完成回答なし。特定に必要な情報を得られず。",
+          "contentVerdict": "保留",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-10-turn-2-attempt-1-answer.json",
+            "case-10-turn-2-attempt-1-input.json",
+            "case-10-turn-2-attempt-1-sent.json",
+            "case-10-turn-2-attempt-2-answer.json",
+            "case-10-turn-2-attempt-2-input.json",
+            "case-10-turn-2-attempt-2-sent.json"
+          ],
+          "finalCustomerMessageVisible": false,
+          "finalVisibilityNote": "未回答時は初期の一時表示と後の消失・未確認をattemptsとsnapshotで区別。初回一時表示の確認を取り消さず集計。",
+          "waitSecondsObserved": null,
+          "waitDescription": "2.42秒 / 4.93秒"
+        }
+      ],
+      "verdict": "不合格",
+      "additional": false
+    },
+    {
+      "id": 11,
+      "turns": [
+        {
+          "question": "家庭用の炊飯器を買いたいです。おすすめを教えてください。",
+          "inputFullTextVerified": true,
+          "sendOperations": 2,
+          "customerMessageConfirmed": true,
+          "answer": null,
+          "observations": [
+            "サーバーからの応答を読み取れませんでした。 再試行",
+            "サーバーからの応答を読み取れませんでした。 再試行"
+          ],
+          "attempts": [
+            {
+              "waitSecondsObserved": 2.43,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": false,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            },
+            {
+              "waitSecondsObserved": 12.33,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            }
+          ],
+          "verdict": "不合格",
+          "reason": "応答読取エラーで完成回答なし。対象外商品の適切な案内は内容評価保留。",
+          "contentVerdict": "保留",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-11-turn-1-attempt-1-answer.json",
+            "case-11-turn-1-attempt-1-input.json",
+            "case-11-turn-1-attempt-1-sent.json",
+            "case-11-turn-1-attempt-2-answer.json",
+            "case-11-turn-1-attempt-2-input.json",
+            "case-11-turn-1-attempt-2-sent.json"
+          ],
+          "finalCustomerMessageVisible": false,
+          "finalVisibilityNote": "未回答時は初期の一時表示と後の消失・未確認をattemptsとsnapshotで区別。初回一時表示の確認を取り消さず集計。",
+          "waitSecondsObserved": null,
+          "waitDescription": "2.43秒 / 12.33秒"
+        },
+        {
+          "question": "工業用品のお店なら対象外ですよね。相談できる範囲を教えてください。",
+          "inputFullTextVerified": true,
+          "sendOperations": 2,
+          "customerMessageConfirmed": true,
+          "answer": null,
+          "observations": [
+            "サーバーからの応答を読み取れませんでした。 再試行",
+            "120秒までに完成回答なし"
+          ],
+          "attempts": [
+            {
+              "waitSecondsObserved": 4.83,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "AOKI ENG / PRODUCT SUPPORT\n\nこんにちは。\n何をお探しですか？\n\nお探しの製品や、ものづくりのお困りごとをお聞かせください。商品名・型番・用途からご案内します。\n\n耐熱ガラスを探している\n図面から製作できますか？\nどんなことを相談できますか？\n前回の相談を見る（2026/10/26 18:35:34）"
+            },
+            {
+              "waitSecondsObserved": 121.95,
+              "error": null,
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "工業用品のお店なら対象外ですよね。相談できる範囲を教えてください。\n内容を確認しています"
+            }
+          ],
+          "verdict": "不合格",
+          "reason": "エラー後の再試行は120秒を超えて作成中。相談可能範囲の完成回答なし。",
+          "contentVerdict": "保留",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-11-turn-2-60seconds.json",
+            "case-11-turn-2-attempt-1-answer.json",
+            "case-11-turn-2-attempt-1-input.json",
+            "case-11-turn-2-attempt-1-sent.json",
+            "case-11-turn-2-attempt-2-answer.json",
+            "case-11-turn-2-attempt-2-input.json",
+            "case-11-turn-2-attempt-2-sent.json",
+            "case-11-turn-2-recovery.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": "未回答時は初期の一時表示と後の消失・未確認をattemptsとsnapshotで区別。初回一時表示の確認を取り消さず集計。",
+          "waitSecondsObserved": null,
+          "waitDescription": "4.83秒 / 121.95秒"
+        }
+      ],
+      "verdict": "不合格",
+      "additional": false
+    },
+    {
+      "id": 12,
+      "turns": [
+        {
+          "question": "AOKI-XYZ-999999という型番の耐熱ガラスは扱っていますか？型番を写し間違えたかもしれません。",
+          "inputFullTextVerified": true,
+          "sendOperations": 1,
+          "customerMessageConfirmed": true,
+          "answer": "A\nアオキエンジ\n「AOKI-XYZ-999999という型番の耐熱ガラスは扱っていますか？型番を写し間違えたかもしれません。」をお探しですね。\n今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\nメーカー名、またはラベルや資料にある商品名・型番を教えてください。",
+          "observations": [],
+          "attempts": [
+            {
+              "waitSecondsObserved": 12.34,
+              "error": null,
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "AOKI-XYZ-999999という型番の耐熱ガラスは扱っていますか？型番を写し間違えたかもしれません。\nA\nアオキエンジ\n「AOKI-XYZ-999999という型番の耐熱ガラスは扱っていますか？型番を写し間違えたかもしれません。」をお探しですね。\n今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\nメーカー名、またはラベルや資料にある商品名・型番を教えてください。"
+            }
+          ],
+          "waitSecondsObserved": 12.34,
+          "conversationVisibleText": "AOKI-XYZ-999999という型番の耐熱ガラスは扱っていますか？型番を写し間違えたかもしれません。\nA\nアオキエンジ\n「AOKI-XYZ-999999という型番の耐熱ガラスは扱っていますか？型番を写し間違えたかもしれません。」をお探しですね。\n今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\nメーカー名、またはラベルや資料にある商品名・型番を教えてください。",
+          "verdict": "合格",
+          "reason": "一致掲載を確認できない範囲を限定し、取扱不存在を断定せずメーカー名やラベル・資料の名称型番を確認する。質問全文を商品名風に引用する不自然さはある。",
+          "contentVerdict": "合格",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-12-turn-1-attempt-1-answer.json",
+            "case-12-turn-1-attempt-1-input.json",
+            "case-12-turn-1-attempt-1-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": ""
+        },
+        {
+          "question": "見つからない場合、似た型番を推測して注文に進めず、何を照合すればよいか教えてください。",
+          "inputFullTextVerified": true,
+          "sendOperations": 1,
+          "customerMessageConfirmed": true,
+          "answer": "A\nアオキエンジ\n「ガラス製品」の分野についてご相談いただけます。\n個別製品の仕様・対応可否、価格・在庫・納期は当社で確認します。選ぶときは、使用温度、寸法と厚さ、温度変化（加熱・冷却の頻度）、取付方法、用途（覗き窓・カバー等）が分かると候補を絞り込めます。どのような用途でお使いになるか教えていただけますか？画面下の「相談を依頼する」からもご相談いただけます。\nこの内容で相談を依頼する\nこの分野の見積を相談したい\n必要な仕様を相談したい",
+          "observations": [],
+          "attempts": [
+            {
+              "waitSecondsObserved": 9.8,
+              "error": null,
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "AOKI-XYZ-999999という型番の耐熱ガラスは扱っていますか？型番を写し間違えたかもしれません。\nA\nアオキエンジ\n「AOKI-XYZ-999999という型番の耐熱ガラスは扱っていますか？型番を写し間違えたかもしれません。」をお探しですね。\n今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\nメーカー名、またはラベルや資料にある商品名・型番を教えてください。\n見つからない場合、似た型番を推測して注文に進めず、何を照合すればよいか教えてください。\nA\nアオキエンジ\n「ガラス製品」の分野についてご相談いただけます。\n個別製品の仕様・対応可否、価格・在庫・納期は当社で確認します。選ぶときは、使用温度、寸法と厚さ、温度変化（加熱・冷却の頻度）、取付方法、用途（覗き窓・カバー等）が分かると候補を絞り込めます。どのような用途でお使いになるか教えていただけますか？画面下の「相談を依頼する」からもご相談いただけます。\nこの内容で相談を依頼する\nこの分野の見積を相談したい\n必要な仕様を相談したい"
+            }
+          ],
+          "waitSecondsObserved": 9.8,
+          "conversationVisibleText": "AOKI-XYZ-999999という型番の耐熱ガラスは扱っていますか？型番を写し間違えたかもしれません。\nA\nアオキエンジ\n「AOKI-XYZ-999999という型番の耐熱ガラスは扱っていますか？型番を写し間違えたかもしれません。」をお探しですね。\n今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\nメーカー名、またはラベルや資料にある商品名・型番を教えてください。\n見つからない場合、似た型番を推測して注文に進めず、何を照合すればよいか教えてください。\nA\nアオキエンジ\n「ガラス製品」の分野についてご相談いただけます。\n個別製品の仕様・対応可否、価格・在庫・納期は当社で確認します。選ぶときは、使用温度、寸法と厚さ、温度変化（加熱・冷却の頻度）、取付方法、用途（覗き窓・カバー等）が分かると候補を絞り込めます。どのような用途でお使いになるか教えていただけますか？画面下の「相談を依頼する」からもご相談いただけます。\nこの内容で相談を依頼する\nこの分野の見積を相談したい\n必要な仕様を相談したい",
+          "verdict": "合格",
+          "reason": "似た型番や注文を推測せず、使用温度・寸法・厚さ・温度変化・取付・用途の確認を案内。初問のラベル照合案内と併せて次の確認方法を得られる。",
+          "contentVerdict": "合格",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-12-turn-2-attempt-1-answer.json",
+            "case-12-turn-2-attempt-1-input.json",
+            "case-12-turn-2-attempt-1-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": ""
+        },
+        {
+          "question": "今回は情報確認だけです。注文や正式見積の依頼は送信されていないという理解で合っていますか？",
+          "inputFullTextVerified": true,
+          "sendOperations": 1,
+          "customerMessageConfirmed": true,
+          "answer": "A\nアオキエンジ\nこのチャットでは、ご注文やお問い合わせの送信は行っていません。まだ正式なご依頼としては未送信のため、確認メールも送られません。\n下の「この内容で相談を依頼する」から、この会話の内容を添えて相談を依頼できます。お急ぎの場合はお電話（093-382-2110）でもご相談いただけます。\nこの内容で相談を依頼する",
+          "observations": [],
+          "attempts": [
+            {
+              "waitSecondsObserved": 7.4,
+              "error": null,
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "AOKI-XYZ-999999という型番の耐熱ガラスは扱っていますか？型番を写し間違えたかもしれません。\nA\nアオキエンジ\n「AOKI-XYZ-999999という型番の耐熱ガラスは扱っていますか？型番を写し間違えたかもしれません。」をお探しですね。\n今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\nメーカー名、またはラベルや資料にある商品名・型番を教えてください。\n見つからない場合、似た型番を推測して注文に進めず、何を照合すればよいか教えてください。\nA\nアオキエンジ\n「ガラス製品」の分野についてご相談いただけます。\n個別製品の仕様・対応可否、価格・在庫・納期は当社で確認します。選ぶときは、使用温度、寸法と厚さ、温度変化（加熱・冷却の頻度）、取付方法、用途（覗き窓・カバー等）が分かると候補を絞り込めます。どのような用途でお使いになるか教えていただけますか？画面下の「相談を依頼する」からもご相談いただけます。\n今回は情報確認だけです。注文や正式見積の依頼は送信されていないという理解で合っていますか？\nA\nアオキエンジ\nこのチャットでは、ご注文やお問い合わせの送信は行っていません。まだ正式なご依頼としては未送信のため、確認メールも送られません。\n下の「この内容で相談を依頼する」から、この会話の内容を添えて相談を依頼できます。お急ぎの場合はお電話（093-382-2110）でもご相談いただけます。\nこの内容で相談を依頼する"
+            }
+          ],
+          "waitSecondsObserved": 7.4,
+          "conversationVisibleText": "AOKI-XYZ-999999という型番の耐熱ガラスは扱っていますか？型番を写し間違えたかもしれません。\nA\nアオキエンジ\n「AOKI-XYZ-999999という型番の耐熱ガラスは扱っていますか？型番を写し間違えたかもしれません。」をお探しですね。\n今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\nメーカー名、またはラベルや資料にある商品名・型番を教えてください。\n見つからない場合、似た型番を推測して注文に進めず、何を照合すればよいか教えてください。\nA\nアオキエンジ\n「ガラス製品」の分野についてご相談いただけます。\n個別製品の仕様・対応可否、価格・在庫・納期は当社で確認します。選ぶときは、使用温度、寸法と厚さ、温度変化（加熱・冷却の頻度）、取付方法、用途（覗き窓・カバー等）が分かると候補を絞り込めます。どのような用途でお使いになるか教えていただけますか？画面下の「相談を依頼する」からもご相談いただけます。\n今回は情報確認だけです。注文や正式見積の依頼は送信されていないという理解で合っていますか？\nA\nアオキエンジ\nこのチャットでは、ご注文やお問い合わせの送信は行っていません。まだ正式なご依頼としては未送信のため、確認メールも送られません。\n下の「この内容で相談を依頼する」から、この会話の内容を添えて相談を依頼できます。お急ぎの場合はお電話（093-382-2110）でもご相談いただけます。\nこの内容で相談を依頼する",
+          "verdict": "合格",
+          "reason": "注文・問い合わせ・正式依頼が未送信で確認メールも送られないと明示。実際に依頼操作は行っていない。",
+          "contentVerdict": "合格",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-12-turn-3-attempt-1-answer.json",
+            "case-12-turn-3-attempt-1-input.json",
+            "case-12-turn-3-attempt-1-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": ""
+        }
+      ],
+      "verdict": "合格",
+      "additional": false
+    },
+    {
+      "id": 13,
+      "turns": [
+        {
+          "question": "古い炉の窓ガラスにひびが入りました。今あるものと同じ寸法なら、そのまま交換品を選んでもよいですか？",
+          "inputFullTextVerified": true,
+          "sendOperations": 1,
+          "customerMessageConfirmed": true,
+          "answer": "A\nアオキエンジ\n選定では、1. 連続使用温度・最高温度と加熱冷却の速さ、2. 窓の寸法・厚さと取付方法、圧力の有無、3. 接触する雰囲気・薬品と必要な透明性を照合します。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。",
+          "observations": [],
+          "attempts": [
+            {
+              "waitSecondsObserved": 7.36,
+              "error": null,
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "古い炉の窓ガラスにひびが入りました。今あるものと同じ寸法なら、そのまま交換品を選んでもよいですか？\nA\nアオキエンジ\n選定では、1. 連続使用温度・最高温度と加熱冷却の速さ、2. 窓の寸法・厚さと取付方法、圧力の有無、3. 接触する雰囲気・薬品と必要な透明性を照合します。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。"
+            }
+          ],
+          "waitSecondsObserved": 7.36,
+          "conversationVisibleText": "古い炉の窓ガラスにひびが入りました。今あるものと同じ寸法なら、そのまま交換品を選んでもよいですか？\nA\nアオキエンジ\n選定では、1. 連続使用温度・最高温度と加熱冷却の速さ、2. 窓の寸法・厚さと取付方法、圧力の有無、3. 接触する雰囲気・薬品と必要な透明性を照合します。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。",
+          "verdict": "合格",
+          "reason": "寸法だけで適合を決めず、温度変化・取付・圧力・雰囲気等と製品資料を照合する具体的手順を提示。",
+          "contentVerdict": "合格",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-13-turn-1-attempt-1-answer.json",
+            "case-13-turn-1-attempt-1-input.json",
+            "case-13-turn-1-attempt-1-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": ""
+        },
+        {
+          "question": "割れた原因は分かりません。再発を避けるため、取付方法や運転条件で何を確認したらよいですか？",
+          "inputFullTextVerified": true,
+          "sendOperations": 1,
+          "customerMessageConfirmed": true,
+          "answer": "A\nアオキエンジ\n選定では、1. 用途と接触する物・使用環境、2. 形状・寸法と取付方法、3. 使用温度・荷重や圧力などの運転条件を照合します。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。",
+          "observations": [],
+          "attempts": [
+            {
+              "waitSecondsObserved": 7.33,
+              "error": null,
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "古い炉の窓ガラスにひびが入りました。今あるものと同じ寸法なら、そのまま交換品を選んでもよいですか？\nA\nアオキエンジ\n選定では、1. 連続使用温度・最高温度と加熱冷却の速さ、2. 窓の寸法・厚さと取付方法、圧力の有無、3. 接触する雰囲気・薬品と必要な透明性を照合します。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。\n割れた原因は分かりません。再発を避けるため、取付方法や運転条件で何を確認したらよいですか？\nA\nアオキエンジ\n選定では、1. 用途と接触する物・使用環境、2. 形状・寸法と取付方法、3. 使用温度・荷重や圧力などの運転条件を照合します。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。"
+            }
+          ],
+          "waitSecondsObserved": 7.33,
+          "conversationVisibleText": "古い炉の窓ガラスにひびが入りました。今あるものと同じ寸法なら、そのまま交換品を選んでもよいですか？\nA\nアオキエンジ\n選定では、1. 連続使用温度・最高温度と加熱冷却の速さ、2. 窓の寸法・厚さと取付方法、圧力の有無、3. 接触する雰囲気・薬品と必要な透明性を照合します。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。\n割れた原因は分かりません。再発を避けるため、取付方法や運転条件で何を確認したらよいですか？\nA\nアオキエンジ\n選定では、1. 用途と接触する物・使用環境、2. 形状・寸法と取付方法、3. 使用温度・荷重や圧力などの運転条件を照合します。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。",
+          "verdict": "合格",
+          "reason": "取付方法、使用環境、使用温度・荷重・圧力の運転条件を確認する案内があり、原因を推測して断定しない。一般的な回答だが準備には使える。",
+          "contentVerdict": "合格",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-13-turn-2-attempt-1-answer.json",
+            "case-13-turn-2-attempt-1-input.json",
+            "case-13-turn-2-attempt-1-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": ""
+        }
+      ],
+      "verdict": "合格",
+      "additional": true
+    },
+    {
+      "id": 14,
+      "turns": [
+        {
+          "question": "食品が通る配管に使うガスケットを探しています。PTFEなら食品用として使えますか？",
+          "inputFullTextVerified": true,
+          "sendOperations": 1,
+          "customerMessageConfirmed": true,
+          "answer": "A\nアオキエンジ\n選定では、1. 接触する流体・薬品の名称と濃度、2. 連続・最高使用温度と圧力、3. 内径・外径・厚さ、フランジ規格と締付条件を照合します。伺った条件は、材質：PTFE・用途：食品が通る配管に使うガスケットです。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。",
+          "observations": [],
+          "attempts": [
+            {
+              "waitSecondsObserved": 7.34,
+              "error": null,
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "食品が通る配管に使うガスケットを探しています。PTFEなら食品用として使えますか？\nA\nアオキエンジ\n選定では、1. 接触する流体・薬品の名称と濃度、2. 連続・最高使用温度と圧力、3. 内径・外径・厚さ、フランジ規格と締付条件を照合します。伺った条件は、材質：PTFE・用途：食品が通る配管に使うガスケットです。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。"
+            }
+          ],
+          "waitSecondsObserved": 7.34,
+          "conversationVisibleText": "食品が通る配管に使うガスケットを探しています。PTFEなら食品用として使えますか？\nA\nアオキエンジ\n選定では、1. 接触する流体・薬品の名称と濃度、2. 連続・最高使用温度と圧力、3. 内径・外径・厚さ、フランジ規格と締付条件を照合します。伺った条件は、材質：PTFE・用途：食品が通る配管に使うガスケットです。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。",
+          "verdict": "不合格",
+          "reason": "PTFEだけで食品用適合を断定しない点は良いが、食品接触に対する製品別の適合資料の確認という質問固有の確認方法を示さない。",
+          "contentVerdict": "不合格",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-14-turn-1-attempt-1-answer.json",
+            "case-14-turn-1-attempt-1-input.json",
+            "case-14-turn-1-attempt-1-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": ""
+        },
+        {
+          "question": "洗浄時には薬剤も使います。食品への接触と洗浄の両方について、購入前に必要な証明や条件を教えてください。",
+          "inputFullTextVerified": true,
+          "sendOperations": 1,
+          "customerMessageConfirmed": true,
+          "answer": "A\nアオキエンジ\n商品を示す情報として「食品が通る配管に使うガスケット」を受け取っています。メーカー名も分かれば添えてください。まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。",
+          "observations": [],
+          "attempts": [
+            {
+              "waitSecondsObserved": 7.31,
+              "error": null,
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "食品が通る配管に使うガスケットを探しています。PTFEなら食品用として使えますか？\nA\nアオキエンジ\n選定では、1. 接触する流体・薬品の名称と濃度、2. 連続・最高使用温度と圧力、3. 内径・外径・厚さ、フランジ規格と締付条件を照合します。伺った条件は、材質：PTFE・用途：食品が通る配管に使うガスケットです。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。\n洗浄時には薬剤も使います。食品への接触と洗浄の両方について、購入前に必要な証明や条件を教えてください。\nA\nアオキエンジ\n商品を示す情報として「食品が通る配管に使うガスケット」を受け取っています。メーカー名も分かれば添えてください。まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。"
+            }
+          ],
+          "waitSecondsObserved": 7.31,
+          "conversationVisibleText": "食品が通る配管に使うガスケットを探しています。PTFEなら食品用として使えますか？\nA\nアオキエンジ\n選定では、1. 接触する流体・薬品の名称と濃度、2. 連続・最高使用温度と圧力、3. 内径・外径・厚さ、フランジ規格と締付条件を照合します。伺った条件は、材質：PTFE・用途：食品が通る配管に使うガスケットです。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。\n洗浄時には薬剤も使います。食品への接触と洗浄の両方について、購入前に必要な証明や条件を教えてください。\nA\nアオキエンジ\n商品を示す情報として「食品が通る配管に使うガスケット」を受け取っています。メーカー名も分かれば添えてください。まず取扱可否だけを確認する場合は、分かる名称だけでもお問い合わせに記載できます。寸法など不明な仕様を推測して埋める必要はありません。個別の在庫確認には対象仕様の特定が必要です。まだ送信・担当者への確認は行っていません。",
+          "verdict": "不合格",
+          "reason": "食品接触と洗浄に必要な証明・薬品条件を求めたのに、名称・メーカー・取扱可否・在庫確認の話へ移る。証明資料や洗浄条件への回答不足。",
+          "contentVerdict": "不合格",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-14-turn-2-attempt-1-answer.json",
+            "case-14-turn-2-attempt-1-input.json",
+            "case-14-turn-2-attempt-1-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": ""
+        }
+      ],
+      "verdict": "不合格",
+      "additional": true
+    },
+    {
+      "id": 15,
+      "turns": [
+        {
+          "question": "手元にガスケットの写真しかありません。写真を見せれば型番や材質を確定できますか？",
+          "inputFullTextVerified": true,
+          "sendOperations": 1,
+          "customerMessageConfirmed": true,
+          "answer": "A\nアオキエンジ\n「手元にガスケットの写真しかありません。写真を見せれば型番や材質を確定できますか？」をお探しですね。\n今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\nメーカー名、またはラベルや資料にある商品名・型番を教えてください。",
+          "observations": [],
+          "attempts": [
+            {
+              "waitSecondsObserved": 9.81,
+              "error": null,
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "手元にガスケットの写真しかありません。写真を見せれば型番や材質を確定できますか？\nA\nアオキエンジ\n「手元にガスケットの写真しかありません。写真を見せれば型番や材質を確定できますか？」をお探しですね。\n今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\nメーカー名、またはラベルや資料にある商品名・型番を教えてください。"
+            }
+          ],
+          "waitSecondsObserved": 9.81,
+          "conversationVisibleText": "手元にガスケットの写真しかありません。写真を見せれば型番や材質を確定できますか？\nA\nアオキエンジ\n「手元にガスケットの写真しかありません。写真を見せれば型番や材質を確定できますか？」をお探しですね。\n今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\nメーカー名、またはラベルや資料にある商品名・型番を教えてください。",
+          "verdict": "不合格",
+          "reason": "写真から型番・材質を確定できるかという質問全文を商品名として扱う。掲載未一致という別の回答になり、写真判定の限界や確認方法を説明しない。",
+          "contentVerdict": "不合格",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-15-turn-1-attempt-1-answer.json",
+            "case-15-turn-1-attempt-1-input.json",
+            "case-15-turn-1-attempt-1-sent.json"
+          ],
+          "finalCustomerMessageVisible": true,
+          "finalVisibilityNote": ""
+        },
+        {
+          "question": "写真のほかに、現物のどこを測り、どんな刻印や使用条件を控えておけばよいですか？まだ写真は送らず、準備だけしたいです。",
+          "inputFullTextVerified": true,
+          "sendOperations": 2,
+          "customerMessageConfirmed": true,
+          "answer": null,
+          "observations": [
+            "サーバーからの応答を読み取れませんでした。 再試行",
+            "サーバーからの応答を読み取れませんでした。 再試行"
+          ],
+          "attempts": [
+            {
+              "waitSecondsObserved": 2.34,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": true,
+              "conversationVisibleText": "手元にガスケットの写真しかありません。写真を見せれば型番や材質を確定できますか？\nA\nアオキエンジ\n「手元にガスケットの写真しかありません。写真を見せれば型番や材質を確定できますか？」をお探しですね。\n今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\nメーカー名、またはラベルや資料にある商品名・型番を教えてください。"
+            },
+            {
+              "waitSecondsObserved": 2.38,
+              "error": "サーバーからの応答を読み取れませんでした。 再試行",
+              "customerMessageConfirmed": false,
+              "conversationVisibleText": "手元にガスケットの写真しかありません。写真を見せれば型番や材質を確定できますか？\nA\nアオキエンジ\n「手元にガスケットの写真しかありません。写真を見せれば型番や材質を確定できますか？」をお探しですね。\n今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\nメーカー名、またはラベルや資料にある商品名・型番を教えてください。"
+            }
+          ],
+          "verdict": "不合格",
+          "reason": "応答読取エラーで完成回答なし。測定箇所や刻印、使用条件の案内を得られず。",
+          "contentVerdict": "保留",
+          "additionalCustomerStatements": [],
+          "evidenceFiles": [
+            "case-15-turn-2-attempt-1-answer.json",
+            "case-15-turn-2-attempt-1-input.json",
+            "case-15-turn-2-attempt-1-sent.json",
+            "case-15-turn-2-attempt-2-answer.json",
+            "case-15-turn-2-attempt-2-input.json",
+            "case-15-turn-2-attempt-2-sent.json"
+          ],
+          "finalCustomerMessageVisible": false,
+          "finalVisibilityNote": "未回答時は初期の一時表示と後の消失・未確認をattemptsとsnapshotで区別。初回一時表示の確認を取り消さず集計。",
+          "waitSecondsObserved": null,
+          "waitDescription": "2.34秒 / 2.38秒"
+        }
+      ],
+      "verdict": "不合格",
+      "additional": true
+    }
+  ],
+  "additionalCases": [
+    {
+      "id": 13,
+      "questions": [
+        "古い炉の窓ガラスにひびが入りました。今あるものと同じ寸法なら、そのまま交換品を選んでもよいですか？",
+        "割れた原因は分かりません。再発を避けるため、取付方法や運転条件で何を確認したらよいですか？"
+      ]
+    },
+    {
+      "id": 14,
+      "questions": [
+        "食品が通る配管に使うガスケットを探しています。PTFEなら食品用として使えますか？",
+        "洗浄時には薬剤も使います。食品への接触と洗浄の両方について、購入前に必要な証明や条件を教えてください。"
+      ]
+    },
+    {
+      "id": 15,
+      "questions": [
+        "手元にガスケットの写真しかありません。写真を見せれば型番や材質を確定できますか？",
+        "写真のほかに、現物のどこを測り、どんな刻印や使用条件を控えておけばよいですか？まだ写真は送らず、準備だけしたいです。"
+      ]
+    }
+  ],
+  "scopeNotes": [
+    "公開ページと表示DOMのみ使用。コード・設計・DB・管理画面・API・通信・JSソース・他フォルダー・過去レポート・期待回答は未参照。",
+    "指定順・追問順で15ケース30質問に操作した。未反映5質問は実送信成功とみなさない。各質問最大2操作。追加発言は独自3ケース6質問のみ。",
+    "ケース2初問の作成中表示を早期完了判定した記録不備を訂正。完成回答は同じ会話欄から再取得した。初回4.84秒は完成待ち時間ではなく、正確な完成待ち時間は未計測。",
+    "ケース5と11の120秒超では通常再読込で回復。ケース5の追問初回は前回答作成中で未反映。ケース7も上限超後の再試行でエラー。",
+    "送信操作数はクリック操作数でありHTTP成功やサーバー受理数ではない。確認済み顧客発言数は30質問のうち会話欄に一度以上現れた異なる質問数。初期表示後に消えた発言を含む。",
+    "待ち時間は送信クリック直前からDOM観察までの実測で、CLI・snapshot処理と安定表示確認の時間を含む。完成の瞬間を厳密には測っていない。",
+    "回答全文には会話欄のアバター表示A・アオキエンジと回答に付属する表示ボタン名を含む場合がある。これらを別回答として数えない。",
+    "ケース8・9は未反映のため内容判定保留。ほかの未回答は利用可能性で不合格、内容の正誤は保留と区別。",
+    "顧客情報や添付を渡さず、問い合わせ・正式見積・注文フォームを送信していない。外部公式情報との独立照合は実施していない。"
+  ],
+  "summary": {
+    "casesAttempted": 15,
+    "plannedQuestions": 30,
+    "sendOperations": 45,
+    "confirmedDistinctCustomerMessages": 25,
+    "completedAnswers": 17,
+    "unconfirmedQuestions": 5,
+    "unansweredQuestions": 13,
+    "caseVerdicts": {
+      "合格": 3,
+      "不合格": 10,
+      "保留": 2
+    },
+    "turnVerdicts": {
+      "合格": 8,
+      "不合格": 17,
+      "保留": 5
+    }
+  },
+  "browserCleanup": {
+    "ownedPageClosed": true,
+    "verifiedAbsent": true,
+    "beforeEvidence": "browser-tabs-before-close.json",
+    "closeEvidence": "browser-tab-close.json",
+    "afterEvidence": "browser-tabs-after-close.json",
+    "otherTabsChanged": false
+  }
+}

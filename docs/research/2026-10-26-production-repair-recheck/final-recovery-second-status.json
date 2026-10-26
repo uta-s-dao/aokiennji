@@ -1,0 +1,12 @@
+{
+  "id": "15ec72d5-ea68-4359-be86-7fbe83ce83bd",
+  "ok": true,
+  "result": {
+    "result": "{\"busy\":true,\"errors\":[],\"last\":\"A\\nアオキエンジ\\n伺った条件：材質：PTFE・仕様：内径50mm・外径90mm・厚さ2mm・数量：2枚。販売可否と在庫は、照合結果で確認できた範囲に限ります。\",\"log\":\"PTFE製で内径50mm、外径90mm、厚さ3mmのガスケットを2枚。選定に必要な条件は何ですか？\\nA\\nアオキエンジ\\n希望数量は2枚として承りました。\\n選定では、1. 接触する流体・薬品の名称と濃度、2. 連続・最高使用温度と圧力、3. 内径・外径・厚さ、フランジ規格と締付条件を照合します。伺った条件は、材質：PTFE・仕様：内径50mm・外径90mm・厚さ3mm・数量：2枚です。分かっている条件は再提出不要です。不明な項目を推測して埋める必要はありません。これらだけで個別製品の適合を確定せず、製品資料の適用範囲と照合します。\\n厚さだけ2mmに訂正します。いまの希望条件をまとめてください。\\nA\\nアオキエンジ\\n伺った条件：材質：PTFE・仕様：内径50mm・外径90mm・厚さ2mm・数量：2枚。販売可否と在庫は、照合結果で確認できた範囲に限ります。\",\"probe\":{\"calls\":[{\"requestId\":\"7669db0f-f1b3-4211-bfd8-490e055bb70e\",\"stream\":true},{\"requestId\":\"7669db0f-f1b3-4211-bfd8-490e055bb70e\",\"stream\":false},{\"conversationId\":\"4dd936df-77a1-4196-808b-b89a6a5d97fb\",\"requestId\":\"ead83969-cf76-4384-acae-0082d78eda98\",\"stream\":true}],\"clipped\":true,\"historyFailed\":true},\"userMessages\":2}",
+    "origin": "https://aoki-enji.official-b.workers.dev/"
+  },
+  "_meta": {
+    "runtimeId": "2eb7d5be-c126-4cfd-8483-31d3f7adcc5e"
+  }
+}
+

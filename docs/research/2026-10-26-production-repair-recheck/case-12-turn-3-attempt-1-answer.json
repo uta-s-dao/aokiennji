@@ -1,0 +1,50 @@
+{
+  "id": "8f0bd0e5-c1fa-4f70-83e4-4257aba311ba",
+  "ok": true,
+  "result": {
+    "origin": "https://aoki-enji.official-b.workers.dev/",
+    "refs": {
+      "e1": {
+        "name": "本文へ移動",
+        "role": "link"
+      },
+      "e2": {
+        "name": "過去の相談",
+        "role": "button"
+      },
+      "e3": {
+        "name": "新しい相談を始める",
+        "role": "button"
+      },
+      "e4": {
+        "name": "チャットを閉じる",
+        "role": "button"
+      },
+      "e5": {
+        "name": "当社へのお問い合わせ",
+        "role": "link"
+      },
+      "e6": {
+        "name": "ファイルを添付",
+        "role": "button"
+      },
+      "e7": {
+        "name": "相談内容",
+        "role": "textbox"
+      },
+      "e8": {
+        "name": "メッセージを送信",
+        "role": "button"
+      },
+      "e9": {
+        "name": "この内容で相談を依頼する",
+        "role": "link"
+      }
+    },
+    "snapshot": "- generic\n  - link \"本文へ移動\" [ref=e1]\n  - dialog \"商品相談チャット\"\n    - banner\n      - strong\n        - StaticText \"商品相談アシスタント\"\n      - StaticText \"自動応答 · アオキエンジ株式会社\"\n      - button \"過去の相談\" [ref=e2]\n      - button \"新しい相談を始める\" [ref=e3]\n      - button \"チャットを閉じる\" [ref=e4]\n    - log \"相談の会話\"\n      - article\n        - StaticText \"AOKI-XYZ-999999という型番の耐熱ガラスは扱っていますか？型番を写し間違えたかもしれません。\"\n      - article\n        - StaticText \"A\"\n        - StaticText \"アオキエンジ\"\n        - StaticText \"「AOKI-XYZ-999999という型番の耐熱ガラスは扱っていますか？型番を写し間違えたかもしれません。」をお探しですね。\\n今回確認できた商品ページの範囲では、この名称に一致する掲載は見つかりませんでした。サイト全体に商品がないという判断ではありません。\\n当社の販売・調達可否と現在庫は未確認です。お問い合わせから、この名称と必要な仕様を担当者へ送って確認できます。まだ依頼は送信していません。\\nメーカー名、またはラベルや資料にある商品名・型番を教えてください。\"\n      - article\n        - StaticText \"見つからない場合、似た型番を推測して注文に進めず、何を照合すればよいか教えてください。\"\n      - article\n        - StaticText \"A\"\n        - StaticText \"アオキエンジ\"\n        - StaticText \"「ガラス製品」の分野についてご相談いただけます。\\n個別製品の仕様・対応可否、価格・在庫・納期は当社で確認します。選ぶときは、使用温度、寸法と厚さ、温度変化（加熱・冷却の頻度）、取付方法、用途（覗き窓・カバー等）が分かると候補を絞り込めます。どのような用途でお使いになるか教えていただけますか？画面下の「相談を依頼する」からもご相談いただけます。\"\n      - article\n        - StaticText \"今回は情報確認だけです。注文や正式見積の依頼は送信されていないという理解で合っていますか？\"\n      - article\n        - StaticText \"A\"\n        - StaticText \"アオキエンジ\"\n        - StaticText \"このチャットでは、ご注文やお問い合わせの送信は行っていません。まだ正式なご依頼としては未送信のため、確認メールも送られません。\\n下の「この内容で相談を依頼する」から、この会話の内容を添えて相談を依頼できます。お急ぎの場合はお電話（093-382-2110）でもご相談いただけます。\"\n        - link \"この内容で相談を依頼する\" [ref=e9]\n    - contentinfo\n      - form\n        - button \"ファイルを添付\" [expanded=false, ref=e6]\n        - textbox \"相談内容\" [ref=e7]\n        - button \"メッセージを送信\" [disabled, ref=e8]\n      - StaticText \"登録情報をもとにご案内します\"\n      - link \"当社へのお問い合わせ\" [ref=e5]\n        - StaticText \"相談を依頼する\"",
+    "browserPageId": "3d6ae23d-165e-4923-b522-123bf66435eb"
+  },
+  "_meta": {
+    "runtimeId": "2eb7d5be-c126-4cfd-8483-31d3f7adcc5e"
+  }
+}
