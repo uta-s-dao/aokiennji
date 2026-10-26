@@ -115,7 +115,7 @@ test('all consultations remain in admin after browser history deletion, with cus
   await expect(
     first.getByText('この回答にAIのAPI呼び出しはありません。', { exact: true }),
   ).toBeVisible();
-  const downloadEvent = (await page.waitForEvent('download'));
+  const downloadEvent = page.waitForEvent('download');
   await page.getByRole('button', { name: '表示中の記録をJSON保存' }).click();
   const download = await downloadEvent;
   const stream = await download.createReadStream();
