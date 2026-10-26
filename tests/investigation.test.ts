@@ -186,7 +186,7 @@ it('rejects invented actions and low confidence without executing a URL', async 
   });
   expect((await run()).result.investigation.stopReason).toBe('decision_unavailable');
   expect(network).not.toHaveBeenCalled();
-  decision.mockResolvedValue({ answers: { next: { choice: 'url_0', confidence: 0.2 } } });
+  decision.mockResolvedValue({ answers: { next: { choice: 'url_0', confidence: 0.02 } } });
   expect((await run()).result.status).toBe('failed');
   expect(network).not.toHaveBeenCalled();
 });
@@ -219,7 +219,7 @@ it('stops on failures, unavailable decision budget or cancellation, and obeys di
   expect(disabled.result.investigation.stopReason).toBe('disabled');
   expect(decision).not.toHaveBeenCalled();
   expect(network).not.toHaveBeenCalled();
-  vi.stubEnv('AI_JEV_MAX_CALL_USD', '');
+  await db().prepare('UPDATE ai_budget_policy SET paused=true WHERE id=1').run();
   expect((await run()).result.investigation.stopReason).toBe('decision_unavailable');
   expect(decision).not.toHaveBeenCalled();
   const abort = AbortSignal.abort();
@@ -439,4 +439,50 @@ it('starts research from customer purpose and shape even when no product name or
   expect(reply.productNameLookup?.investigation?.stopReason).toBe('needs_customer');
   expect(reply.inquiryState.model).toBeUndefined();
   expect(reply.content).toContain('サイズ');
+});
+
+it('reads a small ranked set of category pages when identity is known but the category judgment is uncertain', async () => {
+  let n = 0;
+  network.mockImplementation(async (url) => ({
+    status: 200,
+    url,
+    headers: new Headers(),
+    body: Buffer.from(
+      url.endsWith('/robots.txt')
+        ? ''
+        : url === 'https://investigate.example/'
+          ? '<a href="/products/">製品紹介</a>'
+          : url.endsWith('/products/')
+            ? '<section><h2>別分類</h2><a href="/products/wrong/">製品一覧</a></section><section><h2>フッ素樹脂</h2><a href="/products/right/">製品一覧</a></section>'
+            : url.endsWith('/right/')
+              ? page
+              : '<main>別の商品分野</main>',
+    ),
+  }));
+  decision.mockImplementation(async (_url, _headers, body: any) => {
+    n++;
+    const a = body.questions.next.criteria;
+    const wrong = Object.keys(a).find((k) => a[k].includes('/products/wrong/'));
+    const right = Object.keys(a).find((k) => a[k].includes('/products/right/'));
+    const choice = n === 3 ? wrong! : n === 4 ? 'finish' : firstUrl(a);
+    return {
+      answers: {
+        next: {
+          choice,
+          confidence: n === 3 ? 0.3 : 0.95,
+          probabilities: n === 3 ? { [wrong!]: 0.6, [right!]: 0.4 } : undefined,
+        },
+      },
+      usage: { input_tokens: 200, output_tokens: 1 },
+    };
+  });
+  const { result, trace } = await run({ identityKnown: true });
+  expect(result.status).toBe('identified');
+  expect(result.matches[0].model).toBe('9096-SGM');
+  expect(result.candidates).toEqual([]);
+  expect(trace.investigation?.visited).toContain('https://investigate.example/products/right/');
+  expect(trace.investigation?.actions[2].batchTargets).toHaveLength(2);
+  expect(trace.investigation?.candidates.find((c) => c.url.endsWith('/right/'))?.label).toContain(
+    'フッ素樹脂',
+  );
 });

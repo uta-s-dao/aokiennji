@@ -426,6 +426,7 @@ export async function lookupProductName(
     return investigateProduct(name, {
       ...input,
       message: input.message || name,
+      identityKnown: true,
       context: { ...input.context, conversationId: input.context.conversationId || '' },
     });
   }

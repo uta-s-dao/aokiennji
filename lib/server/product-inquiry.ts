@@ -393,7 +393,7 @@ export async function productInquiry(input: {
       : '';
     if (process.env.TYPESAFE_API_KEY && settings.flags.webSearch) {
       const { investigateProduct } = await import('./investigation');
-      const lookup = await investigateProduct(state.model, input);
+      const lookup = await investigateProduct(state.model, { ...input, identityKnown:true });
       return reply(`${acknowledgement}${previousModelNotice}${productNameLookupReply(state.model, lookup)}`, { productNameLookup: lookup });
     }
     const result = publicSourcing(

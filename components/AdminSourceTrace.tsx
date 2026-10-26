@@ -51,6 +51,9 @@ export default function AdminSourceTrace({ trace }: { trace: SourceTrace }) {
                             : '調査終了'}
                 </strong>
                 <p>{action.target || action.label}</p>
+                {action.batchTargets?.map((url) => (
+                  <p key={url}>同じ判断で取得：{url}</p>
+                ))}
                 <p>
                   結果：{action.outcome}・{datetime(action.at)}
                   {action.confidence !== undefined
