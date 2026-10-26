@@ -137,8 +137,7 @@ export async function productInquiry(input: {
         .join('\n');
     }
     if (extra.productNameLookup && /価格|値段|在庫|納期|届|確約/.test(message))
-      content +=
-        '\n価格・納期も未確認です。到着日の確約はできません。寸法・仕様、必要数量、お届け先と希望日、在庫確保・配送条件の確認が必要です。';
+      content += `\n価格・納期も未確認です。到着日の確約はできません。${currentFacts() ? `伺った条件：${currentFacts()}。` : ''}${!state.dimensions ? '寸法・規格を特定したうえで、' : ''}${state.quantity ? `${state.quantity}${state.quantityUnit || ''}分` : '必要数'}の在庫確保、出荷可能日と出荷締切、${state.destination ? `${state.destination}向けの` : ''}配送便・到着見込みを確認する必要があります。${!state.quantity || !state.destination ? `未確認の${[!state.quantity && '必要数量', !state.destination && 'お届け先'].filter(Boolean).join('・')}もお知らせください。` : '数量とお届け先の再提出は不要です。'}`;
     return {
       content:
         state.quantity && !state.model && /数量|個|枚|本|台/.test(message)
@@ -485,9 +484,9 @@ export async function productInquiry(input: {
       `${description ? `「${description}」ですね。` : ''}形状を識別するため、全体の縦・横・厚さを単位付きで教えてください。取り付け穴がある場合は、穴の直径と穴同士の中心距離も分かると照合に役立ちます。現物の写真や手描きの寸法図でも相談できます。これらだけで販売可否や適合を確定するものではありません。`,
     );
   }
-  if (/(?:届|到着|配送|納期).*(?:確約|保証)|(?:確約|保証).*(?:届|到着)/.test(message))
+  if (/(?:届|到着|配送|納期).*(?:確約|保証|約束)|(?:確約|保証|約束|必ず).*(?:届|到着)/.test(message))
     return reply(
-      `到着日の確約はできません。現在の在庫確保、発送可能日、配送便とお届け先への到着見込みを確認する必要があります。${currentFacts() ? `伺った条件：${currentFacts()}。` : ''}まだ問い合わせや注文は送信していません。`,
+      `到着日の確約はできません。${state.quantity ? `${state.quantity}${state.quantityUnit || ''}分の` : '現在の'}在庫確保、発送可能日と出荷締切、${state.destination ? `${state.destination}向けの` : ''}配送便と到着見込みを確認する必要があります。${currentFacts() ? `伺った条件：${currentFacts()}。` : ''}まだ問い合わせや注文は送信していません。`,
     );
   if (
     /食品|食品接触/.test(texts.slice(-6).join(' ')) &&

@@ -538,3 +538,34 @@ it('reads the identity index without transferring complete document bodies', asy
     spy.mockRestore();
   }
 });
+
+it('retains known quantity and destination when answering earliest arrival and a promise request', async () => {
+  await crawlSupplierCatalog(await site());
+  model.mockResolvedValueOnce({
+    ...interpretation(name),
+    quantity: 10,
+    quantityEvidence: '10枚',
+    quantityUnit: '枚',
+  });
+  const first = await answerChat(
+    `${name}を10枚ほしいです。価格、現在の在庫、福岡までの最短納期は分かりますか？`,
+    'known-delivery',
+  );
+  expect(first.message.content).toContain('福岡');
+  expect(first.message.content).toContain('10枚');
+  expect(first.message.content).toContain('出荷締切');
+  expect(first.message.content).toContain('再提出は不要');
+  model.mockResolvedValueOnce({ ...interpretation(''), designation: '', model: '' });
+  network.mockClear();
+  const second = await answerChat(
+    '明日必ず届くと約束できますか？今は問い合わせ送信せず、確認だけしたいです。',
+    'known-delivery',
+    first.conversationId,
+  );
+  expect(second.message.content).toContain('確約はできません');
+  expect(second.message.content).toContain('10枚');
+  expect(second.message.content).toContain('福岡');
+  expect(second.message.content).toContain('出荷締切');
+  expect(second.message.handoff).toBeUndefined();
+  expect(network).not.toHaveBeenCalled();
+});
