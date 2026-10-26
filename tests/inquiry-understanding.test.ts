@@ -354,3 +354,10 @@ it('does not replace a request for selection information with a summary or hando
   expect(r.message.content).toContain('取付');
   expect(r.message.handoff).toBeUndefined();
 });
+
+it('answers both company location and business even when the address policy also matches',async()=>{
+ const r=await answerChat('会社の所在地と事業内容を教えてください。','company-combined');
+ expect(r.message.content).toContain('北九州市');
+ expect(r.message.content).toContain('設計');
+ expect(r.message.content).toContain('据付');
+});

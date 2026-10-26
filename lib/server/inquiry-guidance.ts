@@ -8,6 +8,7 @@ export function informationQuestion(text: string) {
 export function companyQuestion(text: string) {
   return (
     /^(?:会社概要|所在地|住所|どんな会社|どのような会社)/.test(text) ||
+    /^(?:会社|事業|業務)(?:の|について|は).*(?:所在地|住所|事業|業務|仕事|何|どこ)/.test(text) ||
     /(?:アオキエンジ|御社|そちら|この会社).*(?:どこ|どんな仕事|どのような仕事|事業|何をして|何を扱|会社|所在地|住所)/.test(
       text,
     ) ||

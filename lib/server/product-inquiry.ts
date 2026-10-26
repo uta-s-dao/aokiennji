@@ -49,7 +49,7 @@ const candidate = z.object({
 });
 const reading = z.object({ candidates: z.array(candidate).max(8) });
 export function usesProductInquiry(message: string, history: ChatMessage[], images: string[] = []) {
-  if (images.length) return true;
+  if (images.length || companyQuestion(message)) return true;
   if (
     policyKeys(message).some((key) =>
       ['catalog', 'invoice', 'hours', 'payment', 'formEdit'].includes(key),
