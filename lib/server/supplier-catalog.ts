@@ -10,7 +10,7 @@ import type {
   SupplierKnowledge,
   StoredChatMessage,
 } from '../contracts';
-import { byId, list, now, save } from './db';
+import { byId, db, list, now, save } from './db';
 import { safeFetch } from './safe-fetch';
 import { decodeHtml } from './html';
 import {
@@ -33,6 +33,7 @@ export type CatalogDocument = {
   createdAt: string;
   supplierCatalog: { version: 1; entries: CatalogEntry[] };
 };
+type CatalogIndexDocument = Omit<CatalogDocument, 'content'>;
 export const catalogModelKey = (s: string) =>
   catalogNameKey(s).replace(/^(?:TOMBO(?:NO\.?)?|NO\.?)/, '');
 export const catalogNameKey = (s: string) =>
@@ -335,10 +336,23 @@ export async function lookupProductName(
     signal?: AbortSignal;
     message?: string;
     registeredOnly?: boolean;
-    registeredData?: { documents: CatalogDocument[]; sources: Map<string, Source> };
+    matchMention?: boolean;
+    registeredData?: { documents: CatalogIndexDocument[]; sources: Map<string, Source> };
   },
 ) {
   const { trace, settings } = input;
+  const queryKey = catalogNameKey(name);
+  const nameMatches = (entryName: string) => {
+    const key = catalogNameKey(entryName);
+    if (key === queryKey) return true;
+    if (!input.matchMention || key.length < 6) return false;
+    const index = queryKey.indexOf(key);
+    return (
+      index >= 0 &&
+      !/[A-Z0-9_-]/.test(queryKey[index - 1] || '') &&
+      !/[A-Z0-9_-]/.test(queryKey[index + key.length] || '')
+    );
+  };
   const found: CatalogEntry[] = [];
   let checkedAt: string | undefined;
   const registered = startSourceStage(
@@ -349,14 +363,13 @@ export async function lookupProductName(
     '登録済み仕入先の商品掲載索引を商品名で照合',
   );
   const consider = (
-    doc: CatalogDocument,
+    doc: CatalogIndexDocument,
     origin: 'registered_data' | 'preferred_sites' = 'registered_data',
   ) => {
     const matches =
       doc.supplierCatalog?.entries.filter(
         (e) =>
-          catalogNameKey(e.name) === catalogNameKey(name) ||
-          (!!e.model && catalogModelKey(e.model) === catalogModelKey(name)),
+          nameMatches(e.name) || (!!e.model && catalogModelKey(e.model) === catalogModelKey(name)),
       ) || [];
     for (const match of matches) {
       found.push(match);
@@ -373,8 +386,18 @@ export async function lookupProductName(
       });
     }
   };
-  const documents = input.registeredData?.documents || await list<CatalogDocument>('documents');
-  const sources = input.registeredData?.sources || new Map((await list<Source>('sources')).map((s) => [s.id, s]));
+  // Identity lookup only needs the index and provenance, not the HTML/text body.
+  const documents =
+    input.registeredData?.documents ||
+    (
+      await db()
+        .prepare(
+          "SELECT (json::jsonb - 'content')::text AS json FROM documents WHERE json::jsonb->'supplierCatalog' IS NOT NULL",
+        )
+        .all()
+    ).map((row: { json: string }) => JSON.parse(row.json) as CatalogIndexDocument);
+  const sources =
+    input.registeredData?.sources || new Map((await list<Source>('sources')).map((s) => [s.id, s]));
   for (const doc of documents) {
     if (
       !doc.supplierCatalog ||

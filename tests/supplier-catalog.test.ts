@@ -485,3 +485,56 @@ it('excludes robots-blocked detail sites from the alternative search instead of 
   });
   expect(search.mock.calls[0][3]?.excludedDomains).toContain('blocked.example');
 });
+
+it('recognizes an explicit indexed product name inside a question when the interpreter returns no identity', async () => {
+  await crawlSupplierCatalog(await site());
+  model.mockResolvedValueOnce({
+    ...interpretation(''),
+    designationKind: 'category',
+    identityUnavailable: true,
+    next: 'purpose',
+    requestedInformation: 'description',
+  });
+  const answer = await answerChat(
+    `${name}はどのような用途の製品ですか？型番が分からないので候補を教えてください。`,
+    'mentioned-index-name',
+  );
+  expect(answer.message.inquiryState?.designation).toBe(name);
+  expect(answer.message.productNameLookup?.matches).toEqual([{ name, model: '9007' }]);
+  expect(answer.message.content).not.toContain('この名称に一致する掲載は見つかりません');
+});
+it('does not identify a suffixed name or multiple mentioned products as one exact registered item', async () => {
+  await crawlSupplierCatalog(await site());
+  const input = {
+    trace: await createSourceTrace(),
+    settings,
+    context: { scope: 'chat' as const },
+    registeredOnly: true,
+    matchMention: true,
+  };
+  expect((await lookupProductName(`${name}XYZを探しています`, input)).matches).toEqual([]);
+  expect(
+    (await lookupProductName(`${name}とナフロン® PTFE低クリープガスケットの違いは？`, input))
+      .matches,
+  ).toHaveLength(2);
+});
+
+it('reads the identity index without transferring complete document bodies', async () => {
+  await crawlSupplierCatalog(await site());
+  const trace = await createSourceTrace();
+  const { database } = await import('../lib/server/database');
+  const spy = vi.spyOn(database, 'prepare');
+  try {
+    const r = await lookupProductName(name, {
+      trace,
+      settings,
+      context: { scope: 'chat' },
+      registeredOnly: true,
+    });
+    expect(r.matches.map((p) => p.model)).toEqual(['9007']);
+    expect(spy.mock.calls.some(([q]) => q.includes("json::jsonb - 'content'"))).toBe(true);
+    expect(spy.mock.calls.some(([q]) => q === 'SELECT json FROM documents')).toBe(false);
+  } finally {
+    spy.mockRestore();
+  }
+});

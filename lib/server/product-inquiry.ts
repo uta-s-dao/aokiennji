@@ -291,6 +291,16 @@ export async function productInquiry(input: {
     state.quoteDeclined = false;
   const latestIdentityText =
     message.split(/ではなく|じゃなく|ではなくて|から(?=[A-Za-z])/).at(-1) || message;
+  // Explicit registered names in the customer's words are stronger identity
+  // evidence than an empty/category classification from the interpreter.
+  if (!state.model && !state.designation && !/以外|ではない|ではありません|じゃない/.test(latestIdentityText)) {
+    const mentioned = await lookupProductName(latestIdentityText, { ...input, registeredOnly: true, matchMention: true });
+    if (mentioned.matches.length === 1) {
+      state.designation = mentioned.matches[0].name;
+      state.designationKind = 'product_name';
+      state.identityUnavailable = false;
+    }
+  }
   const explicit =
     /(?:図面番号|部品番号)/.test(message) && !/注文用?型番/.test(message)
       ? undefined
