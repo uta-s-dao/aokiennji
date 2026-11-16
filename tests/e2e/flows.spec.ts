@@ -181,6 +181,10 @@ test("未確定の調達相談をメールへ引き継ぎ、旧方式の対応�
   await expect(
     page.getByRole("heading", { name: "今回の依頼は対応範囲外です" }),
   ).toHaveCount(0);
+  await page.getByText("根拠・確認した条件", { exact: true }).click();
+  await expect(
+    page.getByText("材料手配：客先支給", { exact: true }),
+  ).toHaveCount(0);
   await page.getByRole("button", { name: "メールで相談する" }).click();
   await expect(page.getByLabel("件名と本文")).toContainText(text);
   await expect(page.getByLabel("件名と本文")).not.toContainText("客先支給");

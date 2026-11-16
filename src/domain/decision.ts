@@ -269,10 +269,12 @@ export function decideAvailability(
         verdict,
         reasonCode,
         reason,
-        conditions: i.fields
-          .filter((f) => f.hardConstraint && f.value)
-          .map((f) => `${f.label}：${present(f)}`)
-          .slice(0, 10),
+        conditions: pendingInput
+          ? []
+          : i.fields
+              .filter((f) => f.hardConstraint && f.value)
+              .map((f) => `${f.label}：${present(f)}`)
+              .slice(0, 10),
         missingFields: [
           ...new Set([
             ...missing,

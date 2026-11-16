@@ -298,6 +298,7 @@ it("型番の変更候補が残る間は旧型番の取扱分野も確定しな�
   expect(result.verdict).toBe("needs_review");
   expect(result.items[0].scopeAssessment.status).toBe("unconfirmed");
   expect(result.items[0].scopeAssessment.evidence).toEqual([]);
+  expect(result.items[0].conditions).toEqual([]);
   expect(makeMailDraft(pending, result).body).not.toContain("AX-100");
   const demoPending = extractDemo(s, p.changes[0].quote);
   expect(demoPending.unresolvedInputs?.[0].text).toBe(p.changes[0].quote);
