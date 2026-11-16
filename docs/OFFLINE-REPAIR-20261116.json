@@ -1,0 +1,1978 @@
+{
+  "codeRevision": "f27e7040b0456a23482c758819f0f2a0aa090350",
+  "sourceDigest": "05153c196a255b722a89d3368c6dbb7efec4abde3c13a5eef2b283c9b2b1f869",
+  "createdAt": "2026-11-16T13:26:12.491Z",
+  "externalRequests": 0,
+  "scope": "Captured outputs replayed through final code; not new generations or latency measurements",
+  "gradingChanges": {
+    "E19": "Supply question stays pending instead of being confirmed",
+    "E20": "Also verify hypothetical query reaches mail"
+  },
+  "summary": {
+    "previousCases": 20,
+    "previousOriginalCriteriaPassed": 19,
+    "previousRevisedCriteriaPassed": 20,
+    "repairedLiveResponsesReplayed": 10,
+    "liveGradesReproduced": true
+  },
+  "previousRows": [
+    {
+      "caseId": "E01",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "manufacturer",
+          "pass": true,
+          "actual": {
+            "text": "デモ工業",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "model",
+          "pass": true,
+          "actual": {
+            "text": "AX-100",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "quantity",
+          "pass": true,
+          "actual": {
+            "text": "2台",
+            "number": 2,
+            "unit": "台"
+          }
+        },
+        {
+          "name": "request_scope",
+          "pass": true,
+          "actual": {
+            "text": "purchase",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "zero_additional_questions",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "business_verdict",
+          "pass": true,
+          "actual": "can_handle"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E01）",
+        "body": "照会番号：AV-E01\n商品・加工・製作について相談します。\n\n【AX-100】\n依頼範囲：商品・材料の購入\nメーカー：デモ工業\n型番：AX-100\n数量：2台\n材料手配：該当なし\n\n確認日時：2026-11-16T13:26:12.439Z\nAX-100：承認済みの取扱分野に含まれます。\n今回の依頼：承認済みの取扱範囲と今回の必須条件が一致しています。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E01",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E02",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "model",
+          "pass": true,
+          "actual": {
+            "text": "AX-100B",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "quantity",
+          "pass": true,
+          "actual": {
+            "text": "1個",
+            "number": 1,
+            "unit": "個"
+          }
+        },
+        {
+          "name": "request_scope",
+          "pass": true,
+          "actual": {
+            "text": "purchase",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E02）",
+        "body": "照会番号：AV-E02\n商品・加工・製作について相談します。\n\n【AX-100B】\n依頼範囲：商品・材料の購入\n型番：AX-100B\n数量：1個\n材料手配：該当なし\n\n確認日時：2026-11-16T13:26:12.441Z\nAX-100B：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E02",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E03",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "manufacturer",
+          "pass": true,
+          "actual": {
+            "text": "架空社",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "model",
+          "pass": true,
+          "actual": {
+            "text": "ZX-42",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "quantity",
+          "pass": true,
+          "actual": {
+            "text": "3個",
+            "number": 3,
+            "unit": "個"
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E03）",
+        "body": "照会番号：AV-E03\n商品・加工・製作について相談します。\n\n【ZX-42】\n依頼範囲：商品・材料の購入\nメーカー：架空社\n型番：ZX-42\n数量：3個\n材料手配：該当なし\n\n確認日時：2026-11-16T13:26:12.442Z\nZX-42：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E03",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E04",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "model",
+          "pass": true,
+          "actual": {
+            "text": "AX-100",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "request_scope",
+          "pass": true,
+          "actual": {
+            "text": "purchase",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "contains:required_date",
+          "pass": true,
+          "actual": {
+            "text": "2027年2月1日",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E04）",
+        "body": "照会番号：AV-E04\n商品・加工・製作について相談します。\n\n【型番AX-100】\n依頼範囲：商品・材料の購入\n型番：AX-100\n希望日：2027年2月1日\n材料手配：該当なし\n\n確認日時：2026-11-16T13:26:12.444Z\n型番AX-100：取扱分野も担当者確認が必要です。\n今回の依頼：取扱分野の根拠と、今回の仕様・依頼方式・希望条件を分けて確認する必要があります。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E04",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E05",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "outer_diameter",
+          "pass": true,
+          "actual": {
+            "text": "100mm",
+            "number": 100,
+            "unit": "mm"
+          }
+        },
+        {
+          "name": "opening_diameter",
+          "pass": true,
+          "actual": {
+            "text": "80mm",
+            "number": 80,
+            "unit": "mm"
+          }
+        },
+        {
+          "name": "quantity",
+          "pass": true,
+          "actual": {
+            "text": "4枚",
+            "number": 4,
+            "unit": "枚"
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E05）",
+        "body": "照会番号：AV-E05\n商品・加工・製作について相談します。\n\n【点検窓用ガラス】\n用途：装置の点検窓用\n数量：4枚\n外径：100mm\n見える穴の径：80mm\n\n確認日時：2026-11-16T13:26:12.445Z\n点検窓用ガラス：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E05",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E06",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "quantity",
+          "pass": true,
+          "actual": {
+            "text": "8個",
+            "number": 8,
+            "unit": "個"
+          }
+        },
+        {
+          "name": "request_scope",
+          "pass": true,
+          "actual": {
+            "text": "purchase",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "status:manufacturer",
+          "pass": true,
+          "actual": "unknown"
+        },
+        {
+          "name": "status:material",
+          "pass": true,
+          "actual": "unknown"
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E06）",
+        "body": "照会番号：AV-E06\n商品・加工・製作について相談します。\n\n【交換用パッキン】\n依頼範囲：商品・材料の購入\nメーカー：分からない\n数量：8個\n用途：温水配管\n材質：分からない\n材料手配：該当なし\n\n確認日時：2026-11-16T13:26:12.447Z\n交換用パッキン：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E06",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E07",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "normal_temperature",
+          "pass": true,
+          "actual": {
+            "text": "680℃",
+            "number": 680,
+            "unit": "℃"
+          }
+        },
+        {
+          "name": "peak_temperature",
+          "pass": true,
+          "actual": {
+            "text": "820℃",
+            "number": 820,
+            "unit": "℃"
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        },
+        {
+          "name": "mail_excludes:780℃",
+          "pass": true,
+          "actual": false
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E07）",
+        "body": "照会番号：AV-E07\n商品・加工・製作について相談します。\n\n【ガラス】\n対象の説明：ガラス\n依頼範囲：商品・材料の購入\n材料手配：該当なし\n通常温度：680℃\n最高温度：820℃\n\n確認日時：2026-11-16T13:26:12.450Z\nガラス：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E07",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E08",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "outer_diameter",
+          "pass": true,
+          "actual": {
+            "text": "100mm",
+            "number": 100,
+            "unit": "mm"
+          }
+        },
+        {
+          "name": "opening_diameter",
+          "pass": true,
+          "actual": {
+            "text": "80mm",
+            "number": 80,
+            "unit": "mm"
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E08）",
+        "body": "照会番号：AV-E08\n商品・加工・製作について相談します。\n\n【ガラス】\n対象の説明：ガラス\n依頼範囲：商品・材料の購入\n材料手配：該当なし\n見える穴の径：80mm\n外径：100mm\n\n確認日時：2026-11-16T13:26:12.454Z\nガラス：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E08",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E09",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "request_scope",
+          "pass": true,
+          "actual": {
+            "text": "fabrication",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "contains:work_scope",
+          "pass": true,
+          "actual": {
+            "text": "架台全体",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "contains:coating",
+          "pass": true,
+          "actual": {
+            "text": "粉体塗装が必要",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "contains:supplied_parts",
+          "pass": true,
+          "actual": {
+            "text": "塗料は支給",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "contains:drawing_number",
+          "pass": true,
+          "actual": {
+            "text": "D-61",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "contains:required_date",
+          "pass": true,
+          "actual": {
+            "text": "2027年1月20日",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "paint_is_not_customer_material",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        },
+        {
+          "name": "business_scope",
+          "pass": true,
+          "actual": "in_scope"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E09）",
+        "body": "照会番号：AV-E09\n商品・加工・製作について相談します。\n\n【図番D-61の架台全体】\n依頼範囲：製作\n図番：D-61\n依頼する部位・作業：架台全体\n塗装：粉体塗装が必要\n支給品：塗料は支給\n希望日：2027年1月20日\n対象の説明：図番D-61の架台全体\n\n確認日時：2026-11-16T13:26:12.456Z\n図番D-61の架台全体：承認済みの取扱分野に含まれます。\n今回の依頼：取扱分野の根拠と、今回の仕様・依頼方式・希望条件を分けて確認する必要があります。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E09",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E10",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "request_scope",
+          "pass": true,
+          "actual": {
+            "text": "fabrication",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "material_supply",
+          "pass": true,
+          "actual": {
+            "text": "company_sourced",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "contains:excluded_work",
+          "pass": true,
+          "actual": {
+            "text": "リブ",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        },
+        {
+          "name": "business_scope",
+          "pass": true,
+          "actual": "in_scope"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E10）",
+        "body": "照会番号：AV-E10\n商品・加工・製作について相談します。\n\n【図面の架台】\n依頼範囲：製作\n対象の説明：図面の架台\n製作除外：リブ\n材料手配：当社調達\n\n確認日時：2026-11-16T13:26:12.459Z\n図面の架台：承認済みの取扱分野に含まれます。\n今回の依頼：取扱分野の根拠と、今回の仕様・依頼方式・希望条件を分けて確認する必要があります。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E10",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E11",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "width",
+          "pass": true,
+          "actual": {
+            "text": "600mm",
+            "number": 600,
+            "unit": "mm"
+          }
+        },
+        {
+          "name": "height",
+          "pass": true,
+          "actual": {
+            "text": "700mm",
+            "number": 700,
+            "unit": "mm"
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        },
+        {
+          "name": "mail_excludes:幅：500mm",
+          "pass": true,
+          "actual": false
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E11）",
+        "body": "照会番号：AV-E11\n商品・加工・製作について相談します。\n\n【架台】\n対象の説明：架台\n依頼範囲：製作\n高さ：700mm\n幅：600mm\n\n確認日時：2026-11-16T13:26:12.460Z\n架台：承認済みの取扱分野に含まれます。\n今回の依頼：取扱分野の根拠と、今回の仕様・依頼方式・希望条件を分けて確認する必要があります。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E11",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E12",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "contains:drawing_revision",
+          "pass": true,
+          "actual": {
+            "text": "R3",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E12）",
+        "body": "照会番号：AV-E12\n商品・加工・製作について相談します。\n\n【架台】\n対象の説明：架台\n依頼範囲：製作\n図面版：R3\n\n確認日時：2026-11-16T13:26:12.461Z\n架台：承認済みの取扱分野に含まれます。\n今回の依頼：取扱分野の根拠と、今回の仕様・依頼方式・希望条件を分けて確認する必要があります。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E12",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E13",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 2
+        },
+        {
+          "name": "part:ガラス",
+          "pass": true,
+          "actual": "ガラス"
+        },
+        {
+          "name": "ガラス:quantity",
+          "pass": true,
+          "actual": {
+            "text": "4枚",
+            "number": 4,
+            "unit": "枚"
+          }
+        },
+        {
+          "name": "ガラス:outer_diameter",
+          "pass": true,
+          "actual": {
+            "text": "100mm",
+            "number": 100,
+            "unit": "mm"
+          }
+        },
+        {
+          "name": "part:パッキン",
+          "pass": true,
+          "actual": "パッキン"
+        },
+        {
+          "name": "パッキン:quantity",
+          "pass": true,
+          "actual": {
+            "text": "8個",
+            "number": 8,
+            "unit": "個"
+          }
+        },
+        {
+          "name": "パッキン:inner_diameter",
+          "pass": true,
+          "actual": {
+            "text": "80mm",
+            "number": 80,
+            "unit": "mm"
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E13）",
+        "body": "照会番号：AV-E13\n商品・加工・製作について相談します。\n\n【ガラス】\n数量：4枚\n外径：100mm\n対象の説明：ガラス\n\n【パッキン】\n数量：8個\n内径：80mm\n対象の説明：パッキン\n\n確認日時：2026-11-16T13:26:12.462Z\nガラス：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\nパッキン：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E13",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E14",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 2
+        },
+        {
+          "name": "part:カバー",
+          "pass": true,
+          "actual": "カバー"
+        },
+        {
+          "name": "カバー:quantity",
+          "pass": true,
+          "actual": {
+            "text": "4組",
+            "number": 4,
+            "unit": "組"
+          }
+        },
+        {
+          "name": "カバー:contains:coating",
+          "pass": true,
+          "actual": {
+            "text": "塗装不要",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "カバー:contains:destination",
+          "pass": true,
+          "actual": {
+            "text": "大阪",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "part:ネック",
+          "pass": true,
+          "actual": "ネック"
+        },
+        {
+          "name": "ネック:quantity",
+          "pass": true,
+          "actual": {
+            "text": "8組",
+            "number": 8,
+            "unit": "組"
+          }
+        },
+        {
+          "name": "ネック:contains:coating",
+          "pass": true,
+          "actual": {
+            "text": "外装塗装",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "ネック:contains:destination",
+          "pass": true,
+          "actual": {
+            "text": "神戸",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E14）",
+        "body": "照会番号：AV-E14\n商品・加工・製作について相談します。\n\n【カバー】\n数量：4組\n塗装：塗装不要\n納入先：大阪\n対象の説明：カバー\n\n【ネック】\n数量：8組\n塗装：外装塗装\n納入先：神戸\n対象の説明：ネック\n\n確認日時：2026-11-16T13:26:12.463Z\nカバー：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\nネック：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E14",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E15",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 2
+        },
+        {
+          "name": "part:ガラス",
+          "pass": true,
+          "actual": "ガラス"
+        },
+        {
+          "name": "ガラス:quantity",
+          "pass": true,
+          "actual": {
+            "text": "4枚",
+            "number": 4,
+            "unit": "枚"
+          }
+        },
+        {
+          "name": "part:パッキン",
+          "pass": true,
+          "actual": "パッキン"
+        },
+        {
+          "name": "パッキン:quantity",
+          "pass": true,
+          "actual": {
+            "text": "10個",
+            "number": 10,
+            "unit": "個"
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E15）",
+        "body": "照会番号：AV-E15\n商品・加工・製作について相談します。\n\n【ガラス】\n対象の説明：ガラス\n数量：4枚\n\n【パッキン】\n対象の説明：パッキン\n数量：10個\n\n確認日時：2026-11-16T13:26:12.464Z\nガラス：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\nパッキン：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E15",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E16",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": false,
+      "errorCode": "INVALID_EXTRACTION",
+      "checks": [
+        {
+          "name": "ambiguous_target_not_applied",
+          "pass": true,
+          "actual": "INVALID_EXTRACTION"
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        },
+        {
+          "name": "failed_input_preserved_in_mail",
+          "pass": true,
+          "actual": null
+        }
+      ],
+      "unresolvedInputs": [
+        "材質を鉄に変更してください。どちらの部品かはまだ決めていません。"
+      ],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E16）",
+        "body": "照会番号：AV-E16\n商品・加工・製作について相談します。\n\n最新の相談を確認中のため、以前の条件・判断は記載していません。\n\n解釈・確認が未完了の入力：\n材質を鉄に変更してください。どちらの部品かはまだ決めていません。\n\n確認結果：未確認（再調査が必要です）\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E16",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E17",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "status:purpose",
+          "pass": true,
+          "actual": "unknown"
+        },
+        {
+          "name": "status:manufacturer",
+          "pass": true,
+          "actual": "unknown"
+        },
+        {
+          "name": "status:material",
+          "pass": true,
+          "actual": "unknown"
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E17）",
+        "body": "照会番号：AV-E17\n商品・加工・製作について相談します。\n\n【メーカー不明の部品】\n用途：分からない\nメーカー：分からない\n材質：分からない\n対象の説明：メーカー不明の部品\n\n確認日時：2026-11-16T13:26:12.465Z\nメーカー不明の部品：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E17",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E18",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "request_scope",
+          "pass": true,
+          "actual": {
+            "text": "processing",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "material_supply",
+          "pass": true,
+          "actual": {
+            "text": "customer_supplied",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "out_of_scope"
+        },
+        {
+          "name": "business_verdict",
+          "pass": true,
+          "actual": "out_of_scope"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E18）",
+        "body": "照会番号：AV-E18\n商品・加工・製作について相談します。\n\n【リング材】\n依頼範囲：加工\n加工内容：穴加工\n支給品：リング材\n対象の説明：リング材\n材料手配：客先支給\n\n確認日時：2026-11-16T13:26:12.466Z\nリング材：取扱分野も担当者確認が必要です。\n今回の依頼：【架空デモ】客先支給のリング材への加工は、この方式に限って対応範囲外です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E18",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E19",
+      "originalGrade": false,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "request_scope",
+          "pass": true,
+          "actual": {
+            "text": "processing",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "material_supply",
+          "pass": true,
+          "actual": {
+            "text": "customer_supplied",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        },
+        {
+          "name": "business_verdict",
+          "pass": true,
+          "actual": "needs_review"
+        },
+        {
+          "name": "mail_excludes:客先支給",
+          "pass": true,
+          "actual": false
+        },
+        {
+          "name": "latest_query_preserved",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "old_verdict_not_in_mail",
+          "pass": true,
+          "actual": null
+        }
+      ],
+      "unresolvedInputs": [
+        "材料も御社で調達できますか。リング材の加工も一緒に依頼したいです。"
+      ],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E19）",
+        "body": "照会番号：AV-E19\n商品・加工・製作について相談します。\n\n最新の相談を確認中のため、以前の条件・判断は記載していません。\n\n解釈・確認が未完了の入力：\n材料も御社で調達できますか。リング材の加工も一緒に依頼したいです。\n\n確認結果：未確認（再調査が必要です）\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E19",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "caseId": "E20",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "material",
+          "pass": true,
+          "actual": {
+            "text": "SUS304",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        },
+        {
+          "name": "latest_query_preserved",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "old_verdict_not_in_mail",
+          "pass": true,
+          "actual": null
+        }
+      ],
+      "unresolvedInputs": [
+        "SUS316ならどうでしょうか。まだ材質の変更は決めていません。"
+      ],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E20）",
+        "body": "照会番号：AV-E20\n商品・加工・製作について相談します。\n\n最新の相談を確認中のため、以前の条件・判断は記載していません。\n\n解釈・確認が未完了の入力：\nSUS316ならどうでしょうか。まだ材質の変更は決めていません。\n\n確認結果：未確認（再調査が必要です）\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E20",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    }
+  ],
+  "repairRows": [
+    {
+      "caseId": "E01",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "manufacturer",
+          "pass": true,
+          "actual": {
+            "text": "デモ工業",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "model",
+          "pass": true,
+          "actual": {
+            "text": "AX-100",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "quantity",
+          "pass": true,
+          "actual": {
+            "text": "2台",
+            "number": 2,
+            "unit": "台"
+          }
+        },
+        {
+          "name": "request_scope",
+          "pass": true,
+          "actual": {
+            "text": "purchase",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "zero_additional_questions",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "business_verdict",
+          "pass": true,
+          "actual": "can_handle"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E01）",
+        "body": "照会番号：AV-E01\n商品・加工・製作について相談します。\n\n【AX-100】\n依頼範囲：商品・材料の購入\nメーカー：デモ工業\n型番：AX-100\n数量：2台\n材料手配：該当なし\n\n確認日時：2026-11-16T13:26:12.470Z\nAX-100：承認済みの取扱分野に含まれます。\n今回の依頼：承認済みの取扱範囲と今回の必須条件が一致しています。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E01",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      },
+      "matchesRecordedLiveGrade": true
+    },
+    {
+      "caseId": "E06",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "quantity",
+          "pass": true,
+          "actual": {
+            "text": "8個",
+            "number": 8,
+            "unit": "個"
+          }
+        },
+        {
+          "name": "request_scope",
+          "pass": true,
+          "actual": {
+            "text": "purchase",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "status:manufacturer",
+          "pass": true,
+          "actual": "unknown"
+        },
+        {
+          "name": "status:material",
+          "pass": true,
+          "actual": "unknown"
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E06）",
+        "body": "照会番号：AV-E06\n商品・加工・製作について相談します。\n\n【交換用パッキン】\n依頼範囲：商品・材料の購入\nメーカー：分からない\n数量：8個\n用途：温水配管\n材質：分からない\n材料手配：該当なし\n\n確認日時：2026-11-16T13:26:12.471Z\n交換用パッキン：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E06",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      },
+      "matchesRecordedLiveGrade": true
+    },
+    {
+      "caseId": "E07",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "normal_temperature",
+          "pass": true,
+          "actual": {
+            "text": "680℃",
+            "number": 680,
+            "unit": "℃"
+          }
+        },
+        {
+          "name": "peak_temperature",
+          "pass": true,
+          "actual": {
+            "text": "820℃",
+            "number": 820,
+            "unit": "℃"
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        },
+        {
+          "name": "mail_excludes:780℃",
+          "pass": true,
+          "actual": false
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E07）",
+        "body": "照会番号：AV-E07\n商品・加工・製作について相談します。\n\n【ガラス】\n対象の説明：ガラス\n依頼範囲：商品・材料の購入\n材料手配：該当なし\n通常温度：680℃\n最高温度：820℃\n\n確認日時：2026-11-16T13:26:12.473Z\nガラス：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E07",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      },
+      "matchesRecordedLiveGrade": true
+    },
+    {
+      "caseId": "E08",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "outer_diameter",
+          "pass": true,
+          "actual": {
+            "text": "100mm",
+            "number": 100,
+            "unit": "mm"
+          }
+        },
+        {
+          "name": "opening_diameter",
+          "pass": true,
+          "actual": {
+            "text": "80mm",
+            "number": 80,
+            "unit": "mm"
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E08）",
+        "body": "照会番号：AV-E08\n商品・加工・製作について相談します。\n\n【ガラス】\n対象の説明：ガラス\n依頼範囲：商品・材料の購入\n材料手配：該当なし\n見える穴の径：80mm\n外径：100mm\n\n確認日時：2026-11-16T13:26:12.474Z\nガラス：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E08",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      },
+      "matchesRecordedLiveGrade": true
+    },
+    {
+      "caseId": "E09",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "request_scope",
+          "pass": true,
+          "actual": {
+            "text": "fabrication",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "contains:work_scope",
+          "pass": true,
+          "actual": {
+            "text": "架台全体",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "contains:coating",
+          "pass": true,
+          "actual": {
+            "text": "粉体塗装",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "contains:supplied_parts",
+          "pass": true,
+          "actual": {
+            "text": "塗料",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "contains:drawing_number",
+          "pass": true,
+          "actual": {
+            "text": "D-61",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "contains:required_date",
+          "pass": true,
+          "actual": {
+            "text": "2027年1月20日",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "paint_is_not_customer_material",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        },
+        {
+          "name": "business_scope",
+          "pass": true,
+          "actual": "in_scope"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E09）",
+        "body": "照会番号：AV-E09\n商品・加工・製作について相談します。\n\n【架台】\n依頼範囲：製作\n図番：D-61\n依頼する部位・作業：架台全体\n塗装：粉体塗装\n支給品：塗料\n希望日：2027年1月20日\n対象の説明：架台\n\n確認日時：2026-11-16T13:26:12.475Z\n架台：承認済みの取扱分野に含まれます。\n今回の依頼：取扱分野の根拠と、今回の仕様・依頼方式・希望条件を分けて確認する必要があります。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E09",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      },
+      "matchesRecordedLiveGrade": true
+    },
+    {
+      "caseId": "E10",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "request_scope",
+          "pass": true,
+          "actual": {
+            "text": "fabrication",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "material_supply",
+          "pass": true,
+          "actual": {
+            "text": "company_sourced",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "contains:excluded_work",
+          "pass": true,
+          "actual": {
+            "text": "リブ",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        },
+        {
+          "name": "business_scope",
+          "pass": true,
+          "actual": "in_scope"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E10）",
+        "body": "照会番号：AV-E10\n商品・加工・製作について相談します。\n\n【架台】\n依頼範囲：製作\n製作除外：リブ\n対象の説明：架台\n材料手配：当社調達\n\n確認日時：2026-11-16T13:26:12.477Z\n架台：承認済みの取扱分野に含まれます。\n今回の依頼：取扱分野の根拠と、今回の仕様・依頼方式・希望条件を分けて確認する必要があります。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E10",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      },
+      "matchesRecordedLiveGrade": true
+    },
+    {
+      "caseId": "E13",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 2
+        },
+        {
+          "name": "part:ガラス",
+          "pass": true,
+          "actual": "ガラス"
+        },
+        {
+          "name": "ガラス:quantity",
+          "pass": true,
+          "actual": {
+            "text": "4枚",
+            "number": 4,
+            "unit": "枚"
+          }
+        },
+        {
+          "name": "ガラス:outer_diameter",
+          "pass": true,
+          "actual": {
+            "text": "100mm",
+            "number": 100,
+            "unit": "mm"
+          }
+        },
+        {
+          "name": "part:パッキン",
+          "pass": true,
+          "actual": "パッキン"
+        },
+        {
+          "name": "パッキン:quantity",
+          "pass": true,
+          "actual": {
+            "text": "8個",
+            "number": 8,
+            "unit": "個"
+          }
+        },
+        {
+          "name": "パッキン:inner_diameter",
+          "pass": true,
+          "actual": {
+            "text": "80mm",
+            "number": 80,
+            "unit": "mm"
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E13）",
+        "body": "照会番号：AV-E13\n商品・加工・製作について相談します。\n\n【ガラス】\n数量：4枚\n外径：100mm\n対象の説明：ガラス\n\n【パッキン】\n数量：8個\n内径：80mm\n対象の説明：パッキン\n\n確認日時：2026-11-16T13:26:12.478Z\nガラス：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\nパッキン：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E13",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      },
+      "matchesRecordedLiveGrade": true
+    },
+    {
+      "caseId": "E14",
+      "originalGrade": false,
+      "revisedGrade": false,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 2
+        },
+        {
+          "name": "part:カバー",
+          "pass": true,
+          "actual": "カバー"
+        },
+        {
+          "name": "カバー:quantity",
+          "pass": true,
+          "actual": {
+            "text": "4組",
+            "number": 4,
+            "unit": "組"
+          }
+        },
+        {
+          "name": "カバー:contains:coating",
+          "pass": false,
+          "actual": {
+            "text": "不要",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "カバー:contains:destination",
+          "pass": true,
+          "actual": {
+            "text": "大阪",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "part:ネック",
+          "pass": true,
+          "actual": "ネック"
+        },
+        {
+          "name": "ネック:quantity",
+          "pass": true,
+          "actual": {
+            "text": "8組",
+            "number": 8,
+            "unit": "組"
+          }
+        },
+        {
+          "name": "ネック:contains:coating",
+          "pass": true,
+          "actual": {
+            "text": "外装塗装",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "ネック:contains:destination",
+          "pass": true,
+          "actual": {
+            "text": "神戸",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E14）",
+        "body": "照会番号：AV-E14\n商品・加工・製作について相談します。\n\n【カバー】\n数量：4組\n塗装：不要\n納入先：大阪\n対象の説明：カバー\n\n【ネック】\n数量：8組\n塗装：外装塗装\n納入先：神戸\n対象の説明：ネック\n\n確認日時：2026-11-16T13:26:12.478Z\nカバー：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\nネック：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E14",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      },
+      "matchesRecordedLiveGrade": true
+    },
+    {
+      "caseId": "E17",
+      "originalGrade": true,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "status:purpose",
+          "pass": true,
+          "actual": "unknown"
+        },
+        {
+          "name": "status:manufacturer",
+          "pass": true,
+          "actual": "unknown"
+        },
+        {
+          "name": "status:material",
+          "pass": true,
+          "actual": "unknown"
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "unresolvedInputs": [],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E17）",
+        "body": "照会番号：AV-E17\n商品・加工・製作について相談します。\n\n【部品】\n依頼範囲：商品・材料の購入\n用途：分からない\nメーカー：分からない\n材質：分からない\n対象の説明：部品\n材料手配：該当なし\n\n確認日時：2026-11-16T13:26:12.479Z\n部品：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E17",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      },
+      "matchesRecordedLiveGrade": true
+    },
+    {
+      "caseId": "E19",
+      "originalGrade": false,
+      "revisedGrade": true,
+      "extractionCompleted": true,
+      "errorCode": null,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "request_scope",
+          "pass": true,
+          "actual": {
+            "text": "processing",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "material_supply",
+          "pass": true,
+          "actual": {
+            "text": "customer_supplied",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        },
+        {
+          "name": "business_verdict",
+          "pass": true,
+          "actual": "needs_review"
+        },
+        {
+          "name": "mail_excludes:客先支給",
+          "pass": true,
+          "actual": false
+        },
+        {
+          "name": "latest_query_preserved",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "old_verdict_not_in_mail",
+          "pass": true,
+          "actual": null
+        }
+      ],
+      "unresolvedInputs": [
+        "材料も御社で調達できますか。リング材の加工も一緒に依頼したいです。"
+      ],
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E19）",
+        "body": "照会番号：AV-E19\n商品・加工・製作について相談します。\n\n最新の相談を確認中のため、以前の条件・判断は記載していません。\n\n解釈・確認が未完了の入力：\n材料も御社で調達できますか。リング材の加工も一緒に依頼したいです。\n\n確認結果：未確認（再調査が必要です）\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E19",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      },
+      "matchesRecordedLiveGrade": true
+    }
+  ]
+}

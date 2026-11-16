@@ -17,3 +17,12 @@
 技術上の確認には、Cloudflare公式の[React構成](https://developers.cloudflare.com/workers/framework-guides/web-apps/react/)、[D1ローカル開発](https://developers.cloudflare.com/d1/best-practices/local-development/)、[D1 batch](https://developers.cloudflare.com/d1/worker-api/d1-database/#batch)、[ローカルcron試験](https://developers.cloudflare.com/workers/configuration/cron-triggers/#test-cron-triggers-locally)を参照しました。この実装はViteでUIをビルドし、WranglerでローカルWorkerと静的資産を配信します。
 
 段階4の接続・利用上限・未確認入力の扱いは [INTAKE-INTEGRATION.md](INTAKE-INTEGRATION.md) に追記しました。公開契約版2と設計原本は変更していません。
+
+
+## 実モデル評価後の修正
+
+未確定変更は非公開snapshotのpendingChanges（eventId/itemId/key）とunresolvedInputsに保存します。対応欄を明示更新した場合だけ関連保留を解消し、無関係な入力は保留を消しません。保留中はResearchBriefへ未確認入力のmarkerを渡し、判定・根拠・旧条件の表示を保留します。メールは旧構造化値と結果を列挙せず、最新未確認原文を渡します。公開契約版2とDBスキーマは維持しました。過去のsnapshotを一括変換する処理は行っていません。
+
+分類は型番aliasと明示対応表から候補を決め、最終判定で承認・seller資料・期限・全必須条件を再検証します。fixtures/demo/classification.jsonは架空のdemo-source/ruleに限った名称対応で、会社本番の分類管理機能ではありません。モデルのcategory指定単独では確定しません。
+
+引用の補正は原文の一意な文へ限定します。属性名・数値・単位・品目との対応を検査し、不明/非開示の言い回しを拡張しました。最新の検証・費用・未達は[LIVE-REPAIR-20261116.md](LIVE-REPAIR-20261116.md)を参照してください。
