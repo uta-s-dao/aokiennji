@@ -244,13 +244,14 @@ export function applyExtractionProposal(
       const grounded = proposal.newItems.find(
         (i) => refs.get(i.ref) === addition.id,
       )!;
+      const identityKey = ["description", "product_name"].find(
+        (key) =>
+          !changes.some((c) => c.itemId === addition.id && c.key === key),
+      );
+      if (!identityKey) throw bad();
       changes.push({
         itemId: addition.id,
-        key: changes.some(
-          (c) => c.itemId === addition.id && c.key === "description",
-        )
-          ? "product_name"
-          : "description",
+        key: identityKey,
         text: addition.label,
         quote: grounded.quote,
         hardConstraint: false,

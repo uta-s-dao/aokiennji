@@ -168,17 +168,24 @@ export function extractDemo(
     (e) => e.text !== text,
   );
   if (
-    isTentative(text) &&
-    /SUS|材質|材料|調達/.test(text) &&
-    s.brief.items.length
+    pending.length ||
+    (isTentative(text) &&
+      /SUS|材質|材料|調達/.test(text) &&
+      s.brief.items.length)
   ) {
     state.unresolvedInputs.push(event);
     const keys = /材料|調達/.test(text) ? ["material_supply"] : ["material"];
     state.pendingChanges = [
       ...(state.pendingChanges ?? []),
-      ...s.brief.items.flatMap((i) =>
-        keys.map((key) => ({ eventId: event.id, itemId: i.id, key })),
-      ),
+      ...(pending.length
+        ? pending.map((p) => ({
+            eventId: event.id,
+            itemId: p.itemId,
+            key: p.key,
+          }))
+        : s.brief.items.flatMap((i) =>
+            keys.map((key) => ({ eventId: event.id, itemId: i.id, key })),
+          )),
     ];
     state.recoveryOffered = false;
   }

@@ -273,3 +273,76 @@ it("別部品の値を含む引用や『変更しません』から値を確定�
     applyExtractionProposal(one, p.changes[0].quote, null, p),
   ).toThrow();
 });
+
+it("型番の変更候補が残る間は旧型番の取扱分野も確定しない", () => {
+  const s = extractDemo(makeSnapshot("pending-model"), "AX-100を購入したい");
+  const p: ExtractionProposal = {
+    schemaVersion: 1,
+    newItems: [],
+    changes: [
+      {
+        itemRef: s.brief.items[0].id,
+        key: "model",
+        status: "known",
+        value: { text: "AX-200", number: null, unit: null },
+        quote: "AX-200ならどうでしょうか",
+        operation: "hypothetical",
+        hardConstraint: false,
+      },
+    ],
+    ambiguities: [],
+    unprocessedQuotes: [],
+  };
+  const pending = applyExtractionProposal(s, p.changes[0].quote, null, p);
+  const result = decide(pending);
+  expect(result.verdict).toBe("needs_review");
+  expect(result.items[0].scopeAssessment.status).toBe("unconfirmed");
+  expect(result.items[0].scopeAssessment.evidence).toEqual([]);
+  expect(makeMailDraft(pending, result).body).not.toContain("AX-100");
+  const demoPending = extractDemo(s, p.changes[0].quote);
+  expect(demoPending.unresolvedInputs?.[0].text).toBe(p.changes[0].quote);
+  expect(decide(demoPending).items[0].scopeAssessment.status).toBe(
+    "unconfirmed",
+  );
+});
+
+it("識別用の補助値で顧客が明示した説明・商品名の不明を上書きしない", () => {
+  const text = "部品の説明は分かりません。商品名も不明です。";
+  const p: ExtractionProposal = {
+    schemaVersion: 1,
+    newItems: [
+      {
+        ref: "one",
+        label: "部品",
+        quote: text,
+        profile: "unknown",
+        category: null,
+      },
+    ],
+    changes: [
+      {
+        itemRef: "one",
+        key: "description",
+        status: "unknown",
+        value: null,
+        quote: "説明は分かりません",
+        operation: "set",
+        hardConstraint: false,
+      },
+      {
+        itemRef: "one",
+        key: "product_name",
+        status: "unknown",
+        value: null,
+        quote: "商品名も不明",
+        operation: "set",
+        hardConstraint: false,
+      },
+    ],
+    ambiguities: [],
+    unprocessedQuotes: [],
+  };
+  expect(() =>
+    applyExtractionProposal(makeSnapshot("unknown-name"), text, null, p),
+  ).toThrow();
+});
