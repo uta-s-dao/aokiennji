@@ -1,0 +1,303 @@
+{
+  "kind": "live-baseline-within-three-call-limit",
+  "startedAt": "2026-11-16T10:20:55.957Z",
+  "codeRevision": "2c024c8271ce667c5088fe08ccf48eb7bce11541",
+  "knowledgeRevision": 56,
+  "ruleDigest": "9cae3740b2b4e95e48ea8aa5220cf9c8a136c578f45b7a6f3d7179adce3811dd",
+  "model": "gpt-5.6-terra",
+  "dataKind": "架空相談・架空承認資料",
+  "independentEvaluation": false,
+  "maxNewCalls": 3,
+  "before": {
+    "provider": "openai",
+    "calls": {
+      "count": 0
+    },
+    "control": {
+      "blocked_reason": null
+    }
+  },
+  "results": [
+    {
+      "id": "B01",
+      "input": "メーカーはデモ工業です。型番AX-100を2台購入したいです。",
+      "expected": {
+        "items": 1,
+        "fields": {
+          "manufacturer": "デモ工業",
+          "model": "AX-100",
+          "request_scope": "purchase",
+          "quantity": {
+            "number": 2,
+            "unit": "台"
+          }
+        },
+        "expectedAdditionalQuestions": 0
+      },
+      "caseId": "ec128ebb-e27c-4b89-a99c-83428f2c1658",
+      "firstResponse": {
+        "kind": "intake_response",
+        "caseId": "ec128ebb-e27c-4b89-a99c-83428f2c1658",
+        "revision": 1,
+        "action": "ask",
+        "question": {
+          "id": "initial",
+          "itemId": null,
+          "fieldKey": "description",
+          "text": "名称・用途・写真のいずれかを教えてください。",
+          "inputType": "text",
+          "options": [],
+          "allowUnknown": true,
+          "allowSkip": true
+        },
+        "jobId": null,
+        "canResearch": false,
+        "notice": "自由文の確認を完了できませんでした。入力を保持しています。再入力・修正またはメール相談できます。"
+      },
+      "intakeElapsedMs": 3035,
+      "researchObservedMs": 13,
+      "startedByExplicitAction": false,
+      "phase": "collecting",
+      "questionsAsked": 0,
+      "question": {
+        "id": "initial",
+        "itemId": null,
+        "fieldKey": "description",
+        "text": "名称・用途・写真のいずれかを教えてください。",
+        "inputType": "text",
+        "options": [],
+        "allowUnknown": true,
+        "allowSkip": true
+      },
+      "items": [],
+      "unresolvedInputs": [
+        "メーカーはデモ工業です。型番AX-100を2台購入したいです。"
+      ],
+      "result": null,
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-EC128EBB）",
+        "body": "照会番号：AV-EC128EBB\n商品・加工・製作について相談します。\n\n解釈・確認が未完了の入力：\nメーカーはデモ工業です。型番AX-100を2台購入したいです。\n\n確認結果：未確認（再調査が必要です）\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-EC128EBB",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      },
+      "afterCallCount": 1,
+      "providerObservation": {
+        "case_id": "ec128ebb-e27c-4b89-a99c-83428f2c1658",
+        "state": "failed",
+        "error_code": "MODEL_TIMEOUT",
+        "input_tokens": null,
+        "output_tokens": null
+      },
+      "assessment": {
+        "extractionSuccess": false,
+        "inputPreserved": true,
+        "mailPreservesInput": true,
+        "businessVerdictAvailable": false,
+        "businessCorrectness": "not_evaluable_without_extraction",
+        "speedTargetMet": false
+      }
+    },
+    {
+      "id": "B02",
+      "input": "図番D-61の架台全体を製作してください。粉体塗装が必要で、塗料は支給します。希望納入日は2027年1月20日です。",
+      "expected": {
+        "items": 1,
+        "requestScope": "fabrication",
+        "mustKeep": [
+          "D-61",
+          "粉体塗装",
+          "塗料",
+          "2027年1月20日"
+        ],
+        "mustNotInferMaterialSupply": "customer_supplied",
+        "expectedVerdict": "needs_review"
+      },
+      "caseId": "3c15c30f-f97c-4a64-926e-83b9f2fd7e08",
+      "firstResponse": {
+        "kind": "intake_response",
+        "caseId": "3c15c30f-f97c-4a64-926e-83b9f2fd7e08",
+        "revision": 1,
+        "action": "ask",
+        "question": {
+          "id": "initial",
+          "itemId": null,
+          "fieldKey": "description",
+          "text": "名称・用途・写真のいずれかを教えてください。",
+          "inputType": "text",
+          "options": [],
+          "allowUnknown": true,
+          "allowSkip": true
+        },
+        "jobId": null,
+        "canResearch": false,
+        "notice": "自由文の確認を完了できませんでした。入力を保持しています。再入力・修正またはメール相談できます。"
+      },
+      "intakeElapsedMs": 3029,
+      "researchObservedMs": 9,
+      "startedByExplicitAction": false,
+      "phase": "collecting",
+      "questionsAsked": 0,
+      "question": {
+        "id": "initial",
+        "itemId": null,
+        "fieldKey": "description",
+        "text": "名称・用途・写真のいずれかを教えてください。",
+        "inputType": "text",
+        "options": [],
+        "allowUnknown": true,
+        "allowSkip": true
+      },
+      "items": [],
+      "unresolvedInputs": [
+        "図番D-61の架台全体を製作してください。粉体塗装が必要で、塗料は支給します。希望納入日は2027年1月20日です。"
+      ],
+      "result": null,
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-3C15C30F）",
+        "body": "照会番号：AV-3C15C30F\n商品・加工・製作について相談します。\n\n解釈・確認が未完了の入力：\n図番D-61の架台全体を製作してください。粉体塗装が必要で、塗料は支給します。希望納入日は2027年1月20日です。\n\n確認結果：未確認（再調査が必要です）\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-3C15C30F",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      },
+      "afterCallCount": 2,
+      "providerObservation": {
+        "case_id": "3c15c30f-f97c-4a64-926e-83b9f2fd7e08",
+        "state": "failed",
+        "error_code": "MODEL_TIMEOUT",
+        "input_tokens": null,
+        "output_tokens": null
+      },
+      "assessment": {
+        "extractionSuccess": false,
+        "inputPreserved": true,
+        "mailPreservesInput": true,
+        "businessVerdictAvailable": false,
+        "businessCorrectness": "not_evaluable_without_extraction",
+        "speedTargetMet": false
+      }
+    },
+    {
+      "id": "B03",
+      "input": "大きいカバーは4組、塗装不要、配送先は大阪です。小さいネックは8組、外装塗装、配送先は神戸です。どちらもリブは製作から除外し、材料は客先支給で加工を依頼します。",
+      "expected": {
+        "items": 2,
+        "parts": [
+          {
+            "labelIncludes": "カバー",
+            "quantity": 4,
+            "unit": "組",
+            "coating": "塗装不要",
+            "destination": "大阪"
+          },
+          {
+            "labelIncludes": "ネック",
+            "quantity": 8,
+            "unit": "組",
+            "coating": "外装塗装",
+            "destination": "神戸"
+          }
+        ],
+        "shared": {
+          "excludedWorkIncludes": "リブ",
+          "requestScope": "processing",
+          "materialSupply": "customer_supplied"
+        }
+      },
+      "caseId": "a17376a5-fcd2-4be7-adca-bd7e62ac242b",
+      "firstResponse": {
+        "kind": "intake_response",
+        "caseId": "a17376a5-fcd2-4be7-adca-bd7e62ac242b",
+        "revision": 1,
+        "action": "ask",
+        "question": {
+          "id": "initial",
+          "itemId": null,
+          "fieldKey": "description",
+          "text": "名称・用途・写真のいずれかを教えてください。",
+          "inputType": "text",
+          "options": [],
+          "allowUnknown": true,
+          "allowSkip": true
+        },
+        "jobId": null,
+        "canResearch": false,
+        "notice": "自由文の確認を完了できませんでした。入力を保持しています。再入力・修正またはメール相談できます。"
+      },
+      "intakeElapsedMs": 3026,
+      "researchObservedMs": 12,
+      "startedByExplicitAction": false,
+      "phase": "collecting",
+      "questionsAsked": 0,
+      "question": {
+        "id": "initial",
+        "itemId": null,
+        "fieldKey": "description",
+        "text": "名称・用途・写真のいずれかを教えてください。",
+        "inputType": "text",
+        "options": [],
+        "allowUnknown": true,
+        "allowSkip": true
+      },
+      "items": [],
+      "unresolvedInputs": [
+        "大きいカバーは4組、塗装不要、配送先は大阪です。小さいネックは8組、外装塗装、配送先は神戸です。どちらもリブは製作から除外し、材料は客先支給で加工を依頼します。"
+      ],
+      "result": null,
+      "mailDraft": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-A17376A5）",
+        "body": "照会番号：AV-A17376A5\n商品・加工・製作について相談します。\n\n解釈・確認が未完了の入力：\n大きいカバーは4組、塗装不要、配送先は大阪です。小さいネックは8組、外装塗装、配送先は神戸です。どちらもリブは製作から除外し、材料は客先支給で加工を依頼します。\n\n確認結果：未確認（再調査が必要です）\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-A17376A5",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      },
+      "afterCallCount": 3,
+      "providerObservation": {
+        "case_id": "a17376a5-fcd2-4be7-adca-bd7e62ac242b",
+        "state": "failed",
+        "error_code": "MODEL_TIMEOUT",
+        "input_tokens": null,
+        "output_tokens": null
+      },
+      "assessment": {
+        "extractionSuccess": false,
+        "inputPreserved": true,
+        "mailPreservesInput": true,
+        "businessVerdictAvailable": false,
+        "businessCorrectness": "not_evaluable_without_extraction",
+        "speedTargetMet": false
+      }
+    }
+  ],
+  "limitations": [
+    "実装担当者による既知仕様の予備評価。独立未知評価ではない",
+    "会社承認済み実資料と会社担当者の正解ラベルは未提供",
+    "現在の案件ごと1回上限のため、自由文の複数ターンはこの枠では評価しない"
+  ],
+  "after": {
+    "provider": "openai",
+    "calls": {
+      "count": 3
+    },
+    "control": {
+      "blocked_reason": null
+    }
+  },
+  "fixedCodeAndKnowledge": true,
+  "finishedAt": "2026-11-16T10:21:05.282Z",
+  "summary": {
+    "cases": 3,
+    "extractionSucceeded": 0,
+    "confirmedTimeouts": 3,
+    "mailPreservesFullInput": 3,
+    "inputRetained": 3,
+    "overall": "not_passed",
+    "independent20CaseEvaluation": "not_run",
+    "p95": "not_established_from_three_cases",
+    "billing": "unknown_for_timed_out_calls",
+    "next": "compare low-latency extraction settings under an approved evaluation budget"
+  }
+}
