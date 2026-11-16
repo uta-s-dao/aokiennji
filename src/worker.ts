@@ -47,6 +47,8 @@ export default {
   scheduled: research.scheduled,
 };
 const messages: Record<string, string> = {
+  INTAKE_PENDING:
+    "同じ入力を処理中です。入力を保持して、少し待ってから再試行してください。",
   REVISION_CONFLICT:
     "別の更新がありました。最新の内容を確認し、もう一度操作してください。",
   NOT_OWNER: "この相談にアクセスできません。",

@@ -12,6 +12,7 @@ type CaseView = {
   canResearch: boolean;
   questionsAsked: number;
   overflow: string[];
+  unresolvedInputs?: string[];
   attachments: { id: string; name: string; analysis: string }[];
   job: { id: string; status: string; stage: string; deadline: number } | null;
   result: PublicResult | null;
@@ -51,6 +52,7 @@ async function request<T = Record<string, unknown>>(
 }
 const uuid = () => crypto.randomUUID();
 function App() {
+  const [provider, setProvider] = useState("demo");
   const [ready, setReady] = useState(false),
     [caseId, setCaseId] = useState(localStorage.getItem("av2_case") ?? ""),
     [view, setView] = useState<CaseView | null>(null),
@@ -64,9 +66,10 @@ function App() {
   const questionRef = useRef<HTMLHeadingElement>(null),
     mutation = useRef<{ key: string; id: string } | null>(null);
   useEffect(() => {
-    request<{ csrf: string }>("/session")
+    request<{ csrf: string; extraction: string }>("/session")
       .then((s) => {
         csrf = s.csrf;
+        setProvider(s.extraction);
         setReady(true);
       })
       .catch((e) => setError(String(e)));
@@ -175,8 +178,13 @@ function App() {
         b,
       );
       if (result.notice) setNotice(result.notice);
-      setView(await request<CaseView>("/cases/" + cid));
-      setInput("");
+      const refreshed = await request<CaseView>("/cases/" + cid);
+      setView(refreshed);
+      if (
+        answer.type !== "text" ||
+        !refreshed.unresolvedInputs?.includes(answer.text ?? "")
+      )
+        setInput("");
       setDraft(null);
     });
   }
@@ -558,6 +566,17 @@ function App() {
                 </div>
               </section>
             )}
+            {!!view?.unresolvedInputs?.length && (
+              <section className="notice" role="status">
+                <p>解釈できていない入力を保持しています。</p>
+                {view.unresolvedInputs.map((t, i) => (
+                  <p key={i}>{t}</p>
+                ))}
+                <button disabled={busy} onClick={prepareMail}>
+                  入力内容でメール文を作成
+                </button>
+              </section>
+            )}
             {view && (
               <button
                 className="edit-toggle"
@@ -668,7 +687,17 @@ function App() {
             <details className="privacy">
               <summary>このデモと情報の扱い</summary>
               <p>
-                架空の資料を使うローカル試作です。自由文は簡易のデモ抽出で処理します。実際の会社の取扱判断には利用できません。AI・Web検索への送信は行いません。案件・添付の暫定保管期限は作成から30日です。
+                架空の資料を使うローカル試作です。
+                {provider === "openai"
+                  ? "自由文の必要な内容をOpenAI APIへ送り、入力条件を抽出します。"
+                  : provider === "disabled"
+                    ? "自由文の自動抽出は停止中です。"
+                    : "自由文は簡易のデモ抽出で処理します。"}
+                実際の会社の取扱判断には利用できません。
+                {provider === "openai"
+                  ? "写真・図面と会社資料は外部へ送りません。Web検索は未接続です。"
+                  : "AI・Web検索への送信は行いません。"}
+                案件・添付の暫定保管期限は作成から30日です。
               </p>
               {view && (
                 <button

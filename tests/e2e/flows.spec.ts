@@ -134,3 +134,19 @@ test("200%拡大相当・キーボード操作で横にはみ出さない", asyn
     ),
   ).toBe(true);
 });
+
+test("解釈失敗で原入力を残し、メール文へ引き継ぐ", async ({ page }) => {
+  await page.getByLabel("ご希望の内容").fill("ガラス 外径10℃");
+  await page.getByRole("button", { name: "相談を始める" }).click();
+  await expect(
+    page.getByText("解釈できていない入力を保持しています。"),
+  ).toBeVisible();
+  await expect(page.getByLabel("回答", { exact: true })).toHaveValue(
+    "ガラス 外径10℃",
+  );
+  await page.getByRole("button", { name: "入力内容でメール文を作成" }).click();
+  await expect(page.getByLabel("件名と本文")).toContainText("ガラス 外径10℃");
+  await expect(
+    page.getByRole("heading", { name: "当社で取扱対応できます" }),
+  ).toHaveCount(0);
+});

@@ -19,11 +19,9 @@ import {
 import { fields } from "../domain/fields";
 import { makeMailDraft } from "../domain/mail";
 import { checkRule } from "../domain/decision";
-import {
-  extractDemo,
-  extractOnce,
-  demoExtractor,
-} from "../adapters/extraction";
+import { extractDemo } from "../adapters/extraction";
+import { configuredIntake } from "../adapters/intake-service";
+import { intakeProvider } from "../adapters/openai-intake";
 import {
   type Env,
   type CaseRow,
@@ -148,7 +146,7 @@ async function responseFor(e: Env, c: CaseRow, s: Snapshot, force = false) {
       notice: s.overflow.length
         ? "4品目以上の入力を保持しました。未処理内容を別案件へ分割してください。"
         : s.extractionFailed
-          ? "自由文を解釈できませんでした。入力内容を保持しています。"
+          ? "自由文の確認を完了できませんでした。入力を保持しています。再入力・修正またはメール相談できます。"
           : null,
     },
   };
@@ -171,8 +169,9 @@ export async function api(
       {
         csrf: await hash("csrf:" + token),
         mode: "local-demo",
-        extraction: "demo-rules",
-        externalEnabled: false,
+        extraction: intakeProvider(e),
+        externalEnabled:
+          intakeProvider(e) === "openai" && e.EXTERNAL_ENABLED === "true",
       },
       200,
       {
@@ -257,6 +256,7 @@ export async function api(
       job: j,
       result: await currentResult(e, c),
       questionsAsked: s.brief.questionsAsked,
+      unresolvedInputs: (s.unresolvedInputs ?? []).map((e) => e.text),
     });
   }
   if (route === "" && method === "DELETE") {
@@ -299,8 +299,11 @@ export async function api(
       )
         throw new AppError("INVALID_INPUT");
       if (answer.type === "text") {
-        s = await extractOnce(demoExtractor, s, text(answer.text), q);
-        if (s.extractionFailed) await audit(e, c.id, "EXTRACTION_FALLBACK");
+        s = await configuredIntake(e, c, mutationId, s, text(answer.text), q);
+        if (s.extractionFailed)
+          await audit(e, c.id, "EXTRACTION_FALLBACK", {
+            code: s.extractionError ?? "UNKNOWN",
+          });
       } else {
         if (!q?.itemId) throw new AppError("INVALID_INPUT");
         const value =
@@ -316,21 +319,26 @@ export async function api(
             (answer.type === "unknown" ? "分からない" : "スキップ"),
           type: "selection",
         };
-        s = applyInput(s, event, [
-          {
-            itemId: q.itemId,
-            key: q.fieldKey,
-            text: value?.id,
-            quote: event.text,
-            status:
-              answer.type === "unknown"
-                ? "unknown"
-                : answer.type === "skip"
-                  ? "skipped"
-                  : "known",
-          },
-        ]);
+        if (q.id === "input-recovery") {
+          s.inputs.push(event);
+          s.recoveryOffered = true;
+        } else
+          s = applyInput(s, event, [
+            {
+              itemId: q.itemId,
+              key: q.fieldKey,
+              text: value?.id,
+              quote: event.text,
+              status:
+                answer.type === "unknown"
+                  ? "unknown"
+                  : answer.type === "skip"
+                    ? "skipped"
+                    : "known",
+            },
+          ]);
       }
+      if (q?.id === "input-recovery") s.recoveryOffered = true;
       if (c.revision > 0) {
         s.brief.questionsAsked = Math.min(6, s.brief.questionsAsked + 1);
         s.fallbackCount++;
@@ -659,6 +667,26 @@ async function admin(req: Request, e: Env, owner: string) {
     throw new AppError("NOT_OWNER", 403);
   const p = new URL(req.url).pathname,
     method = req.method;
+  if (p.endsWith("/intake-status") && method === "GET")
+    return json({
+      provider: intakeProvider(e),
+      calls: await stmt(
+        e,
+        "SELECT calls AS count FROM intake_totals WHERE id=1",
+      ).first(),
+      control: await stmt(
+        e,
+        "SELECT blocked_reason FROM intake_controls WHERE id=1",
+      ).first(),
+    });
+  if (p.endsWith("/intake-resume") && method === "POST") {
+    await stmt(
+      e,
+      "UPDATE intake_controls SET blocked_reason=NULL WHERE id=1",
+    ).run();
+    await audit(e, null, "INTAKE_RESUMED");
+    return json({ ok: true });
+  }
   const caseMatch = p.match(/^\/api\/v2\/admin\/cases\/([^/]+)$/);
   if (caseMatch && method === "GET") {
     const row = await stmt(

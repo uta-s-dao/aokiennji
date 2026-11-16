@@ -236,6 +236,15 @@ export async function maintenance(e: Env) {
   );
   await stmt(
     e,
+    "UPDATE intake_calls SET result_json=NULL WHERE case_id IN (SELECT id FROM cases WHERE deleted=1)",
+  ).run();
+  await stmt(
+    e,
+    "DELETE FROM intake_calls WHERE created_at<? AND case_id IN (SELECT id FROM cases WHERE deleted=1)",
+    Date.now() - 90 * 86400000,
+  ).run();
+  await stmt(
+    e,
     "DELETE FROM audit_events WHERE created_at<?",
     Date.now() - 90 * 86400000,
   ).run();

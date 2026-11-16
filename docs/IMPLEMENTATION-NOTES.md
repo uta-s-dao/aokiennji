@@ -9,9 +9,11 @@
 - D1 CASは、期待revisionなどを検査するCHECK制約付きのwrite_guards挿入をbatch先頭に置き、不一致ならbatch全体をrollbackします。0行UPDATEを成功扱いにする構成ではありません。結果commitにも入力版・知識版・leaseToken・lease期限・60秒期限・案件有効性のガードがあります。
 - 訂正前後の値と入力イベント参照はcase_events.event_jsonに保存し、現在スナップショットとは分離します。メール文は現在のフィールドから作ります。暫定保管期限の処理時は履歴・結果・ジョブも削除します。
 - 添付の差替えは、顧客が「最新図面に差し替える」を選んだ操作として記録し、元の品目との対応を維持します。ファイル名だけで版を選びません。解析adapterは未接続なので添付から寸法を取り込みません。
-- 質問設定と属性辞書は読み取り専用コードです。自由文はデモ抽出adapterを1回だけ呼び、3秒の期限を設けます。障害時は元入力を保持します。実モデルの品質を検証したことにはしません。
+- 質問設定と属性辞書は読み取り専用コードです。自由文は既定のデモ抽出、または設定済みのOpenAI adapterを1回だけ呼び、3秒の期限を設けます。障害時は元入力を保持します。実モデルの品質を検証したことにはしません。
 - raw JSONをコピーして機密フィールドを削除する方法を避け、公開結果はallowlist DTOとして組み立てます。
 - ローカルでは5秒間隔でWranglerのローカルscheduledイベントを駆動します。製品画面の進捗は保存されたジョブ状態だけを使います。
-- 通信はローカルだけです。公開根拠の型はHTTPS URLに対応しますが、このデモの社内ルール根拠は公開説明と確認日時だけを返します。元資料URL・ファイル保存キーは返しません。
+- 既定の通信はローカルだけです。OpenAIの明示設定時には抽出用endpointだけを使用します。公開根拠の型はHTTPS URLに対応しますが、このデモの社内ルール根拠は公開説明と確認日時だけを返します。元資料URL・ファイル保存キーは返しません。
 
 技術上の確認には、Cloudflare公式の[React構成](https://developers.cloudflare.com/workers/framework-guides/web-apps/react/)、[D1ローカル開発](https://developers.cloudflare.com/d1/best-practices/local-development/)、[D1 batch](https://developers.cloudflare.com/d1/worker-api/d1-database/#batch)、[ローカルcron試験](https://developers.cloudflare.com/workers/configuration/cron-triggers/#test-cron-triggers-locally)を参照しました。この実装はViteでUIをビルドし、WranglerでローカルWorkerと静的資産を配信します。
+
+段階4の接続・利用上限・未確認入力の扱いは [INTAKE-INTEGRATION.md](INTAKE-INTEGRATION.md) に追記しました。公開契約版2と設計原本は変更していません。

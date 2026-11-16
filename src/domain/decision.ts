@@ -194,7 +194,14 @@ export function decideAvailability(
       reasonCode: ItemResult["reasonCode"] = "NO_APPROVED_SCOPE",
       reason = "今回の条件での取扱可否は、担当者確認が必要です。";
     let resultRules: CapabilityRule[] = [];
-    if (conflict || (scopeStatus === "out_of_scope" && supported.length)) {
+    if (i.notes.some((n) => n.startsWith("未確認の顧客入力："))) {
+      reasonCode = "MISSING_CONDITIONS";
+      reason =
+        "未確認の入力条件が残っているため、今回の依頼は担当者確認が必要です。";
+    } else if (
+      conflict ||
+      (scopeStatus === "out_of_scope" && supported.length)
+    ) {
       reasonCode = "CONFLICTING_EVIDENCE";
       reason = "判断資料または入力条件に矛盾があり、担当者確認が必要です。";
     } else if (request.some((r) => r.decision === "review_only")) {

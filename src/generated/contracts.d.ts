@@ -8,23 +8,12 @@
 /**
  * 設計用の契約。実装では各$defsを個別に検証する。プロバイダーの構造化出力用スキーマはこれとは別に互換変換する。
  */
-export type AvailabilityContracts =
-  | ResearchBrief
-  | AnswerMutation
-  | IntakeResponse
-  | PublicResult
-  | CapabilityRule;
+export type AvailabilityContracts = ResearchBrief | AnswerMutation | IntakeResponse | PublicResult | CapabilityRule;
 export type Id = string;
 export type Field = {
   key: FieldKey;
   label: string;
-  status:
-    | "not_asked"
-    | "known"
-    | "unknown"
-    | "skipped"
-    | "not_applicable"
-    | "conflict";
+  status: "not_asked" | "known" | "unknown" | "skipped" | "not_applicable" | "conflict";
   value: Value | null;
   source: "customer_text" | "selection" | "field_edit" | "none";
   eventId: string | null;

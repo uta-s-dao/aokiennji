@@ -20,7 +20,9 @@
     "demo:seed": "node scripts/demo-seed.mjs",
     "rules:import": "node scripts/import-rules.mjs",
     "check": "npm run typecheck && npm run lint && npm run test:contracts && npm run test:domain && npm run test:integration && npm run test:isolation && npm run build",
-    "measure:local": "playwright test measure.spec.ts --project desktop"
+    "measure:local": "playwright test measure.spec.ts --project desktop",
+    "intake:status": "node scripts/intake-status.mjs",
+    "intake:resume": "node scripts/intake-status.mjs --resume"
   },
   "dependencies": {
     "ajv": "8.20.0",

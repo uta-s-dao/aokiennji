@@ -13,11 +13,22 @@ const ajv = new Ajv({
 });
 formats(ajv);
 ajv.addSchema(schema);
+const extractionSchema = JSON.parse(
+  await readFile("src/domain/extraction.schema.json", "utf8"),
+);
+ajv.addSchema(extractionSchema);
 await mkdir("src/generated", { recursive: true });
 const exportsMap = Object.fromEntries(
   Object.keys(schema.$defs)
     .filter((k) => !["Id", "FieldKey", "Value", "Verdict"].includes(k))
     .map((k) => ["validate" + k, schema.$id + "#/$defs/" + k]),
+);
+exportsMap.validateExtractionProposal = extractionSchema.$id;
+await writeFile(
+  "src/generated/extraction.d.ts",
+  await compile(extractionSchema, "ExtractionProposal", {
+    ignoreMinAndMaxItems: true,
+  }),
 );
 let code = standalone(ajv, exportsMap);
 code = code.replace(

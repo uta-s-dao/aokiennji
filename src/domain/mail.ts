@@ -19,6 +19,13 @@ export function makeMailDraft(
         .map((f) => `${f.label}：${present(f)}`),
       ...i.notes.map((n) => `補足：${n}`),
     ]),
+    ...(s.unresolvedInputs?.length
+      ? [
+          "",
+          "解釈・確認が未完了の入力：",
+          ...s.unresolvedInputs.map((e) => e.text),
+        ]
+      : []),
     ...(s.overflow.length
       ? ["", "別案件への分割が必要な未処理入力：", ...s.overflow]
       : []),

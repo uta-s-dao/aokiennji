@@ -15,6 +15,11 @@ export type Env = {
   LOCAL_ADMIN_TOKEN: string;
   CONTACT_EMAIL: string;
   INTAKE_MODEL: string;
+  INTAKE_PROVIDER?: string;
+  OPENAI_API_KEY?: string;
+  INTAKE_MAX_OUTPUT_TOKENS?: string;
+  INTAKE_MAX_CALLS_TOTAL?: string;
+  INTAKE_MAX_CALLS_PER_CASE?: string;
   RESEARCH_MODEL: string;
   EXTERNAL_ENABLED: string;
 };

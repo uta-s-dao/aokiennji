@@ -45,6 +45,9 @@ export type Snapshot = {
   fallbackCount: number;
   attachmentNames: string[];
   extractionFailed?: boolean;
+  extractionError?: string;
+  unresolvedInputs?: InputEvent[];
+  recoveryOffered?: boolean;
 };
 export type Source = {
   id: string;

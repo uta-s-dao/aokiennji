@@ -187,6 +187,7 @@ export function chooseNextQuestion(
   rules: CapabilityRule[],
   force = false,
 ): Question | null {
+  if (s.brief.questionsAsked >= 6 && !hasClue(s)) return null;
   if (!hasClue(s))
     return {
       id: "initial",
@@ -199,6 +200,17 @@ export function chooseNextQuestion(
       allowSkip: true,
     };
   if (force || s.brief.questionsAsked >= 6 || s.overflow.length) return null;
+  if (s.extractionFailed && s.unresolvedInputs?.length && !s.recoveryOffered)
+    return {
+      id: "input-recovery",
+      itemId: s.brief.items.length === 1 ? s.brief.items[0].id : null,
+      fieldKey: "description",
+      text: "対象や条件を短く入力し直すか、入力内容の修正・メール相談へ進めます。",
+      inputType: "text",
+      options: [],
+      allowUnknown: true,
+      allowSkip: true,
+    };
   for (const item of s.brief.items) {
     const applicable = rules.filter(
       (r) =>
@@ -279,6 +291,17 @@ export function makeResearchBrief(
   if (!hasClue(s) || s.overflow.length)
     throw new AppError(s.overflow.length ? "SPLIT_REQUIRED" : "INVALID_INPUT");
   const b = { ...structuredClone(s.brief), revision, knowledgeRevision };
+  for (const item of b.items) {
+    item.notes = item.notes.filter((n) => !n.startsWith("未確認の顧客入力："));
+    if (s.unresolvedInputs?.length)
+      item.notes.push(
+        "未確認の顧客入力：" +
+          s.unresolvedInputs
+            .map((e) => e.text)
+            .join(" / ")
+            .slice(0, 450),
+      );
+  }
   if (!validateResearchBrief(b)) throw new AppError("INVALID_INPUT");
   if (new Set(b.items.map((i) => i.id)).size !== b.items.length)
     throw new AppError("INVALID_INPUT");

@@ -107,7 +107,9 @@ beforeAll(async () => {
   db = (await mf.getD1Database("DB")) as unknown as D1Database;
   const sql =
     (await readFile("migrations/0001.sql", "utf8")) +
-    (await readFile("migrations/0002_event_payload.sql", "utf8"));
+    (await readFile("migrations/0002_event_payload.sql", "utf8")) +
+    (await readFile("migrations/0003_intake_calls.sql", "utf8")) +
+    (await readFile("migrations/0004_intake_totals.sql", "utf8"));
   await db.exec(sql.replace(/--[^\n]*/g, "").replace(/\n/g, " "));
   env = {
     DB: db,
