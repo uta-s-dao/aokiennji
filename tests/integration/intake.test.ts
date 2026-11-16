@@ -6,6 +6,11 @@ import {
 } from "miniflare";
 import { readFile } from "node:fs/promises";
 import type { ExtractionProposal } from "../../src/domain/extraction-proposal";
+import { extractDemo } from "../../src/adapters/extraction";
+import { makeSnapshot } from "../../src/domain/intake";
+import { runJob } from "../../src/research-worker";
+import type { Item } from "../../src/domain/model";
+import type { Env } from "../../src/adapters/store";
 let mf: Miniflare,
   db: D1Database,
   calls = 0,
@@ -38,7 +43,7 @@ const proposal = (): ExtractionProposal => ({
   ambiguities: [],
   unprocessedQuotes: [],
 });
-const output = proposal();
+let output = proposal();
 const origin = "http://127.0.0.1";
 let n = 0;
 async function client() {
@@ -143,6 +148,7 @@ beforeAll(async () => {
   expect((await c("/admin/demo", "POST", {})).status).toBe(200);
 });
 beforeEach(async () => {
+  output = proposal();
   calls = 0;
   status = 200;
   delay = 0;
@@ -218,6 +224,96 @@ it("全体上限で追加送信を止め入力をメールへ保持する", asyn
   expect(view.body.unresolvedInputs).toEqual(["AX-100を購入したい"]);
   const mail = await call(`/cases/${cid}/mail-draft`, "POST", {});
   expect(mail.body.body).toContain("解釈・確認が未完了");
+});
+it("モデルが分類を返さなくても登録型番をD1の承認ルールへ接続する", async () => {
+  output.newItems[0].category = null;
+  output.changes.push({
+    itemRef: "one",
+    key: "request_scope",
+    status: "known",
+    value: { text: "purchase", number: null, unit: null },
+    quote: "購入したい",
+    operation: "set",
+    hardConstraint: true,
+  });
+  const { call, cid } = await setupCase();
+  const accepted = await call(
+    `/cases/${cid}/answers`,
+    "POST",
+    answer("classify"),
+  );
+  expect(accepted.status).toBe(200);
+  expect(accepted.body.action).toBe("research_started");
+  const env = { DB: db } as Env;
+  await runJob(env, String(accepted.body.jobId));
+  const result = await call(`/cases/${cid}/result`);
+  expect(result.body.result).toMatchObject({ verdict: "can_handle" });
+  expect(calls).toBe(1);
+});
+it("調達変更の相談をDBから画面とメールへ保持し、旧方式の判定を再利用しない", async () => {
+  const { call, cid } = await setupCase();
+  const prior = extractDemo(
+    makeSnapshot(cid),
+    "リング材を客先支給して穴加工を依頼します。",
+  );
+  await db
+    .prepare("UPDATE cases SET snapshot=?,revision=1 WHERE id=?")
+    .bind(JSON.stringify(prior), cid)
+    .run();
+  const initial = await call(`/cases/${cid}`),
+    itemId = (initial.body.items as Item[])[0].id;
+  const text =
+    "材料も御社で調達できますか。リング材の加工も一緒に依頼したいです。";
+  output = {
+    schemaVersion: 1,
+    newItems: [],
+    changes: [
+      {
+        itemRef: itemId,
+        key: "material_supply",
+        status: "known",
+        value: { text: "company_sourced", number: null, unit: null },
+        quote: "材料も御社で調達できますか",
+        operation: "hypothetical",
+        hardConstraint: false,
+      },
+    ],
+    ambiguities: [],
+    unprocessedQuotes: [],
+  };
+  const response = await call(`/cases/${cid}/answers`, "POST", {
+    mutationId: "pending",
+    expectedRevision: 1,
+    questionId: (initial.body.question as { id: string }).id,
+    answer: { type: "text", text },
+  });
+  expect(response.status).toBe(200);
+  expect((await call(`/cases/${cid}`)).body.unresolvedInputs).toEqual([text]);
+  const research = await call(`/cases/${cid}/research`, "POST", {
+    mutationId: "research-pending",
+    expectedRevision: 2,
+  });
+  expect(research.status).toBe(200);
+  await runJob({ DB: db } as Env, String(research.body.jobId));
+  expect((await call(`/cases/${cid}/result`)).body.result).toMatchObject({
+    verdict: "needs_review",
+  });
+  const draft = await call(`/cases/${cid}/mail-draft`, "POST", {});
+  expect(draft.body.body).toContain(text);
+  expect(draft.body.body).not.toContain("客先支給");
+  expect(draft.body.body).not.toContain("対応範囲外");
+  const edited = await call(`/cases/${cid}/fields`, "PATCH", {
+    mutationId: "confirm",
+    expectedRevision: 3,
+    text: "当社調達",
+    change: { itemId, key: "material_supply", text: "company_sourced" },
+  });
+  expect(edited.status).toBe(200);
+  expect((await call(`/cases/${cid}`)).body.unresolvedInputs).toEqual([]);
+  expect(
+    (await call(`/cases/${cid}/mail-draft`, "POST", {})).body.body,
+  ).toContain("当社調達");
+  expect(calls).toBe(1);
 });
 it.each([401, 429])(
   "HTTP %i で全体停止し再送や次案件で連打しない",

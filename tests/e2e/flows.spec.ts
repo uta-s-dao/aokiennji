@@ -28,8 +28,9 @@ test.beforeEach(async ({ page }) => {
 });
 test("型番品は0問で結果、メール全文を作り送信しない", async ({ page }) => {
   const calls: string[] = [];
+  const localOrigin = new URL(page.url()).origin;
   page.on("request", (r) => {
-    if (!r.url().startsWith("http://127.0.0.1:8787")) calls.push(r.url());
+    if (new URL(r.url()).origin !== localOrigin) calls.push(r.url());
   });
   await page.getByLabel("ご希望の内容").fill("AX-100を購入したい");
   await page.getByRole("button", { name: "相談を始める" }).click();
@@ -155,4 +156,32 @@ test("解釈失敗で原入力を残し、メール文へ引き継ぐ", async ({
   await expect(
     page.getByRole("heading", { name: "当社で取扱対応できます" }),
   ).toHaveCount(0);
+});
+
+test("未確定の調達相談をメールへ引き継ぎ、旧方式の対応外を出さない", async ({
+  page,
+}) => {
+  await page
+    .getByLabel("ご希望の内容")
+    .fill("リング材を客先支給して穴加工を依頼します。");
+  await page.getByRole("button", { name: "相談を始める" }).click();
+  const text =
+    "材料も御社で調達できますか。リング材の加工も一緒に依頼したいです。";
+  await page.getByLabel("回答", { exact: true }).fill(text);
+  await page.getByRole("button", { name: "次へ", exact: true }).click();
+  await expect(
+    page.getByText("解釈できていない入力を保持しています。"),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "この内容で調べる", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "担当者確認が必要です", exact: true }),
+  ).toBeVisible({ timeout: 15000 });
+  await expect(
+    page.getByRole("heading", { name: "今回の依頼は対応範囲外です" }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "メールで相談する" }).click();
+  await expect(page.getByLabel("件名と本文")).toContainText(text);
+  await expect(page.getByLabel("件名と本文")).not.toContainText("客先支給");
 });

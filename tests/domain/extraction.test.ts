@@ -198,9 +198,12 @@ describe("引用付きの変更案", () => {
       ambiguities: [],
       unprocessedQuotes: [],
     };
-    expect(() =>
-      applyExtractionProposal(s, "AX-200ならどう？", null, p),
-    ).toThrow();
+    const tentative = applyExtractionProposal(s, "AX-200ならどう？", null, p);
+    expect(
+      tentative.brief.items[0].fields.find((f) => f.key === "model")?.value
+        ?.text,
+    ).toBe("AX-100");
+    expect(tentative.unresolvedInputs?.[0].text).toBe("AX-200ならどう？");
     p.changes[0].quote = "型番をAX-200に訂正";
     expect(
       applyExtractionProposal(
@@ -432,7 +435,7 @@ it("材料も御社で調達という明示変更を、旧支給方式へ戻さ�
         key: "material_supply",
         status: "known",
         value: { text: "company_sourced", number: null, unit: null },
-        quote: "材料も御社で調達できますか",
+        quote: "材料手配を御社調達に変更してください",
         operation: "correct",
         hardConstraint: true,
       },
@@ -443,7 +446,7 @@ it("材料も御社で調達という明示変更を、旧支給方式へ戻さ�
   expect(
     applyExtractionProposal(
       s,
-      "材料も御社で調達できますか",
+      "材料手配を御社調達に変更してください",
       null,
       p,
     ).brief.items[0].fields.find((f) => f.key === "material_supply")?.value

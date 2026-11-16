@@ -113,7 +113,10 @@ describe("聞き取りと訂正", () => {
   it("I14 依頼方式を変更すると旧方式の否定を流用しない", () => {
     let s = start("リング材を支給するので穴加工してほしい");
     expect(decide(s).items[0].verdict).toBe("out_of_scope");
-    s = extractDemo(s, "材料も御社で調達して加工できますか");
+    s = extractDemo(
+      s,
+      "材料手配を御社調達に変更してください。加工も依頼します。",
+    );
     expect(decide(s).items[0].verdict).toBe("needs_review");
     expect(makeMailDraft(s, decide(s)).body).toContain("当社調達");
     expect(makeMailDraft(s, decide(s)).body).not.toContain("客先支給");

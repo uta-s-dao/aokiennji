@@ -10,6 +10,7 @@ import {
   type ResearchBrief,
 } from "./model";
 import { fields } from "./fields";
+import { resolveCategories } from "./category";
 import {
   validateResearchBrief,
   validateField,
@@ -158,6 +159,16 @@ export function applyInput(
   for (const item of s.brief.items)
     for (const field of item.fields)
       if (!validateField(field)) throw new AppError("INVALID_INPUT");
+  const pending = s.pendingChanges ?? [];
+  s.pendingChanges = pending.filter(
+    (p) => !changes.some((c) => c.itemId === p.itemId && c.key === p.key),
+  );
+  const resolved = pending
+    .filter((p) => !s.pendingChanges!.some((v) => v.eventId === p.eventId))
+    .map((p) => p.eventId);
+  s.unresolvedInputs = (s.unresolvedInputs ?? []).filter(
+    (e) => !resolved.includes(e.id),
+  );
   s.inputs.push(event);
   if (s.inputs.length > 100) throw new AppError("RATE_LIMITED", 429);
   return s;
@@ -187,6 +198,22 @@ export function chooseNextQuestion(
   rules: CapabilityRule[],
   force = false,
 ): Question | null {
+  if (
+    !force &&
+    s.brief.questionsAsked < 6 &&
+    s.unresolvedInputs?.length &&
+    !s.recoveryOffered
+  )
+    return {
+      id: "input-recovery",
+      itemId: s.brief.items.length === 1 ? s.brief.items[0].id : null,
+      fieldKey: "description",
+      text: "確認待ちの相談があります。内容を確定して入力するか、メール相談へ進めます。",
+      inputType: "text",
+      options: [],
+      allowUnknown: true,
+      allowSkip: true,
+    };
   if (s.brief.questionsAsked >= 6 && !hasClue(s)) return null;
   if (!hasClue(s))
     return {
@@ -200,18 +227,7 @@ export function chooseNextQuestion(
       allowSkip: true,
     };
   if (force || s.brief.questionsAsked >= 6 || s.overflow.length) return null;
-  if (s.extractionFailed && s.unresolvedInputs?.length && !s.recoveryOffered)
-    return {
-      id: "input-recovery",
-      itemId: s.brief.items.length === 1 ? s.brief.items[0].id : null,
-      fieldKey: "description",
-      text: "対象や条件を短く入力し直すか、入力内容の修正・メール相談へ進めます。",
-      inputType: "text",
-      options: [],
-      allowUnknown: true,
-      allowSkip: true,
-    };
-  for (const item of s.brief.items) {
+  for (const item of resolveCategories(s.brief.items, rules)) {
     const applicable = rules.filter(
       (r) =>
         r.approvalStatus === "approved" &&

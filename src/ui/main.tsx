@@ -569,6 +569,9 @@ function App() {
             {!!view?.unresolvedInputs?.length && (
               <section className="notice" role="status">
                 <p>解釈できていない入力を保持しています。</p>
+                <p>
+                  最新の相談が未確認のため、以前の条件だけでは取扱可否を確定しません。
+                </p>
                 {view.unresolvedInputs.map((t, i) => (
                   <p key={i}>{t}</p>
                 ))}
@@ -588,6 +591,11 @@ function App() {
             {editing && view && (
               <section className="question-card">
                 <h1>入力内容を確認・修正</h1>
+                {!!view.unresolvedInputs?.length && (
+                  <p>
+                    以下は前回の入力値です。確認待ちの相談内容を反映してから再調査してください。
+                  </p>
+                )}
                 {view.items.map((item) => (
                   <article key={item.id}>
                     <h2>{item.label}</h2>

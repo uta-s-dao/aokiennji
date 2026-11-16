@@ -17,6 +17,7 @@ import {
   hasClue,
 } from "../domain/intake";
 import { fields } from "../domain/fields";
+import { resolveCategories } from "../domain/category";
 import { makeMailDraft } from "../domain/mail";
 import { checkRule } from "../domain/decision";
 import { extractDemo } from "../adapters/extraction";
@@ -103,6 +104,7 @@ function snapshot(c: CaseRow) {
 }
 async function responseFor(e: Env, c: CaseRow, s: Snapshot, force = false) {
   const rs = await rules(e);
+  s.brief.items = resolveCategories(s.brief.items, rs);
   const q = chooseNextQuestion(s, rs, force);
   const k = await knowledge(e);
   s.brief.knowledgeRevision = k;
@@ -147,7 +149,9 @@ async function responseFor(e: Env, c: CaseRow, s: Snapshot, force = false) {
         ? "4品目以上の入力を保持しました。未処理内容を別案件へ分割してください。"
         : s.extractionFailed
           ? "自由文の確認を完了できませんでした。入力を保持しています。再入力・修正またはメール相談できます。"
-          : null,
+          : s.unresolvedInputs?.length
+            ? "変更候補・確認待ちの相談を保持しています。内容を確定して入力するか、メールで相談できます。"
+            : null,
     },
   };
 }

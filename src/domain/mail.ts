@@ -6,19 +6,22 @@ export function makeMailDraft(
   email = "",
   uriLimit = 1800,
 ) {
+  const pending = Boolean(s.unresolvedInputs?.length);
   const ref = "AV-" + s.brief.caseId.slice(0, 8).toUpperCase();
   const subject = `商品・製作の取扱相談（照会番号 ${ref}）`;
   const body = [
     `照会番号：${ref}`,
     "商品・加工・製作について相談します。",
-    ...s.brief.items.flatMap((i) => [
-      "",
-      `【${i.label}】`,
-      ...i.fields
-        .filter((f) => f.status !== "not_asked")
-        .map((f) => `${f.label}：${present(f)}`),
-      ...i.notes.map((n) => `補足：${n}`),
-    ]),
+    ...(pending
+      ? ["", "最新の相談を確認中のため、以前の条件・判断は記載していません。"]
+      : s.brief.items.flatMap((i) => [
+          "",
+          `【${i.label}】`,
+          ...i.fields
+            .filter((f) => f.status !== "not_asked")
+            .map((f) => `${f.label}：${present(f)}`),
+          ...i.notes.map((n) => `補足：${n}`),
+        ])),
     ...(s.unresolvedInputs?.length
       ? [
           "",
@@ -30,7 +33,7 @@ export function makeMailDraft(
       ? ["", "別案件への分割が必要な未処理入力：", ...s.overflow]
       : []),
     "",
-    ...(!r || r.stale
+    ...(pending || !r || r.stale
       ? ["確認結果：未確認（再調査が必要です）"]
       : r.status === "failed"
         ? ["確認結果：調査未完了"]

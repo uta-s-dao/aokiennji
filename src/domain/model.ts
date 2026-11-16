@@ -47,6 +47,7 @@ export type Snapshot = {
   extractionFailed?: boolean;
   extractionError?: string;
   unresolvedInputs?: InputEvent[];
+  pendingChanges?: { eventId: string; itemId: string; key: string }[];
   recoveryOffered?: boolean;
 };
 export type Source = {

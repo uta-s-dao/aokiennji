@@ -8,6 +8,7 @@ import {
   type InputEvent,
 } from "../domain/model";
 import { fields } from "../domain/fields";
+import { isTentative } from "../domain/grounding";
 export type Extractor = {
   extract: (
     s: Snapshot,
@@ -99,7 +100,7 @@ export function extractDemo(
     if (/購入|探して|AX-100/.test(segment)) add("request_scope", "purchase");
     else if (/製作|作って/.test(segment)) add("request_scope", "fabrication");
     else if (/加工|穴を開け/.test(segment)) add("request_scope", "processing");
-    if (/材料も|材料を調達|御社で調達|当社調達/.test(segment))
+    if (/材料も|材料を調達|御社(?:で)?調達|当社調達/.test(segment))
       add("material_supply", "company_sourced");
     else if (/一部支給/.test(segment)) add("material_supply", "mixed");
     else if (/(?:材料|リング材|支給材).{0,6}支給|支給材/.test(segment))
@@ -148,7 +149,39 @@ export function extractDemo(
   const dedup = [
     ...new Map(changes.map((c) => [c.itemId + ":" + c.key, c])).values(),
   ];
-  state = applyInput(state, event, dedup, additions);
+  const pending = dedup.filter(
+    (c) =>
+      isTentative(c.quote) &&
+      s.brief.items.some(
+        (i) =>
+          i.id === c.itemId &&
+          i.fields.some((f) => f.key === c.key && f.value?.text !== c.text),
+      ),
+  );
+  state = applyInput(
+    state,
+    event,
+    dedup.filter((c) => !pending.includes(c)),
+    additions,
+  );
+  state.unresolvedInputs = (state.unresolvedInputs ?? []).filter(
+    (e) => e.text !== text,
+  );
+  if (
+    isTentative(text) &&
+    /SUS|材質|材料|調達/.test(text) &&
+    s.brief.items.length
+  ) {
+    state.unresolvedInputs.push(event);
+    const keys = /材料|調達/.test(text) ? ["material_supply"] : ["material"];
+    state.pendingChanges = [
+      ...(state.pendingChanges ?? []),
+      ...s.brief.items.flatMap((i) =>
+        keys.map((key) => ({ eventId: event.id, itemId: i.id, key })),
+      ),
+    ];
+    state.recoveryOffered = false;
+  }
   return state;
 }
 export class DisabledExtractor implements Extractor {
@@ -182,11 +215,6 @@ export async function extractOnce(
     ]);
     if (result.extractionFailed)
       throw new AppError(result.extractionError ?? "INVALID_EXTRACTION");
-    result.unresolvedInputs = (
-      result.unresolvedInputs ??
-      s.unresolvedInputs ??
-      []
-    ).filter((e) => e.text !== text);
     result.extractionError = undefined;
     return result;
   } catch (error) {

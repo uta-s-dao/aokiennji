@@ -9,6 +9,7 @@ import {
   type PublicEvidence,
 } from "./model";
 import { fields, normalized, present } from "./fields";
+import { resolveCategories } from "./category";
 import {
   validateCapabilityRule,
   validatePublicResult,
@@ -135,7 +136,7 @@ export function decideAvailability(
       return false;
     }
   });
-  const items: ItemResult[] = b.items.map((i) => {
+  const items: ItemResult[] = resolveCategories(b.items, valid, time).map((i) => {
     const matched = valid.filter((r) => matches(r, i));
     const scope = matched.filter((r) => r.assessmentScope === "business_scope");
     const request = matched.filter((r) => r.assessmentScope === "request");
