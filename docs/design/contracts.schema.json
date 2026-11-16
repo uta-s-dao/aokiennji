@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aoki:availability-v2:contracts:2",
+  "title": "取扱可否確認 v2 主要契約（設計版1.1）",
+  "description": "設計用の契約。実装では各$defsを個別に検証する。プロバイダーの構造化出力用スキーマはこれとは別に互換変換する。",
+  "oneOf": [
+    {"$ref": "#/$defs/ResearchBrief"},
+    {"$ref": "#/$defs/AnswerMutation"},
+    {"$ref": "#/$defs/IntakeResponse"},
+    {"$ref": "#/$defs/PublicResult"},
+    {"$ref": "#/$defs/CapabilityRule"}
+  ],
+  "$defs": {
+    "Id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "FieldKey": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+    "Value": {
+      "type": "object", "additionalProperties": false,
+      "required": ["text", "number", "unit"],
+      "properties": {
+        "text": {"type": "string", "minLength": 1, "maxLength": 300},
+        "number": {"type": ["number", "null"]},
+        "unit": {"type": ["string", "null"], "maxLength": 30}
+      }
+    },
+    "Field": {
+      "type": "object", "additionalProperties": false,
+      "required": ["key", "label", "status", "value", "source", "eventId", "quote", "hardConstraint"],
+      "properties": {
+        "key": {"$ref": "#/$defs/FieldKey"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 80},
+        "status": {"enum": ["not_asked", "known", "unknown", "skipped", "not_applicable", "conflict"]},
+        "value": {"oneOf": [{"$ref": "#/$defs/Value"}, {"type": "null"}]},
+        "source": {"enum": ["customer_text", "selection", "field_edit", "none"]},
+        "eventId": {"type": ["string", "null"], "maxLength": 128},
+        "quote": {"type": ["string", "null"], "maxLength": 500},
+        "hardConstraint": {"type": "boolean"},
+        "conflicts": {"type": "array", "minItems": 2, "maxItems": 4, "items": {"$ref": "#/$defs/Value"}}
+      },
+      "allOf": [
+        {"if": {"properties": {"status": {"const": "known"}}}, "then": {"properties": {"value": {"$ref": "#/$defs/Value"}, "source": {"enum": ["customer_text", "selection", "field_edit"]}, "eventId": {"$ref": "#/$defs/Id"}, "quote": {"type": "string", "minLength": 1, "maxLength": 500}}}, "else": {"properties": {"value": {"type": "null"}}}},
+        {"if": {"properties": {"status": {"const": "conflict"}}}, "then": {"required": ["conflicts"]}, "else": {"not": {"required": ["conflicts"]}}}
+      ]
+    },
+    "Item": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "label", "profile", "category", "fields", "notes"],
+      "properties": {
+        "id": {"$ref": "#/$defs/Id"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 100},
+        "profile": {"enum": ["known_model", "replacement", "fabrication", "unknown"]},
+        "category": {"type": ["string", "null"], "maxLength": 100},
+        "fields": {"type": "array", "maxItems": 40, "items": {"$ref": "#/$defs/Field"}},
+        "notes": {"type": "array", "maxItems": 10, "items": {"type": "string", "maxLength": 500}}
+      }
+    },
+    "ResearchBrief": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "schemaVersion", "caseId", "revision", "items", "attachmentRefs", "questionsAsked", "knowledgeRevision", "questionPolicyVersion"],
+      "properties": {
+        "kind": {"const": "research_brief"},
+        "schemaVersion": {"const": 2},
+        "caseId": {"$ref": "#/$defs/Id"},
+        "revision": {"type": "integer", "minimum": 1},
+        "items": {"type": "array", "minItems": 1, "maxItems": 3, "items": {"$ref": "#/$defs/Item"}},
+        "attachmentRefs": {"type": "array", "maxItems": 3, "items": {"type": "object", "additionalProperties": false, "required": ["attachmentId", "itemId"], "properties": {"attachmentId": {"$ref": "#/$defs/Id"}, "itemId": {"type": ["string", "null"], "maxLength": 128}}}},
+        "questionsAsked": {"type": "integer", "minimum": 0, "maximum": 6},
+        "knowledgeRevision": {"type": "integer", "minimum": 0},
+        "questionPolicyVersion": {"$ref": "#/$defs/Id"}
+      }
+    },
+    "AnswerMutation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "mutationId", "expectedRevision", "questionId", "answer"],
+      "properties": {
+        "kind": {"const": "answer_mutation"},
+        "mutationId": {"$ref": "#/$defs/Id"},
+        "expectedRevision": {"type": "integer", "minimum": 0},
+        "questionId": {"$ref": "#/$defs/Id"},
+        "answer": {
+          "oneOf": [
+            {"type": "object", "additionalProperties": false, "required": ["type", "text"], "properties": {"type": {"const": "text"}, "text": {"type": "string", "minLength": 1, "maxLength": 2000}}},
+            {"type": "object", "additionalProperties": false, "required": ["type", "optionId"], "properties": {"type": {"const": "option"}, "optionId": {"$ref": "#/$defs/Id"}}},
+            {"type": "object", "additionalProperties": false, "required": ["type"], "properties": {"type": {"enum": ["unknown", "skip"]}}}
+          ]
+        }
+      }
+    },
+    "Question": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "itemId", "fieldKey", "text", "inputType", "options", "allowUnknown", "allowSkip"],
+      "properties": {
+        "id": {"$ref": "#/$defs/Id"},
+        "itemId": {"type": ["string", "null"], "maxLength": 128},
+        "fieldKey": {"$ref": "#/$defs/FieldKey"},
+        "text": {"type": "string", "minLength": 1, "maxLength": 120},
+        "inputType": {"enum": ["text", "number", "select", "attachment"]},
+        "options": {"type": "array", "maxItems": 5, "items": {"type": "object", "additionalProperties": false, "required": ["id", "label"], "properties": {"id": {"$ref": "#/$defs/Id"}, "label": {"type": "string", "minLength": 1, "maxLength": 60}}}},
+        "allowUnknown": {"const": true},
+        "allowSkip": {"const": true}
+      }
+    },
+    "IntakeResponse": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "caseId", "revision", "action", "question", "jobId", "canResearch", "notice"],
+      "properties": {
+        "kind": {"const": "intake_response"},
+        "caseId": {"$ref": "#/$defs/Id"},
+        "revision": {"type": "integer", "minimum": 0},
+        "action": {"enum": ["ask", "research_started", "contact_only"]},
+        "question": {"oneOf": [{"$ref": "#/$defs/Question"}, {"type": "null"}]},
+        "jobId": {"type": ["string", "null"], "maxLength": 128},
+        "canResearch": {"type": "boolean"},
+        "notice": {"type": ["string", "null"], "maxLength": 160}
+      },
+      "allOf": [
+        {"if": {"properties": {"action": {"const": "ask"}}}, "then": {"properties": {"question": {"$ref": "#/$defs/Question"}, "jobId": {"type": "null"}}}},
+        {"if": {"properties": {"action": {"const": "research_started"}}}, "then": {"properties": {"question": {"type": "null"}, "jobId": {"$ref": "#/$defs/Id"}, "canResearch": {"const": true}}}},
+        {"if": {"properties": {"action": {"const": "contact_only"}}}, "then": {"properties": {"question": {"type": "null"}, "jobId": {"type": "null"}, "canResearch": {"const": false}}}}
+      ]
+    },
+    "Verdict": {"enum": ["can_handle", "needs_review", "out_of_scope"]},
+    "PublicEvidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "label", "url", "checkedAt"],
+      "properties": {
+        "id": {"$ref": "#/$defs/Id"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 200},
+        "url": {"type": ["string", "null"], "pattern": "^https://", "maxLength": 2000},
+        "checkedAt": {"type": "string", "format": "date-time"}
+      }
+    },
+    "ScopeAssessment": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "reason", "evidence"],
+      "properties": {
+        "status": {"enum": ["in_scope", "out_of_scope", "unconfirmed"]},
+        "reason": {"type": "string", "minLength": 1, "maxLength": 300},
+        "evidence": {"type": "array", "maxItems": 8, "items": {"$ref": "#/$defs/PublicEvidence"}}
+      },
+      "allOf": [
+        {"if": {"properties": {"status": {"enum": ["in_scope", "out_of_scope"]}}}, "then": {"properties": {"evidence": {"minItems": 1}}}}
+      ]
+    },
+    "ItemResult": {
+      "type": "object", "additionalProperties": false,
+      "required": ["itemId", "label", "scopeAssessment", "verdict", "reasonCode", "reason", "conditions", "missingFields", "evidence"],
+      "properties": {
+        "itemId": {"$ref": "#/$defs/Id"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 100},
+        "scopeAssessment": {"$ref": "#/$defs/ScopeAssessment"},
+        "verdict": {"$ref": "#/$defs/Verdict"},
+        "reasonCode": {"enum": ["APPROVED_SCOPE_MATCH", "APPROVED_EXCLUSION_MATCH", "MISSING_CONDITIONS", "IDENTITY_UNCERTAIN", "NO_APPROVED_SCOPE", "CONFLICTING_EVIDENCE", "EXPIRED_EVIDENCE", "EXTERNAL_ONLY", "NO_MATCH", "RESEARCH_INCOMPLETE"]},
+        "reason": {"type": "string", "minLength": 1, "maxLength": 300},
+        "conditions": {"type": "array", "maxItems": 10, "items": {"type": "string", "maxLength": 160}},
+        "missingFields": {"type": "array", "maxItems": 40, "items": {"$ref": "#/$defs/FieldKey"}},
+        "evidence": {"type": "array", "maxItems": 8, "items": {"$ref": "#/$defs/PublicEvidence"}}
+      },
+      "allOf": [
+        {"if": {"properties": {"verdict": {"const": "can_handle"}}}, "then": {"properties": {"reasonCode": {"const": "APPROVED_SCOPE_MATCH"}, "evidence": {"minItems": 1}, "scopeAssessment": {"properties": {"status": {"const": "in_scope"}}}}}},
+        {"if": {"properties": {"verdict": {"const": "out_of_scope"}}}, "then": {"properties": {"reasonCode": {"const": "APPROVED_EXCLUSION_MATCH"}, "evidence": {"minItems": 1}}}}
+      ]
+    },
+    "PublicResult": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "caseId", "jobId", "inputRevision", "knowledgeRevision", "status", "verdict", "headline", "items", "createdAt", "stale", "mailDraftAvailable"],
+      "properties": {
+        "kind": {"const": "public_result"},
+        "caseId": {"$ref": "#/$defs/Id"},
+        "jobId": {"$ref": "#/$defs/Id"},
+        "inputRevision": {"type": "integer", "minimum": 1},
+        "knowledgeRevision": {"type": "integer", "minimum": 0},
+        "status": {"enum": ["completed", "partial", "failed"]},
+        "verdict": {"oneOf": [{"$ref": "#/$defs/Verdict"}, {"type": "null"}]},
+        "headline": {"type": "string", "minLength": 1, "maxLength": 100},
+        "items": {"type": "array", "minItems": 1, "maxItems": 3, "items": {"$ref": "#/$defs/ItemResult"}},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "stale": {"type": "boolean"},
+        "mailDraftAvailable": {"type": "boolean"}
+      },
+      "allOf": [
+        {"if": {"properties": {"status": {"const": "failed"}}}, "then": {"properties": {"verdict": {"type": "null"}}}, "else": {"properties": {"verdict": {"$ref": "#/$defs/Verdict"}}}},
+        {"if": {"properties": {"status": {"const": "partial"}}}, "then": {"properties": {"verdict": {"const": "needs_review"}}}}
+      ]
+    },
+    "Predicate": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["field", "op", "value"], "properties": {"field": {"$ref": "#/$defs/FieldKey"}, "op": {"const": "eq"}, "value": {"type": ["string", "number"]}}},
+        {"type": "object", "additionalProperties": false, "required": ["field", "op", "values"], "properties": {"field": {"$ref": "#/$defs/FieldKey"}, "op": {"const": "in"}, "values": {"type": "array", "minItems": 1, "maxItems": 40, "uniqueItems": true, "items": {"type": ["string", "number"]}}}},
+        {"type": "object", "additionalProperties": false, "required": ["field", "op", "min", "max", "unit"], "properties": {"field": {"$ref": "#/$defs/FieldKey"}, "op": {"const": "range"}, "min": {"type": "number"}, "max": {"type": "number"}, "unit": {"type": "string", "minLength": 1, "maxLength": 30}}}
+      ]
+    },
+    "CapabilityRule": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "id", "version", "assessmentScope", "decision", "approvalStatus", "category", "modelAliases", "predicates", "requiredFields", "coveredFields", "publicStatement", "sourceId", "sourceLocator", "approvedBy", "approvedAt", "validUntil", "isDemo"],
+      "properties": {
+        "kind": {"const": "capability_rule"},
+        "id": {"$ref": "#/$defs/Id"},
+        "version": {"type": "integer", "minimum": 1},
+        "assessmentScope": {"enum": ["business_scope", "request"]},
+        "decision": {"enum": ["supported", "excluded", "review_only"]},
+        "approvalStatus": {"enum": ["draft", "approved", "revoked"]},
+        "category": {"type": "string", "minLength": 1, "maxLength": 100},
+        "modelAliases": {"type": "array", "maxItems": 100, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 100}},
+        "predicates": {"type": "array", "maxItems": 40, "items": {"$ref": "#/$defs/Predicate"}},
+        "requiredFields": {"type": "array", "maxItems": 40, "uniqueItems": true, "items": {"$ref": "#/$defs/FieldKey"}},
+        "coveredFields": {"type": "array", "maxItems": 40, "uniqueItems": true, "items": {"$ref": "#/$defs/FieldKey"}},
+        "publicStatement": {"type": "string", "minLength": 1, "maxLength": 300},
+        "sourceId": {"$ref": "#/$defs/Id"},
+        "sourceLocator": {"type": "string", "minLength": 1, "maxLength": 200},
+        "approvedBy": {"type": ["string", "null"], "maxLength": 128},
+        "approvedAt": {"type": ["string", "null"], "format": "date-time"},
+        "validUntil": {"type": ["string", "null"], "format": "date-time"},
+        "isDemo": {"type": "boolean"}
+      },
+      "allOf": [{"if": {"properties": {"approvalStatus": {"const": "approved"}}}, "then": {"properties": {"approvedBy": {"$ref": "#/$defs/Id"}, "approvedAt": {"type": "string", "format": "date-time"}, "validUntil": {"type": "string", "format": "date-time"}}}}]
+    }
+  }
+}

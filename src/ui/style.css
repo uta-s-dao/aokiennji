@@ -1,0 +1,378 @@
+:root {
+  font-family:
+    system-ui,
+    -apple-system,
+    "Noto Sans JP",
+    sans-serif;
+  color: #19382f;
+  background: #f5f6f1;
+  font-synthesis: none;
+  line-height: 1.65;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+header {
+  max-width: 1100px;
+  margin: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 26px 32px;
+  border-bottom: 1px solid #dce2d8;
+}
+.brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-weight: 700;
+  font-size: 17px;
+}
+.mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  background: #235b48;
+  color: #fff;
+  border-radius: 12px;
+  font-size: 24px;
+}
+.brand small,
+small {
+  display: block;
+  font-size: 12px;
+  color: #586d60;
+  font-weight: 400;
+}
+nav {
+  display: flex;
+  gap: 8px;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+button,
+.button {
+  cursor: pointer;
+  border: 1px solid #c3d0c4;
+  border-radius: 9px;
+  padding: 10px 17px;
+  background: #fff;
+  color: #214c3c;
+  text-decoration: none;
+  text-align: center;
+  display: inline-block;
+}
+button:hover,
+.button:hover {
+  background: #edf2e9;
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.primary {
+  background: #235b48;
+  color: white;
+  border-color: #235b48;
+}
+.primary:hover {
+  background: #174534;
+}
+.secondary {
+  background: #edf2e9;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #bd7834;
+  outline-offset: 3px;
+}
+main {
+  max-width: 780px;
+  margin: auto;
+  padding: 38px 24px 60px;
+  min-height: 75vh;
+}
+.steps {
+  display: flex;
+  gap: 28px;
+  margin: 0 0 40px;
+  color: #738173;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+}
+.steps .active {
+  color: #235b48;
+  border-bottom: 2px solid #235b48;
+  padding-bottom: 8px;
+  font-weight: 700;
+}
+.eyebrow {
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: #637c5e;
+}
+h1 {
+  font-size: clamp(24px, 4vw, 34px);
+  line-height: 1.5;
+  letter-spacing: 0.015em;
+  margin: 10px 0 20px;
+}
+h2 {
+  font-size: 21px;
+  margin-top: 8px;
+}
+.intro {
+  margin-bottom: 30px;
+}
+.intro p {
+  color: #5b6e60;
+}
+.question-card,
+.result {
+  background: white;
+  border: 1px solid #dce2d8;
+  border-radius: 18px;
+  padding: 30px;
+  margin: 20px 0;
+  box-shadow: 0 5px 25px #24433104;
+}
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 10px 0 8px;
+}
+textarea,
+input:not([type="file"]):not([type="checkbox"]),
+select {
+  display: block;
+  width: 100%;
+  border: 1px solid #bdcbbd;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+  color: #19382f;
+}
+textarea {
+  resize: vertical;
+  margin: 10px 0 16px;
+  line-height: 1.6;
+}
+form > .primary {
+  width: 100%;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 18px 0;
+}
+.option {
+  width: 100%;
+  margin-bottom: 12px;
+  text-align: left;
+  padding: 16px;
+}
+.attachment {
+  margin: 25px 0;
+  padding: 16px;
+  background: #f7f8f3;
+  border-radius: 10px;
+  font-weight: 400;
+}
+.attachment input {
+  display: block;
+  margin: 10px 0;
+  max-width: 100%;
+}
+.attachment small {
+  margin-top: 8px;
+}
+.examples {
+  display: grid;
+  gap: 8px;
+  margin-top: 22px;
+}
+.examples > span {
+  font-size: 12px;
+  color: #5f7363;
+}
+.examples button {
+  font-size: 13px;
+  text-align: left;
+  background: #f8faf6;
+  border-color: transparent;
+}
+.notice,
+.error {
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin: 18px 0;
+  background: #edf4e8;
+}
+.error {
+  background: #fff0e8;
+  color: #7d3e25;
+}
+.edit-toggle {
+  margin: 8px 0 20px;
+  background: transparent;
+}
+.scope {
+  background: #edf3eb;
+  padding: 12px 15px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+article {
+  border-bottom: 1px solid #e1e7dd;
+  padding: 20px 0;
+}
+article:last-child {
+  border: 0;
+}
+details {
+  margin: 16px 0;
+}
+summary {
+  cursor: pointer;
+}
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 13px;
+}
+.muted {
+  font-size: 12px;
+  color: #687968;
+}
+.privacy {
+  font-size: 12px;
+  color: #64755f;
+  margin-top: 30px;
+}
+.field-editor {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  border-bottom: 1px solid #e1e7dd;
+  padding: 10px 0;
+}
+.field-editor > label:first-child {
+  grid-column: 1/-1;
+}
+.field-editor .check {
+  grid-column: 1;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+}
+.field-editor > button {
+  grid-column: 2;
+  grid-row: 2/4;
+}
+.field-editor input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+}
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #d9e5d4;
+  border-top-color: #235b48;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+footer {
+  max-width: 1100px;
+  margin: auto;
+  border-top: 1px solid #dce2d8;
+  padding: 24px 32px;
+  font-size: 12px;
+  color: #687968;
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+}
+@media (max-width: 600px) {
+  header {
+    padding: 18px 16px;
+    align-items: flex-start;
+  }
+  .brand {
+    font-size: 13px;
+  }
+  .brand small {
+    font-size: 10px;
+  }
+  .mark {
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  nav {
+    flex-direction: column;
+    gap: 4px;
+  }
+  nav button {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+  main {
+    padding: 25px 16px 40px;
+  }
+  .question-card,
+  .result {
+    padding: 20px 16px;
+    border-radius: 12px;
+  }
+  .steps {
+    margin-bottom: 25px;
+    gap: 22px;
+  }
+  .desktop {
+    display: none;
+  }
+  .actions > button,
+  .actions > a {
+    flex: 1;
+    min-width: 130px;
+  }
+  .field-editor {
+    grid-template-columns: 1fr auto;
+  }
+  footer {
+    padding: 20px 16px;
+    flex-direction: column;
+  }
+  .attachment input {
+    font-size: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}

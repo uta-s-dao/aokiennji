@@ -1,0 +1,835 @@
+{
+  "notice": "すべて設計確認用の架空データ。会社の実際の取扱範囲・承認・有効期限を示さない。",
+  "valid": [
+    {
+      "name": "型番既知で追加質問なしの調査入力",
+      "schema": "ResearchBrief",
+      "value": {
+        "kind": "research_brief",
+        "schemaVersion": 2,
+        "caseId": "demo-case-01",
+        "revision": 1,
+        "items": [
+          {
+            "id": "part-1",
+            "label": "架空メーカーの試験用部品",
+            "profile": "known_model",
+            "category": "demo_components",
+            "notes": [],
+            "fields": [
+              {
+                "key": "manufacturer",
+                "label": "メーカー",
+                "status": "known",
+                "value": {
+                  "text": "試験メーカー",
+                  "number": null,
+                  "unit": null
+                },
+                "source": "customer_text",
+                "eventId": "event-1",
+                "quote": "試験メーカーのDEMO-A100を購入したいです",
+                "hardConstraint": true
+              },
+              {
+                "key": "model",
+                "label": "型番",
+                "status": "known",
+                "value": {
+                  "text": "DEMO-A100",
+                  "number": null,
+                  "unit": null
+                },
+                "source": "customer_text",
+                "eventId": "event-1",
+                "quote": "試験メーカーのDEMO-A100を購入したいです",
+                "hardConstraint": true
+              },
+              {
+                "key": "quantity",
+                "label": "数量",
+                "status": "not_asked",
+                "value": null,
+                "source": "none",
+                "eventId": null,
+                "quote": null,
+                "hardConstraint": false
+              },
+              {
+                "key": "request_scope",
+                "label": "依頼範囲",
+                "status": "known",
+                "value": {
+                  "text": "purchase",
+                  "number": null,
+                  "unit": null
+                },
+                "source": "customer_text",
+                "eventId": "event-1",
+                "quote": "試験メーカーのDEMO-A100を購入したいです",
+                "hardConstraint": true
+              }
+            ]
+          }
+        ],
+        "attachmentRefs": [],
+        "questionsAsked": 0,
+        "knowledgeRevision": 1,
+        "questionPolicyVersion": "1"
+      }
+    },
+    {
+      "name": "分からない回答",
+      "schema": "AnswerMutation",
+      "value": {
+        "kind": "answer_mutation",
+        "mutationId": "mutation-2",
+        "expectedRevision": 1,
+        "questionId": "material-part-1-v1",
+        "answer": {
+          "type": "unknown"
+        }
+      }
+    },
+    {
+      "name": "一つだけの質問応答",
+      "schema": "IntakeResponse",
+      "value": {
+        "kind": "intake_response",
+        "caseId": "demo-case-02",
+        "revision": 1,
+        "action": "ask",
+        "question": {
+          "id": "purpose-part-1-v1",
+          "itemId": "part-1",
+          "fieldKey": "purpose",
+          "text": "何に使う部品ですか？",
+          "inputType": "text",
+          "options": [],
+          "allowUnknown": true,
+          "allowSkip": true
+        },
+        "jobId": null,
+        "canResearch": true,
+        "notice": null
+      }
+    },
+    {
+      "name": "聞き取りから直接調査へ",
+      "schema": "IntakeResponse",
+      "value": {
+        "kind": "intake_response",
+        "caseId": "demo-case-01",
+        "revision": 1,
+        "action": "research_started",
+        "question": null,
+        "jobId": "job-01",
+        "canResearch": true,
+        "notice": null
+      }
+    },
+    {
+      "name": "架空の承認済み取扱ルール",
+      "schema": "CapabilityRule",
+      "value": {
+        "kind": "capability_rule",
+        "id": "demo-rule-01",
+        "version": 1,
+        "decision": "supported",
+        "approvalStatus": "approved",
+        "category": "demo_components",
+        "modelAliases": [
+          "DEMO-A100"
+        ],
+        "predicates": [
+          {
+            "field": "manufacturer",
+            "op": "eq",
+            "value": "試験メーカー"
+          },
+          {
+            "field": "model",
+            "op": "eq",
+            "value": "DEMO-A100"
+          },
+          {
+            "field": "request_scope",
+            "op": "eq",
+            "value": "purchase"
+          }
+        ],
+        "requiredFields": [
+          "manufacturer",
+          "model",
+          "request_scope"
+        ],
+        "coveredFields": [
+          "manufacturer",
+          "model",
+          "request_scope"
+        ],
+        "publicStatement": "デモ用の取扱確認です。実際の販売情報ではありません。",
+        "sourceId": "demo-source-01",
+        "sourceLocator": "架空台帳 1行目",
+        "approvedBy": "demo-approver",
+        "approvedAt": "2026-11-15T00:00:00Z",
+        "validUntil": "2026-11-30T00:00:00Z",
+        "isDemo": true,
+        "assessmentScope": "request"
+      }
+    },
+    {
+      "name": "根拠があるデモの肯定結果",
+      "schema": "PublicResult",
+      "value": {
+        "kind": "public_result",
+        "caseId": "demo-case-01",
+        "jobId": "job-01",
+        "inputRevision": 1,
+        "knowledgeRevision": 1,
+        "status": "completed",
+        "verdict": "can_handle",
+        "headline": "デモ：当社で取扱対応できます",
+        "items": [
+          {
+            "itemId": "part-1",
+            "label": "試験用部品 DEMO-A100",
+            "verdict": "can_handle",
+            "reasonCode": "APPROVED_SCOPE_MATCH",
+            "reason": "架空の承認済み取扱ルールに一致しています。",
+            "conditions": [
+              "価格・在庫・納期はメールで確認します。"
+            ],
+            "missingFields": [],
+            "evidence": [
+              {
+                "id": "public-evidence-01",
+                "label": "デモの社内確認済み取扱範囲",
+                "url": null,
+                "checkedAt": "2026-11-15T01:00:00Z"
+              }
+            ],
+            "scopeAssessment": {
+              "status": "in_scope",
+              "reason": "この個別依頼に一致する架空の承認済みルールがあります。",
+              "evidence": [
+                {
+                  "id": "public-evidence-01",
+                  "label": "デモの社内確認済み取扱範囲",
+                  "url": null,
+                  "checkedAt": "2026-11-15T01:00:00Z"
+                }
+              ]
+            }
+          }
+        ],
+        "createdAt": "2026-11-15T01:00:00Z",
+        "stale": false,
+        "mailDraftAvailable": true
+      }
+    },
+    {
+      "name": "Webで候補を発見しただけの結果",
+      "schema": "PublicResult",
+      "value": {
+        "kind": "public_result",
+        "caseId": "demo-case-02",
+        "jobId": "job-02",
+        "inputRevision": 3,
+        "knowledgeRevision": 1,
+        "status": "completed",
+        "verdict": "needs_review",
+        "headline": "担当者の確認が必要です",
+        "items": [
+          {
+            "itemId": "part-1",
+            "label": "交換用部品",
+            "verdict": "needs_review",
+            "reasonCode": "EXTERNAL_ONLY",
+            "reason": "候補資料は見つかりましたが、当社の取扱条件は未確認です。",
+            "conditions": [],
+            "missingFields": [
+              "material"
+            ],
+            "evidence": [],
+            "scopeAssessment": {
+              "status": "unconfirmed",
+              "reason": "有効な会社承認済みの分野根拠は未確認です。",
+              "evidence": []
+            }
+          }
+        ],
+        "createdAt": "2026-11-15T01:00:00Z",
+        "stale": false,
+        "mailDraftAvailable": true
+      }
+    },
+    {
+      "name": "利用枠不足を隠さない失敗結果",
+      "schema": "PublicResult",
+      "value": {
+        "kind": "public_result",
+        "caseId": "demo-case-03",
+        "jobId": "job-03",
+        "inputRevision": 2,
+        "knowledgeRevision": 1,
+        "status": "failed",
+        "verdict": null,
+        "headline": "調査を完了できませんでした",
+        "items": [
+          {
+            "itemId": "part-1",
+            "label": "交換用部品",
+            "verdict": "needs_review",
+            "reasonCode": "RESEARCH_INCOMPLETE",
+            "reason": "入力内容を保持しています。再試行するか、この内容でメール相談できます。",
+            "conditions": [],
+            "missingFields": [],
+            "evidence": [],
+            "scopeAssessment": {
+              "status": "unconfirmed",
+              "reason": "有効な会社承認済みの分野根拠は未確認です。",
+              "evidence": []
+            }
+          }
+        ],
+        "createdAt": "2026-11-15T01:00:00Z",
+        "stale": false,
+        "mailDraftAvailable": true
+      }
+    },
+    {
+      "name": "分野のみを承認する架空ルール",
+      "schema": "CapabilityRule",
+      "value": {
+        "kind": "capability_rule",
+        "id": "demo-scope-fabrication",
+        "version": 1,
+        "decision": "supported",
+        "approvalStatus": "approved",
+        "category": "demo_fabrication",
+        "modelAliases": [],
+        "predicates": [
+          {
+            "field": "request_scope",
+            "op": "eq",
+            "value": "fabrication"
+          }
+        ],
+        "requiredFields": [
+          "request_scope"
+        ],
+        "coveredFields": [
+          "request_scope"
+        ],
+        "publicStatement": "デモ：この分野の製作相談を取扱対象としています。個別仕様・納期の承認ではありません。",
+        "sourceId": "demo-source-scope",
+        "sourceLocator": "架空方針 1行目",
+        "approvedBy": "demo-approver",
+        "approvedAt": "2026-11-15T00:00:00Z",
+        "validUntil": "2026-11-30T00:00:00Z",
+        "isDemo": true,
+        "assessmentScope": "business_scope"
+      }
+    },
+    {
+      "name": "支給材加工の方式に限定した架空の対応外ルール",
+      "schema": "CapabilityRule",
+      "value": {
+        "kind": "capability_rule",
+        "id": "demo-exclude-supplied",
+        "version": 1,
+        "decision": "excluded",
+        "approvalStatus": "approved",
+        "category": "demo_processing",
+        "modelAliases": [],
+        "predicates": [
+          {
+            "field": "request_scope",
+            "op": "eq",
+            "value": "processing"
+          },
+          {
+            "field": "material_supply",
+            "op": "eq",
+            "value": "customer_supplied"
+          }
+        ],
+        "requiredFields": [
+          "request_scope",
+          "material_supply"
+        ],
+        "coveredFields": [
+          "request_scope",
+          "material_supply"
+        ],
+        "publicStatement": "デモ：この対象の客先支給材加工は対応範囲外です。当社調達の加工は別途確認します。",
+        "sourceId": "demo-source-processing",
+        "sourceLocator": "架空加工方針 2行目",
+        "approvedBy": "demo-approver",
+        "approvedAt": "2026-11-15T00:00:00Z",
+        "validUntil": "2026-11-30T00:00:00Z",
+        "isDemo": true,
+        "assessmentScope": "request"
+      }
+    },
+    {
+      "name": "当社調達と加工を区別する調査入力",
+      "schema": "ResearchBrief",
+      "value": {
+        "kind": "research_brief",
+        "schemaVersion": 2,
+        "caseId": "demo-case-supply",
+        "revision": 2,
+        "items": [
+          {
+            "id": "part-1",
+            "label": "架空のリング材の調達と穴加工",
+            "profile": "fabrication",
+            "category": "demo_processing",
+            "notes": [],
+            "fields": [
+              {
+                "key": "request_scope",
+                "label": "依頼範囲",
+                "status": "known",
+                "value": {
+                  "text": "processing",
+                  "number": null,
+                  "unit": null
+                },
+                "source": "customer_text",
+                "eventId": "event-supply-2",
+                "quote": "このリングの材料を御社で調達して穴加工もお願いします",
+                "hardConstraint": true
+              },
+              {
+                "key": "material_supply",
+                "label": "材料手配",
+                "status": "known",
+                "value": {
+                  "text": "company_sourced",
+                  "number": null,
+                  "unit": null
+                },
+                "source": "customer_text",
+                "eventId": "event-supply-2",
+                "quote": "このリングの材料を御社で調達して穴加工もお願いします",
+                "hardConstraint": true
+              }
+            ]
+          }
+        ],
+        "attachmentRefs": [],
+        "questionsAsked": 0,
+        "knowledgeRevision": 1,
+        "questionPolicyVersion": "1"
+      }
+    },
+    {
+      "name": "分野は対象でも今回の必須条件は確認待ちの結果",
+      "schema": "PublicResult",
+      "value": {
+        "kind": "public_result",
+        "caseId": "demo-case-scope",
+        "jobId": "job-scope",
+        "inputRevision": 1,
+        "knowledgeRevision": 1,
+        "status": "completed",
+        "verdict": "needs_review",
+        "headline": "デモ：製作相談の対象です。今回の条件は確認が必要です",
+        "items": [
+          {
+            "itemId": "part-1",
+            "label": "架空の製作相談",
+            "verdict": "needs_review",
+            "reasonCode": "MISSING_CONDITIONS",
+            "reason": "製作相談の対象です。今回の加工範囲と指定納期は担当者確認が必要です。",
+            "conditions": [
+              "個別の加工範囲と指定納期は未確認です。"
+            ],
+            "missingFields": [
+              "work_scope",
+              "required_date"
+            ],
+            "evidence": [],
+            "scopeAssessment": {
+              "status": "in_scope",
+              "reason": "架空の会社方針で、この分野の製作相談は取扱対象です。",
+              "evidence": [
+                {
+                  "id": "public-scope-01",
+                  "label": "デモの承認済み製作分野",
+                  "url": null,
+                  "checkedAt": "2026-11-16T01:00:00Z"
+                }
+              ]
+            }
+          }
+        ],
+        "createdAt": "2026-11-15T01:00:00Z",
+        "stale": false,
+        "mailDraftAvailable": true
+      }
+    },
+    {
+      "name": "分野は対象だが今回の支給材方式は対応外の結果",
+      "schema": "PublicResult",
+      "value": {
+        "kind": "public_result",
+        "caseId": "demo-case-excluded",
+        "jobId": "job-excluded",
+        "inputRevision": 1,
+        "knowledgeRevision": 1,
+        "status": "completed",
+        "verdict": "out_of_scope",
+        "headline": "デモ：この客先支給材加工は対応範囲外です",
+        "items": [
+          {
+            "itemId": "part-1",
+            "label": "架空の客先支給リング加工",
+            "verdict": "out_of_scope",
+            "reasonCode": "APPROVED_EXCLUSION_MATCH",
+            "reason": "この対象の客先支給材加工は対応範囲外です。当社調達からの加工は別方式として確認が必要です。",
+            "conditions": [
+              "この結論は客先支給材の方式に限ります。"
+            ],
+            "missingFields": [],
+            "evidence": [
+              {
+                "id": "public-exclude-01",
+                "label": "デモの方式別加工方針",
+                "url": null,
+                "checkedAt": "2026-11-16T01:00:00Z"
+              }
+            ],
+            "scopeAssessment": {
+              "status": "in_scope",
+              "reason": "架空の会社方針では、この加工分野自体は取扱対象です。",
+              "evidence": [
+                {
+                  "id": "public-scope-01",
+                  "label": "デモの承認済み製作分野",
+                  "url": null,
+                  "checkedAt": "2026-11-16T01:00:00Z"
+                }
+              ]
+            }
+          }
+        ],
+        "createdAt": "2026-11-15T01:00:00Z",
+        "stale": false,
+        "mailDraftAvailable": true
+      }
+    },
+    {
+      "name": "過去の照会だけでは分野も肯定しない結果",
+      "schema": "PublicResult",
+      "value": {
+        "kind": "public_result",
+        "caseId": "demo-case-history",
+        "jobId": "job-history",
+        "inputRevision": 1,
+        "knowledgeRevision": 1,
+        "status": "completed",
+        "verdict": "needs_review",
+        "headline": "現在の取扱範囲の確認が必要です",
+        "items": [
+          {
+            "itemId": "part-1",
+            "label": "架空の製作相談",
+            "verdict": "needs_review",
+            "reasonCode": "NO_APPROVED_SCOPE",
+            "reason": "過去の照会例はありますが、現在の取扱範囲と今回の条件は未確認です。",
+            "conditions": [],
+            "missingFields": [],
+            "evidence": [],
+            "scopeAssessment": {
+              "status": "unconfirmed",
+              "reason": "有効な会社承認済みの分野根拠は未確認です。",
+              "evidence": []
+            }
+          }
+        ],
+        "createdAt": "2026-11-15T01:00:00Z",
+        "stale": false,
+        "mailDraftAvailable": true
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "name": "値があるのに不明扱い",
+      "schema": "Field",
+      "value": {
+        "key": "material",
+        "label": "材質",
+        "status": "unknown",
+        "value": {
+          "text": "SUS304",
+          "number": null,
+          "unit": null
+        },
+        "source": "customer_text",
+        "eventId": "e1",
+        "quote": "分からない",
+        "hardConstraint": false
+      }
+    },
+    {
+      "name": "既知なのに根拠なし",
+      "schema": "Field",
+      "value": {
+        "key": "material",
+        "label": "材質",
+        "status": "known",
+        "value": {
+          "text": "SUS304",
+          "number": null,
+          "unit": null
+        },
+        "source": "none",
+        "eventId": null,
+        "quote": null,
+        "hardConstraint": false
+      }
+    },
+    {
+      "name": "質問を出しながら調査開始",
+      "schema": "IntakeResponse",
+      "value": {
+        "kind": "intake_response",
+        "caseId": "c1",
+        "revision": 1,
+        "action": "research_started",
+        "question": {
+          "id": "q1",
+          "itemId": "p1",
+          "fieldKey": "material",
+          "text": "材質は？",
+          "inputType": "text",
+          "options": [],
+          "allowUnknown": true,
+          "allowSkip": true
+        },
+        "jobId": "j1",
+        "canResearch": true,
+        "notice": null
+      }
+    },
+    {
+      "name": "根拠なしの対応可能",
+      "schema": "ItemResult",
+      "value": {
+        "itemId": "p1",
+        "label": "部品",
+        "verdict": "can_handle",
+        "reasonCode": "APPROVED_SCOPE_MATCH",
+        "reason": "可能です",
+        "conditions": [],
+        "missingFields": [],
+        "evidence": [],
+        "scopeAssessment": {
+          "status": "in_scope",
+          "reason": "分野の根拠だけはあります。",
+          "evidence": [
+            {
+              "id": "scope-only",
+              "label": "架空の分野承認",
+              "url": null,
+              "checkedAt": "2026-11-16T01:00:00Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "公開結果に仕入先の秘密を混入",
+      "schema": "PublicEvidence",
+      "value": {
+        "id": "e1",
+        "label": "確認済み",
+        "url": null,
+        "checkedAt": "2026-11-15T01:00:00Z",
+        "supplierName": "秘密の仕入先"
+      }
+    },
+    {
+      "name": "分野肯定に根拠なし",
+      "schema": "ScopeAssessment",
+      "value": {
+        "status": "in_scope",
+        "reason": "対象です",
+        "evidence": []
+      }
+    },
+    {
+      "name": "分野対象外なのに個別依頼を肯定",
+      "schema": "ItemResult",
+      "value": {
+        "itemId": "part-1",
+        "label": "試験用部品 DEMO-A100",
+        "verdict": "can_handle",
+        "reasonCode": "APPROVED_SCOPE_MATCH",
+        "reason": "架空の承認済み取扱ルールに一致しています。",
+        "conditions": [
+          "価格・在庫・納期はメールで確認します。"
+        ],
+        "missingFields": [],
+        "evidence": [
+          {
+            "id": "public-evidence-01",
+            "label": "デモの社内確認済み取扱範囲",
+            "url": null,
+            "checkedAt": "2026-11-15T01:00:00Z"
+          }
+        ],
+        "scopeAssessment": {
+          "status": "out_of_scope",
+          "reason": "この個別依頼に一致する架空の承認済みルールがあります。",
+          "evidence": [
+            {
+              "id": "public-evidence-01",
+              "label": "デモの社内確認済み取扱範囲",
+              "url": null,
+              "checkedAt": "2026-11-15T01:00:00Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "分野と個別依頼の区別がないルール",
+      "schema": "CapabilityRule",
+      "value": {
+        "kind": "capability_rule",
+        "id": "demo-rule-01",
+        "version": 1,
+        "decision": "supported",
+        "approvalStatus": "approved",
+        "category": "demo_components",
+        "modelAliases": [
+          "DEMO-A100"
+        ],
+        "predicates": [
+          {
+            "field": "manufacturer",
+            "op": "eq",
+            "value": "試験メーカー"
+          },
+          {
+            "field": "model",
+            "op": "eq",
+            "value": "DEMO-A100"
+          }
+        ],
+        "requiredFields": [
+          "manufacturer",
+          "model"
+        ],
+        "coveredFields": [
+          "manufacturer",
+          "model"
+        ],
+        "publicStatement": "デモ用の取扱確認です。実際の販売情報ではありません。",
+        "sourceId": "demo-source-01",
+        "sourceLocator": "架空台帳 1行目",
+        "approvedBy": "demo-approver",
+        "approvedAt": "2026-11-15T00:00:00Z",
+        "validUntil": "2026-11-30T00:00:00Z",
+        "isDemo": true
+      }
+    },
+    {
+      "name": "旧版の調査入力を無変換で混用",
+      "schema": "ResearchBrief",
+      "value": {
+        "kind": "research_brief",
+        "schemaVersion": 1,
+        "caseId": "demo-case-01",
+        "revision": 1,
+        "items": [
+          {
+            "id": "part-1",
+            "label": "架空メーカーの試験用部品",
+            "profile": "known_model",
+            "category": "demo_components",
+            "notes": [],
+            "fields": [
+              {
+                "key": "manufacturer",
+                "label": "メーカー",
+                "status": "known",
+                "value": {
+                  "text": "試験メーカー",
+                  "number": null,
+                  "unit": null
+                },
+                "source": "customer_text",
+                "eventId": "event-1",
+                "quote": "試験メーカーのDEMO-A100を探しています",
+                "hardConstraint": true
+              },
+              {
+                "key": "model",
+                "label": "型番",
+                "status": "known",
+                "value": {
+                  "text": "DEMO-A100",
+                  "number": null,
+                  "unit": null
+                },
+                "source": "customer_text",
+                "eventId": "event-1",
+                "quote": "試験メーカーのDEMO-A100を探しています",
+                "hardConstraint": true
+              },
+              {
+                "key": "quantity",
+                "label": "数量",
+                "status": "not_asked",
+                "value": null,
+                "source": "none",
+                "eventId": null,
+                "quote": null,
+                "hardConstraint": false
+              }
+            ]
+          }
+        ],
+        "attachmentRefs": [],
+        "questionsAsked": 0,
+        "knowledgeRevision": 1,
+        "questionPolicyVersion": "1"
+      }
+    },
+    {
+      "name": "分野が未確認なのに個別依頼を肯定",
+      "schema": "ItemResult",
+      "value": {
+        "itemId": "part-1",
+        "label": "試験用部品 DEMO-A100",
+        "verdict": "can_handle",
+        "reasonCode": "APPROVED_SCOPE_MATCH",
+        "reason": "架空の承認済み取扱ルールに一致しています。",
+        "conditions": [
+          "価格・在庫・納期はメールで確認します。"
+        ],
+        "missingFields": [],
+        "evidence": [
+          {
+            "id": "public-evidence-01",
+            "label": "デモの社内確認済み取扱範囲",
+            "url": null,
+            "checkedAt": "2026-11-15T01:00:00Z"
+          }
+        ],
+        "scopeAssessment": {
+          "status": "unconfirmed",
+          "reason": "有効な会社承認済みの分野根拠は未確認です。",
+          "evidence": []
+        }
+      }
+    }
+  ]
+}

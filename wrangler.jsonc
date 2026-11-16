@@ -1,0 +1,13 @@
+{
+ "$schema":"node_modules/wrangler/config-schema.json",
+ "name":"availability-v2-local-only",
+ "main":"src/worker.ts",
+ "compatibility_date":"2026-11-16",
+ "workers_dev":false,
+ "assets":{"directory":"./dist/ui","binding":"ASSETS","not_found_handling":"single-page-application","run_worker_first":["/api/*"]},
+ "vars":{"APP_MODE":"local-demo","LOCAL_ADMIN_TOKEN":"availability-local-admin","CONTACT_EMAIL":"","INTAKE_MODEL":"disabled","RESEARCH_MODEL":"disabled","EXTERNAL_ENABLED":"false"},
+ "d1_databases":[{"binding":"DB","database_name":"availability-local","database_id":"00000000-0000-0000-0000-000000000002","migrations_dir":"migrations"}],
+ "r2_buckets":[{"binding":"FILES","bucket_name":"availability-local-files"}],
+ "queues":{"producers":[{"binding":"RESEARCH_QUEUE","queue":"availability-local-research"}],"consumers":[{"queue":"availability-local-research","max_batch_size":1,"max_batch_timeout":1,"max_retries":1}]},
+ "triggers":{"crons":["* * * * *"]}
+}

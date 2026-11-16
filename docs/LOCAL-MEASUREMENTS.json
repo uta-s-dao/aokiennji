@@ -1,0 +1,52 @@
+{
+  "measuredAt": "2026-11-16T07:08:16.668Z",
+  "environment": "WSL Linux / Chromium desktop / loopback / local workerd+D1+R2+Queue / warm; 外部AI・検索なし",
+  "selection": {
+    "n": 100,
+    "p50Ms": 133,
+    "p95Ms": 244,
+    "maxMs": 298
+  },
+  "freeTextDemo": {
+    "n": 30,
+    "p50Ms": 152,
+    "p95Ms": 273,
+    "maxMs": 303
+  },
+  "researchFromSubmitToVisible": {
+    "n": 20,
+    "p50Ms": 128,
+    "p95Ms": 228,
+    "maxMs": 230
+  },
+  "questionsForKnownModel": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "limitations": [
+    "デモ抽出の計測。実モデル性能ではない",
+    "選択のうち50操作は調査・結果表示まで含む",
+    "型番調査時間は初回送信から表示までを計測し、調査受付だけを分離していない",
+    "実端末・国内回線・coldの測定、100ms視覚反応、実課金は未検証"
+  ],
+  "sourceFilesSha256": "4ebc8c58912eb5b2f5b9d53613fd89e7d804ac10ace6f437905a51f2b4de66b3",
+  "workerBundleSha256": "11b9ea86cba74259119d64eebd6fbf22de543112fdd513ffe565139575b1837c"
+}

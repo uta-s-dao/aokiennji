@@ -1,0 +1,100 @@
+{
+  "sources": [
+    {
+      "id": "demo-source",
+      "version": 1,
+      "label": "架空のデモ判断資料",
+      "public_allowed": 1,
+      "ai_allowed": 0,
+      "role": "seller",
+      "confirmation_stage": "current_policy",
+      "is_demo": 1
+    }
+  ],
+  "rules": [
+    {
+      "kind": "capability_rule",
+      "version": 1,
+      "assessmentScope": "request",
+      "decision": "supported",
+      "approvalStatus": "approved",
+      "category": "demo_switch",
+      "modelAliases": [
+        "AX-100"
+      ],
+      "predicates": [
+        {
+          "field": "request_scope",
+          "op": "eq",
+          "value": "purchase"
+        }
+      ],
+      "requiredFields": [],
+      "coveredFields": [
+        "manufacturer",
+        "model",
+        "request_scope",
+        "quantity"
+      ],
+      "publicStatement": "【架空デモ】AX-100の商品購入はデモの取扱範囲です。数量の制限なしという架空条件です。",
+      "sourceId": "demo-source",
+      "sourceLocator": "demo:1",
+      "approvedBy": "demo-admin",
+      "approvedAt": "2026-11-16T00:00:00Z",
+      "validUntil": "2099-12-31T00:00:00Z",
+      "isDemo": true,
+      "id": "demo-switch-supported"
+    },
+    {
+      "kind": "capability_rule",
+      "version": 1,
+      "assessmentScope": "business_scope",
+      "decision": "supported",
+      "approvalStatus": "approved",
+      "category": "demo_frame",
+      "modelAliases": [],
+      "predicates": [],
+      "requiredFields": [],
+      "coveredFields": [],
+      "publicStatement": "【架空デモ】架台製作は相談対象分野です。個別の製作条件は未確認です。",
+      "sourceId": "demo-source",
+      "sourceLocator": "demo:1",
+      "approvedBy": "demo-admin",
+      "approvedAt": "2026-11-16T00:00:00Z",
+      "validUntil": "2099-12-31T00:00:00Z",
+      "isDemo": true,
+      "id": "demo-frame-scope"
+    },
+    {
+      "kind": "capability_rule",
+      "version": 1,
+      "assessmentScope": "request",
+      "decision": "excluded",
+      "approvalStatus": "approved",
+      "category": "demo_ring",
+      "modelAliases": [],
+      "predicates": [
+        {
+          "field": "request_scope",
+          "op": "eq",
+          "value": "processing"
+        },
+        {
+          "field": "material_supply",
+          "op": "eq",
+          "value": "customer_supplied"
+        }
+      ],
+      "requiredFields": [],
+      "coveredFields": [],
+      "publicStatement": "【架空デモ】客先支給のリング材への加工は、この方式に限って対応範囲外です。",
+      "sourceId": "demo-source",
+      "sourceLocator": "demo:1",
+      "approvedBy": "demo-admin",
+      "approvedAt": "2026-11-16T00:00:00Z",
+      "validUntil": "2099-12-31T00:00:00Z",
+      "isDemo": true,
+      "id": "demo-ring-excluded"
+    }
+  ]
+}

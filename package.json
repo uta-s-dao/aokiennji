@@ -1,0 +1,49 @@
+{
+  "name": "aoki-availability-v2-local",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite build && node scripts/dev-local.mjs",
+    "dev:ui": "vite --host 127.0.0.1",
+    "db:migrate": "wrangler d1 migrations apply availability-local --local",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests scripts",
+    "test:domain": "vitest run tests/domain",
+    "test:integration": "vite build && wrangler deploy --dry-run --outdir dist/worker && vitest run tests/integration",
+    "test:contracts": "vitest run tests/contracts.test.ts",
+    "test:isolation": "node scripts/isolation.mjs",
+    "test:e2e": "playwright test flows.spec.ts",
+    "build": "vite build && wrangler deploy --dry-run --outdir dist/worker",
+    "eval:live": "node scripts/eval-live.mjs",
+    "contracts:generate": "node scripts/generate-contracts.mjs",
+    "demo:seed": "node scripts/demo-seed.mjs",
+    "rules:import": "node scripts/import-rules.mjs",
+    "check": "npm run typecheck && npm run lint && npm run test:contracts && npm run test:domain && npm run test:integration && npm run test:isolation && npm run build",
+    "measure:local": "playwright test measure.spec.ts --project desktop"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261116.1",
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.65.1",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "eslint": "10.15.0",
+    "json-schema-to-typescript": "16.0.0",
+    "miniflare": "5.20261113.0-beta",
+    "prettier": "3.10.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.2",
+    "vite": "8.3.8",
+    "vitest": "5.1.0",
+    "wrangler": "4.162.0"
+  }
+}

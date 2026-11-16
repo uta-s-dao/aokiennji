@@ -1,0 +1,4 @@
+src/generated/
+docs/design/
+dist/
+node_modules/
