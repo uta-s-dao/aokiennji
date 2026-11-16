@@ -23,6 +23,9 @@ import type {
   Snapshot,
 } from "../../src/domain/model";
 
+import { decodeCompactProposal } from "../../src/domain/compact-extraction";
+import { compactFixture } from "../helpers/compact";
+
 const rules = knowledge.rules as CapabilityRule[];
 const sources = knowledge.sources as Source[];
 type WantedValue = string | { number: number; unit: string };
@@ -85,80 +88,83 @@ const decide = (s: Snapshot) =>
   decideAvailability(makeResearchBrief(s, 2, 1), rules, sources, "replay");
 
 describe("保存した20応答による修正回帰（通信0、独立評価ではない）", () => {
-  for (const sample of dataset.cases as Sample[])
-    it(sample.id, async () => {
-      const s = seed(sample),
-        p = proposal(sample, s);
-      const result = await extractOnce(
-        {
-          extract: async () =>
-            applyExtractionProposal(
-              s,
-              sample.input,
-              chooseNextQuestion(s, rules),
-              p,
-              rules.map((r) => r.category),
-            ),
-        },
-        s,
-        sample.input,
-        null,
-      );
-      const e = sample.expected;
-      if (e.safeUnresolved) {
-        expect(result.extractionFailed).toBe(true);
-        expect(
-          result.unresolvedInputs?.some((e) => e.text === sample.input),
-        ).toBe(true);
-        expect(result.brief.items).toEqual(s.brief.items);
-        return;
-      }
-      expect(result.extractionFailed).toBe(false);
-      if (e.items !== undefined)
-        expect(result.brief.items).toHaveLength(e.items);
-      if (sample.id === "E19") {
-        // Original grade expected a confirmed supply change. A question is instead kept pending, with no old exclusion.
-        expect(
-          field(result.brief.items[0], "material_supply")?.value?.text,
-        ).toBe("customer_supplied");
-        expect(result.unresolvedInputs?.[0].text).toBe(sample.input);
-        expect(decide(result).verdict).toBe("needs_review");
-      } else
-        for (const [k, v] of Object.entries(e.fields ?? {}))
-          compare(result.brief.items[0], k, v);
-      for (const [k, v] of Object.entries(e.statuses ?? {}))
-        expect(field(result.brief.items[0], k)?.status).toBe(v);
-      for (const [k, v] of Object.entries(e.requiredFieldContains ?? {}))
-        expect(field(result.brief.items[0], k)?.value?.text).toContain(v);
-      for (const part of e.parts ?? []) {
-        const item = result.brief.items.find((i) =>
-          i.label.includes(part.label),
+  for (const format of ["full", "compact"])
+    for (const sample of dataset.cases as Sample[])
+      it(format + ":" + sample.id, async () => {
+        const s = seed(sample),
+          p = proposal(sample, s);
+        const result = await extractOnce(
+          {
+            extract: async () =>
+              applyExtractionProposal(
+                s,
+                sample.input,
+                chooseNextQuestion(s, rules),
+                format === "compact"
+                  ? decodeCompactProposal(s, compactFixture(p, s))
+                  : p,
+                rules.map((r) => r.category),
+              ),
+          },
+          s,
+          sample.input,
+          null,
         );
-        expect(item).toBeDefined();
-        for (const [k, v] of Object.entries(part.fields ?? {}))
-          compare(item, k, v);
-        for (const [k, v] of Object.entries(part.contains ?? {}))
-          expect(field(item, k)?.value?.text).toContain(v);
-      }
-      if (e.additionalQuestions === 0)
-        expect(chooseNextQuestion(result, rules)).toBeNull();
-      const decision = decide(result),
-        mail = makeMailDraft(result, decision);
-      if (e.mustNotHandle) expect(decision.verdict).not.toBe("can_handle");
-      if (e.verdict) expect(decision.verdict).toBe(e.verdict);
-      if (e.scope)
-        expect(decision.items[0].scopeAssessment.status).toBe(e.scope);
-      if (e.mustNotInferCustomerMaterial)
-        expect(
-          field(result.brief.items[0], "material_supply")?.value?.text,
-        ).not.toBe("customer_supplied");
-      for (const old of e.mailMustNotContain ?? [])
-        expect(mail.body).not.toContain(old);
-      if (["E19", "E20"].includes(sample.id)) {
-        expect(mail.body).toContain(sample.input);
-        expect(mail.body).not.toContain("今回の依頼：");
-      }
-    });
+        const e = sample.expected;
+        if (e.safeUnresolved) {
+          expect(result.extractionFailed).toBe(true);
+          expect(
+            result.unresolvedInputs?.some((e) => e.text === sample.input),
+          ).toBe(true);
+          expect(result.brief.items).toEqual(s.brief.items);
+          return;
+        }
+        expect(result.extractionFailed).toBe(false);
+        if (e.items !== undefined)
+          expect(result.brief.items).toHaveLength(e.items);
+        if (sample.id === "E19") {
+          // Original grade expected a confirmed supply change. A question is instead kept pending, with no old exclusion.
+          expect(
+            field(result.brief.items[0], "material_supply")?.value?.text,
+          ).toBe("customer_supplied");
+          expect(result.unresolvedInputs?.[0].text).toBe(sample.input);
+          expect(decide(result).verdict).toBe("needs_review");
+        } else
+          for (const [k, v] of Object.entries(e.fields ?? {}))
+            compare(result.brief.items[0], k, v);
+        for (const [k, v] of Object.entries(e.statuses ?? {}))
+          expect(field(result.brief.items[0], k)?.status).toBe(v);
+        for (const [k, v] of Object.entries(e.requiredFieldContains ?? {}))
+          expect(field(result.brief.items[0], k)?.value?.text).toContain(v);
+        for (const part of e.parts ?? []) {
+          const item = result.brief.items.find((i) =>
+            i.label.includes(part.label),
+          );
+          expect(item).toBeDefined();
+          for (const [k, v] of Object.entries(part.fields ?? {}))
+            compare(item, k, v);
+          for (const [k, v] of Object.entries(part.contains ?? {}))
+            expect(field(item, k)?.value?.text).toContain(v);
+        }
+        if (e.additionalQuestions === 0)
+          expect(chooseNextQuestion(result, rules)).toBeNull();
+        const decision = decide(result),
+          mail = makeMailDraft(result, decision);
+        if (e.mustNotHandle) expect(decision.verdict).not.toBe("can_handle");
+        if (e.verdict) expect(decision.verdict).toBe(e.verdict);
+        if (e.scope)
+          expect(decision.items[0].scopeAssessment.status).toBe(e.scope);
+        if (e.mustNotInferCustomerMaterial)
+          expect(
+            field(result.brief.items[0], "material_supply")?.value?.text,
+          ).not.toBe("customer_supplied");
+        for (const old of e.mailMustNotContain ?? [])
+          expect(mail.body).not.toContain(old);
+        if (["E19", "E20"].includes(sample.id)) {
+          expect(mail.body).toContain(sample.input);
+          expect(mail.body).not.toContain("今回の依頼：");
+        }
+      });
 });
 
 it("抽出失敗時は旧値・旧判断をメールへ載せず、最新訂正の全文を残す", async () => {

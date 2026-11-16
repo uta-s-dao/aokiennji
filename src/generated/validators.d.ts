@@ -11,3 +11,4 @@ export const validatePublicResult: import('ajv').ValidateFunction;
 export const validatePredicate: import('ajv').ValidateFunction;
 export const validateCapabilityRule: import('ajv').ValidateFunction;
 export const validateExtractionProposal: import('ajv').ValidateFunction;
+export const validateCompactExtractionProposal: import('ajv').ValidateFunction;

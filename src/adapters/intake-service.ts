@@ -52,6 +52,12 @@ export async function configuredIntake(
         text,
         questionId: q?.id ?? null,
         model: config.model,
+        ...(config.format || config.reasoning
+          ? {
+              format: config.format ?? "full",
+              reasoning: config.reasoning ?? null,
+            }
+          : {}),
       }),
     ),
   );

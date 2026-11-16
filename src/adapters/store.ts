@@ -20,6 +20,8 @@ export type Env = {
   INTAKE_MAX_OUTPUT_TOKENS?: string;
   INTAKE_MAX_CALLS_TOTAL?: string;
   INTAKE_MAX_CALLS_PER_CASE?: string;
+  INTAKE_FORMAT?: string;
+  INTAKE_REASONING?: string;
   RESEARCH_MODEL: string;
   EXTERNAL_ENABLED: string;
 };

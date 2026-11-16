@@ -4,7 +4,12 @@ const require = createRequire(import.meta.url);
 const { reserveBudget } = require("../../scripts/lib/eval-budget.cjs") as {
   reserveBudget: (
     r: { calls: { id: string; reservedMicroUsd: number; state?: string }[] },
-    c: { id: string; inputTokens: number; maxOutputTokens: number },
+    c: {
+      id: string;
+      inputTokens: number;
+      maxOutputTokens: number;
+      model?: string;
+    },
   ) => { reservedMicroUsd: number; inputUpperBound: number };
 };
 it("不明・失敗・未完了の予約も費用枠と40回枠へ算入する", () => {
@@ -22,6 +27,44 @@ it("不明・失敗・未完了の予約も費用枠と40回枠へ算入する",
       maxOutputTokens: 100,
     }),
   ).toThrow("CALL_LIMIT");
+});
+it("以前の34回・費用予約を維持して軽量モデルを最大40回までに制限する", () => {
+  const report = {
+    calls: Array.from({ length: 34 }, (_, i) => ({
+      id: String(i),
+      reservedMicroUsd: i === 0 ? 922447 : 0,
+    })),
+  };
+  for (let i = 0; i < 6; i++)
+    reserveBudget(report, {
+      id: "luna-" + i,
+      inputTokens: 1800,
+      maxOutputTokens: 1024,
+      model: "gpt-6-luna",
+    });
+  expect(report.calls).toHaveLength(40);
+  expect(
+    report.calls.reduce((n, c) => n + c.reservedMicroUsd, 0),
+  ).toBeLessThanOrEqual(1000000);
+  expect(() =>
+    reserveBudget(report, {
+      id: "overflow",
+      inputTokens: 100,
+      maxOutputTokens: 10,
+      model: "gpt-6-luna",
+    }),
+  ).toThrow("CALL_LIMIT");
+  expect(() =>
+    reserveBudget(
+      { calls: [] },
+      {
+        id: "unpriced",
+        inputTokens: 100,
+        maxOutputTokens: 10,
+        model: "different-model",
+      },
+    ),
+  ).toThrow("UNPRICED_MODEL");
 });
 it("1ドルを超える前に拒否し、不正な値や同一IDを再予約しない", () => {
   const report = { calls: [{ id: "used", reservedMicroUsd: 999000 }] };

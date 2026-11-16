@@ -1,0 +1,117 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["n", "c", "u"],
+  "properties": {
+    "n": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["i", "n", "q", "p"],
+        "properties": {
+          "i": {
+            "type": "string",
+            "enum": ["n1", "n2", "n3"]
+          },
+          "n": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "q": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "p": {
+            "type": "string",
+            "enum": ["m", "r", "f", "u"]
+          }
+        }
+      }
+    },
+    "c": {
+      "type": "array",
+      "maxItems": 120,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["i", "k", "v", "q", "o", "h"],
+        "properties": {
+          "i": {
+            "type": "string",
+            "enum": ["0", "1", "2", "n1", "n2", "n3"]
+          },
+          "k": {
+            "type": "string",
+            "enum": [
+              "mf",
+              "mo",
+              "pn",
+              "pu",
+              "ds",
+              "ma",
+              "pr",
+              "rs",
+              "ms",
+              "ws",
+              "ex",
+              "sp",
+              "dn",
+              "dr",
+              "co",
+              "od",
+              "id",
+              "ap",
+              "wd",
+              "ht",
+              "dp",
+              "th",
+              "nt",
+              "pt",
+              "du",
+              "fr",
+              "ps",
+              "fl",
+              "mt",
+              "qt",
+              "dt",
+              "to"
+            ]
+          },
+          "v": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "q": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "o": {
+            "type": "string",
+            "enum": ["s", "c", "h"]
+          },
+          "h": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "u": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2000
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aoki:availability-v2:intake-compact:1",
+  "title": "CompactExtractionProposal"
+}

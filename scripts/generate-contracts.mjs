@@ -17,6 +17,10 @@ const extractionSchema = JSON.parse(
   await readFile("src/domain/extraction.schema.json", "utf8"),
 );
 ajv.addSchema(extractionSchema);
+const compactSchema = JSON.parse(
+  await readFile("src/domain/compact-extraction.schema.json", "utf8"),
+);
+ajv.addSchema(compactSchema);
 await mkdir("src/generated", { recursive: true });
 const exportsMap = Object.fromEntries(
   Object.keys(schema.$defs)
@@ -24,6 +28,13 @@ const exportsMap = Object.fromEntries(
     .map((k) => ["validate" + k, schema.$id + "#/$defs/" + k]),
 );
 exportsMap.validateExtractionProposal = extractionSchema.$id;
+exportsMap.validateCompactExtractionProposal = compactSchema.$id;
+await writeFile(
+  "src/generated/compact-extraction.d.ts",
+  await compile(compactSchema, "CompactExtractionProposal", {
+    ignoreMinAndMaxItems: true,
+  }),
+);
 await writeFile(
   "src/generated/extraction.d.ts",
   await compile(extractionSchema, "ExtractionProposal", {
