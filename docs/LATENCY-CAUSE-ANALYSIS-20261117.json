@@ -1,0 +1,685 @@
+{
+  "createdAt": "2026-11-16T15:12:26.025Z",
+  "codeRevision": "c39c1bffe9fb35c9cc039f18084a4bd71568ca9b",
+  "externalRequests": 0,
+  "modelGenerations": 0,
+  "method": {
+    "runtime": "v24.20.0",
+    "location": "WSL local Node, current source",
+    "fixture": "10 stored repaired responses",
+    "warmupsPerCase": 2,
+    "repetitionsPerCase": 20,
+    "provider": "in-memory Response; no DNS/TLS/remote model/D1/HTTP/browser",
+    "journaling": "20 atomic write/rename runs of recorded report on same filesystem under .wrangler",
+    "timingCaution": "Replay is a local reproduction, not a decomposition of the historical live timings. Clone timing is included in extraction; requestBuild is a separate measurement."
+  },
+  "summary": {
+    "requestBuild": {
+      "n": 200,
+      "p50Ms": 0.0379,
+      "p95Ms": 0.0848,
+      "maxMs": 0.6403
+    },
+    "responseCloneRead": {
+      "n": 200,
+      "p50Ms": 0.0737,
+      "p95Ms": 0.1673,
+      "maxMs": 0.4196
+    },
+    "extractionIncludingMockTransportAndClone": {
+      "n": 200,
+      "p50Ms": 0.3435,
+      "p95Ms": 0.7971,
+      "maxMs": 2.0192
+    },
+    "questionDecisionMail": {
+      "n": 200,
+      "p50Ms": 0.1658,
+      "p95Ms": 0.4968,
+      "maxMs": 5.6505
+    },
+    "journalWrite": {
+      "n": 20,
+      "p50Ms": 1.9021,
+      "p95Ms": 10.5032,
+      "maxMs": 11.6994
+    }
+  },
+  "timeoutScopeDemonstration": {
+    "immediateMockProvider": true,
+    "simulatedUsagePersistDelayMs": 50,
+    "extractionDeadlineMs": 20,
+    "errorCode": "MODEL_TIMEOUT",
+    "actualD1DelayMeasured": false
+  },
+  "rows": [
+    {
+      "caseId": "E01",
+      "liveElapsedMs": 4026,
+      "inputTokens": 1442,
+      "outputTokens": 259,
+      "payloadInfo": {
+        "requestBytes": 6916,
+        "instructionsChars": 1061,
+        "userContextChars": 1716,
+        "latestUtteranceChars": 29,
+        "attributeDictionaryChars": 1373,
+        "attributeCount": 32,
+        "schemaChars": 1716,
+        "changes": 4,
+        "outputJsonChars": 835,
+        "reasoningSpecified": null,
+        "streamSpecified": null
+      },
+      "local": {
+        "requestBuild": {
+          "n": 20,
+          "p50Ms": 0.055,
+          "p95Ms": 0.1064,
+          "maxMs": 0.1279
+        },
+        "responseCloneRead": {
+          "n": 20,
+          "p50Ms": 0.1242,
+          "p95Ms": 0.2633,
+          "maxMs": 0.343
+        },
+        "extractionIncludingMockTransportAndClone": {
+          "n": 20,
+          "p50Ms": 0.626,
+          "p95Ms": 1.1819,
+          "maxMs": 1.3937
+        },
+        "questionDecisionMail": {
+          "n": 20,
+          "p50Ms": 0.3261,
+          "p95Ms": 0.6746,
+          "maxMs": 2.0453
+        }
+      }
+    },
+    {
+      "caseId": "E06",
+      "liveElapsedMs": 4596,
+      "inputTokens": 1457,
+      "outputTokens": 297,
+      "payloadInfo": {
+        "requestBytes": 6985,
+        "instructionsChars": 1061,
+        "userContextChars": 1735,
+        "latestUtteranceChars": 48,
+        "attributeDictionaryChars": 1373,
+        "attributeCount": 32,
+        "schemaChars": 1716,
+        "changes": 5,
+        "outputJsonChars": 939,
+        "reasoningSpecified": null,
+        "streamSpecified": null
+      },
+      "local": {
+        "requestBuild": {
+          "n": 20,
+          "p50Ms": 0.0392,
+          "p95Ms": 0.0939,
+          "maxMs": 0.1192
+        },
+        "responseCloneRead": {
+          "n": 20,
+          "p50Ms": 0.0755,
+          "p95Ms": 0.1186,
+          "maxMs": 0.1531
+        },
+        "extractionIncludingMockTransportAndClone": {
+          "n": 20,
+          "p50Ms": 0.3407,
+          "p95Ms": 0.7194,
+          "maxMs": 0.9455
+        },
+        "questionDecisionMail": {
+          "n": 20,
+          "p50Ms": 0.1964,
+          "p95Ms": 0.3469,
+          "maxMs": 0.3939
+        }
+      }
+    },
+    {
+      "caseId": "E07",
+      "liveElapsedMs": 3762,
+      "inputTokens": 1643,
+      "outputTokens": 174,
+      "payloadInfo": {
+        "requestBytes": 7676,
+        "instructionsChars": 1061,
+        "userContextChars": 2344,
+        "latestUtteranceChars": 32,
+        "attributeDictionaryChars": 1373,
+        "attributeCount": 32,
+        "schemaChars": 1716,
+        "changes": 2,
+        "outputJsonChars": 496,
+        "reasoningSpecified": null,
+        "streamSpecified": null
+      },
+      "local": {
+        "requestBuild": {
+          "n": 20,
+          "p50Ms": 0.04,
+          "p95Ms": 0.0483,
+          "maxMs": 0.0509
+        },
+        "responseCloneRead": {
+          "n": 20,
+          "p50Ms": 0.0743,
+          "p95Ms": 0.1095,
+          "maxMs": 0.1175
+        },
+        "extractionIncludingMockTransportAndClone": {
+          "n": 20,
+          "p50Ms": 0.3487,
+          "p95Ms": 0.4574,
+          "maxMs": 0.6701
+        },
+        "questionDecisionMail": {
+          "n": 20,
+          "p50Ms": 0.1935,
+          "p95Ms": 0.5727,
+          "maxMs": 0.7439
+        }
+      }
+    },
+    {
+      "caseId": "E08",
+      "liveElapsedMs": 2951,
+      "inputTokens": 1649,
+      "outputTokens": 184,
+      "payloadInfo": {
+        "requestBytes": 7654,
+        "instructionsChars": 1061,
+        "userContextChars": 2338,
+        "latestUtteranceChars": 32,
+        "attributeDictionaryChars": 1373,
+        "attributeCount": 32,
+        "schemaChars": 1716,
+        "changes": 2,
+        "outputJsonChars": 501,
+        "reasoningSpecified": null,
+        "streamSpecified": null
+      },
+      "local": {
+        "requestBuild": {
+          "n": 20,
+          "p50Ms": 0.0447,
+          "p95Ms": 0.0714,
+          "maxMs": 0.1075
+        },
+        "responseCloneRead": {
+          "n": 20,
+          "p50Ms": 0.0854,
+          "p95Ms": 0.2897,
+          "maxMs": 0.4196
+        },
+        "extractionIncludingMockTransportAndClone": {
+          "n": 20,
+          "p50Ms": 0.4055,
+          "p95Ms": 1.1114,
+          "maxMs": 1.1973
+        },
+        "questionDecisionMail": {
+          "n": 20,
+          "p50Ms": 0.1853,
+          "p95Ms": 0.2719,
+          "maxMs": 0.334
+        }
+      }
+    },
+    {
+      "caseId": "E09",
+      "liveElapsedMs": 5215,
+      "inputTokens": 1467,
+      "outputTokens": 392,
+      "payloadInfo": {
+        "requestBytes": 6995,
+        "instructionsChars": 1061,
+        "userContextChars": 1745,
+        "latestUtteranceChars": 58,
+        "attributeDictionaryChars": 1373,
+        "attributeCount": 32,
+        "schemaChars": 1716,
+        "changes": 6,
+        "outputJsonChars": 1214,
+        "reasoningSpecified": null,
+        "streamSpecified": null
+      },
+      "local": {
+        "requestBuild": {
+          "n": 20,
+          "p50Ms": 0.0347,
+          "p95Ms": 0.049,
+          "maxMs": 0.0495
+        },
+        "responseCloneRead": {
+          "n": 20,
+          "p50Ms": 0.074,
+          "p95Ms": 0.1514,
+          "maxMs": 0.1871
+        },
+        "extractionIncludingMockTransportAndClone": {
+          "n": 20,
+          "p50Ms": 0.3514,
+          "p95Ms": 0.4717,
+          "maxMs": 0.7533
+        },
+        "questionDecisionMail": {
+          "n": 20,
+          "p50Ms": 0.1926,
+          "p95Ms": 0.3421,
+          "maxMs": 0.6685
+        }
+      }
+    },
+    {
+      "caseId": "E10",
+      "liveElapsedMs": 3280,
+      "inputTokens": 1453,
+      "outputTokens": 224,
+      "payloadInfo": {
+        "requestBytes": 6981,
+        "instructionsChars": 1061,
+        "userContextChars": 1733,
+        "latestUtteranceChars": 46,
+        "attributeDictionaryChars": 1373,
+        "attributeCount": 32,
+        "schemaChars": 1716,
+        "changes": 3,
+        "outputJsonChars": 713,
+        "reasoningSpecified": null,
+        "streamSpecified": null
+      },
+      "local": {
+        "requestBuild": {
+          "n": 20,
+          "p50Ms": 0.035,
+          "p95Ms": 0.3538,
+          "maxMs": 0.6403
+        },
+        "responseCloneRead": {
+          "n": 20,
+          "p50Ms": 0.07,
+          "p95Ms": 0.1295,
+          "maxMs": 0.3542
+        },
+        "extractionIncludingMockTransportAndClone": {
+          "n": 20,
+          "p50Ms": 0.2814,
+          "p95Ms": 0.6782,
+          "maxMs": 2.0192
+        },
+        "questionDecisionMail": {
+          "n": 20,
+          "p50Ms": 0.1633,
+          "p95Ms": 0.2538,
+          "maxMs": 0.4853
+        }
+      }
+    },
+    {
+      "caseId": "E13",
+      "liveElapsedMs": 3766,
+      "inputTokens": 1448,
+      "outputTokens": 304,
+      "payloadInfo": {
+        "requestBytes": 6923,
+        "instructionsChars": 1061,
+        "userContextChars": 1721,
+        "latestUtteranceChars": 34,
+        "attributeDictionaryChars": 1373,
+        "attributeCount": 32,
+        "schemaChars": 1716,
+        "changes": 4,
+        "outputJsonChars": 917,
+        "reasoningSpecified": null,
+        "streamSpecified": null
+      },
+      "local": {
+        "requestBuild": {
+          "n": 20,
+          "p50Ms": 0.0346,
+          "p95Ms": 0.0381,
+          "maxMs": 0.0412
+        },
+        "responseCloneRead": {
+          "n": 20,
+          "p50Ms": 0.0681,
+          "p95Ms": 0.0978,
+          "maxMs": 0.1143
+        },
+        "extractionIncludingMockTransportAndClone": {
+          "n": 20,
+          "p50Ms": 0.3399,
+          "p95Ms": 0.5077,
+          "maxMs": 0.7285
+        },
+        "questionDecisionMail": {
+          "n": 20,
+          "p50Ms": 0.1673,
+          "p95Ms": 0.3301,
+          "maxMs": 5.6505
+        }
+      }
+    },
+    {
+      "caseId": "E14",
+      "liveElapsedMs": 5095,
+      "inputTokens": 1458,
+      "outputTokens": 401,
+      "payloadInfo": {
+        "requestBytes": 6965,
+        "instructionsChars": 1061,
+        "userContextChars": 1729,
+        "latestUtteranceChars": 42,
+        "attributeDictionaryChars": 1373,
+        "attributeCount": 32,
+        "schemaChars": 1716,
+        "changes": 6,
+        "outputJsonChars": 1228,
+        "reasoningSpecified": null,
+        "streamSpecified": null
+      },
+      "local": {
+        "requestBuild": {
+          "n": 20,
+          "p50Ms": 0.0335,
+          "p95Ms": 0.0612,
+          "maxMs": 0.0848
+        },
+        "responseCloneRead": {
+          "n": 20,
+          "p50Ms": 0.0685,
+          "p95Ms": 0.0937,
+          "maxMs": 0.124
+        },
+        "extractionIncludingMockTransportAndClone": {
+          "n": 20,
+          "p50Ms": 0.3646,
+          "p95Ms": 0.4947,
+          "maxMs": 1.189
+        },
+        "questionDecisionMail": {
+          "n": 20,
+          "p50Ms": 0.1584,
+          "p95Ms": 0.2994,
+          "maxMs": 1.3033
+        }
+      }
+    },
+    {
+      "caseId": "E17",
+      "liveElapsedMs": 3402,
+      "inputTokens": 1447,
+      "outputTokens": 230,
+      "payloadInfo": {
+        "requestBytes": 6957,
+        "instructionsChars": 1061,
+        "userContextChars": 1725,
+        "latestUtteranceChars": 38,
+        "attributeDictionaryChars": 1373,
+        "attributeCount": 32,
+        "schemaChars": 1716,
+        "changes": 4,
+        "outputJsonChars": 744,
+        "reasoningSpecified": null,
+        "streamSpecified": null
+      },
+      "local": {
+        "requestBuild": {
+          "n": 20,
+          "p50Ms": 0.0329,
+          "p95Ms": 0.0522,
+          "maxMs": 0.0615
+        },
+        "responseCloneRead": {
+          "n": 20,
+          "p50Ms": 0.056,
+          "p95Ms": 0.0849,
+          "maxMs": 0.0861
+        },
+        "extractionIncludingMockTransportAndClone": {
+          "n": 20,
+          "p50Ms": 0.2409,
+          "p95Ms": 0.4784,
+          "maxMs": 1.234
+        },
+        "questionDecisionMail": {
+          "n": 20,
+          "p50Ms": 0.1121,
+          "p95Ms": 0.1438,
+          "maxMs": 0.1675
+        }
+      }
+    },
+    {
+      "caseId": "E19",
+      "liveElapsedMs": 3017,
+      "inputTokens": 1630,
+      "outputTokens": 183,
+      "payloadInfo": {
+        "requestBytes": 7616,
+        "instructionsChars": 1061,
+        "userContextChars": 2276,
+        "latestUtteranceChars": 33,
+        "attributeDictionaryChars": 1373,
+        "attributeCount": 32,
+        "schemaChars": 1716,
+        "changes": 2,
+        "outputJsonChars": 526,
+        "reasoningSpecified": null,
+        "streamSpecified": null
+      },
+      "local": {
+        "requestBuild": {
+          "n": 20,
+          "p50Ms": 0.0404,
+          "p95Ms": 0.0657,
+          "maxMs": 0.0998
+        },
+        "responseCloneRead": {
+          "n": 20,
+          "p50Ms": 0.0605,
+          "p95Ms": 0.1111,
+          "maxMs": 0.1679
+        },
+        "extractionIncludingMockTransportAndClone": {
+          "n": 20,
+          "p50Ms": 0.2747,
+          "p95Ms": 0.4834,
+          "maxMs": 0.6727
+        },
+        "questionDecisionMail": {
+          "n": 20,
+          "p50Ms": 0.0992,
+          "p95Ms": 0.1226,
+          "maxMs": 2.1334
+        }
+      }
+    }
+  ],
+  "recordedEvidence": {
+    "sourceReports": [
+      "docs/LIVE-EVALUATION-20261116.json",
+      "docs/LIVE-REPAIR-20261116.json"
+    ],
+    "repairSample": 10,
+    "allRepairReasoningTokensZero": true,
+    "allRepairCachedTokensZero": true,
+    "outputTokenRange": [
+      174,
+      401
+    ],
+    "outputTimePearson": 0.904514980898888,
+    "correlationIsNotCausalProof": true,
+    "pairs": [
+      {
+        "caseId": "E01",
+        "beforeMs": 2592,
+        "afterMs": 4026,
+        "beforeInputTokens": 1272,
+        "afterInputTokens": 1442,
+        "beforeOutputTokens": 268,
+        "afterOutputTokens": 259
+      },
+      {
+        "caseId": "E06",
+        "beforeMs": 3038,
+        "afterMs": 4596,
+        "beforeInputTokens": 1287,
+        "afterInputTokens": 1457,
+        "beforeOutputTokens": 301,
+        "afterOutputTokens": 297
+      },
+      {
+        "caseId": "E07",
+        "beforeMs": 2156,
+        "afterMs": 3762,
+        "beforeInputTokens": 1476,
+        "afterInputTokens": 1643,
+        "beforeOutputTokens": 173,
+        "afterOutputTokens": 174
+      },
+      {
+        "caseId": "E08",
+        "beforeMs": 2094,
+        "afterMs": 2951,
+        "beforeInputTokens": 1473,
+        "afterInputTokens": 1649,
+        "beforeOutputTokens": 178,
+        "afterOutputTokens": 184
+      },
+      {
+        "caseId": "E09",
+        "beforeMs": 3317,
+        "afterMs": 5215,
+        "beforeInputTokens": 1297,
+        "afterInputTokens": 1467,
+        "beforeOutputTokens": 398,
+        "afterOutputTokens": 392
+      },
+      {
+        "caseId": "E10",
+        "beforeMs": 2696,
+        "afterMs": 3280,
+        "beforeInputTokens": 1283,
+        "afterInputTokens": 1453,
+        "beforeOutputTokens": 282,
+        "afterOutputTokens": 224
+      },
+      {
+        "caseId": "E13",
+        "beforeMs": 2597,
+        "afterMs": 3766,
+        "beforeInputTokens": 1278,
+        "afterInputTokens": 1448,
+        "beforeOutputTokens": 302,
+        "afterOutputTokens": 304
+      },
+      {
+        "caseId": "E14",
+        "beforeMs": 3327,
+        "afterMs": 5095,
+        "beforeInputTokens": 1288,
+        "afterInputTokens": 1458,
+        "beforeOutputTokens": 404,
+        "afterOutputTokens": 401
+      },
+      {
+        "caseId": "E17",
+        "beforeMs": 2213,
+        "afterMs": 3402,
+        "beforeInputTokens": 1277,
+        "afterInputTokens": 1447,
+        "beforeOutputTokens": 180,
+        "afterOutputTokens": 230
+      },
+      {
+        "caseId": "E19",
+        "beforeMs": 2522,
+        "afterMs": 3017,
+        "beforeInputTokens": 1463,
+        "afterInputTokens": 1630,
+        "beforeOutputTokens": 185,
+        "afterOutputTokens": 183
+      }
+    ]
+  },
+  "currentRuntimeConfig": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "reasoningSpecifiedInRequest": false,
+    "extractionDeadlineMs": 3000,
+    "maxOutputTokens": 1024,
+    "normalPreviewCalls": 3,
+    "maxCallsTotal": 3,
+    "maxCallsPerCase": 1,
+    "evaluationLedgerCalls": 34,
+    "evaluationReservedUpperUSD": 0.922447
+  },
+  "unmeasured": [
+    "Live request headers/TTFT/full body times",
+    "DNS/TLS/provider queue/prefill/generation/transfer decomposition",
+    "Actual D1 time before/inside/after extraction",
+    "Browser event-to-interactive-question time with live API",
+    "Same-time controlled comparison of old/new prompt or model",
+    "Historical host CPU load and event-loop delay"
+  ],
+  "sources": {
+    "latency": "https://developers.openai.com/api/docs/guides/latency-optimization",
+    "model": "https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+    "cache": "https://developers.openai.com/api/docs/guides/prompt-caching"
+  },
+  "reproductionCheck": {
+    "script": "docs/LATENCY-CAUSE-ANALYSIS-20261117.cjs",
+    "createdAt": "2026-11-16T15:20:40.513Z",
+    "modelGenerations": 0,
+    "externalRequests": 0,
+    "summary": {
+      "requestBuild": {
+        "n": 200,
+        "p50Ms": 0.025,
+        "p95Ms": 0.0482,
+        "maxMs": 0.1199
+      },
+      "responseCloneRead": {
+        "n": 200,
+        "p50Ms": 0.0536,
+        "p95Ms": 0.1376,
+        "maxMs": 0.2995
+      },
+      "extractionIncludingMockTransportAndClone": {
+        "n": 200,
+        "p50Ms": 0.2572,
+        "p95Ms": 0.4923,
+        "maxMs": 1.0095
+      },
+      "questionDecisionMail": {
+        "n": 200,
+        "p50Ms": 0.1219,
+        "p95Ms": 0.2796,
+        "maxMs": 1.3456
+      },
+      "journalWrite": {
+        "n": 20,
+        "p50Ms": 1.5401,
+        "p95Ms": 4.4384,
+        "maxMs": 5.5986
+      }
+    },
+    "timeoutScopeDemonstration": {
+      "immediateMockProvider": true,
+      "simulatedUsagePersistDelayMs": 50,
+      "extractionDeadlineMs": 20,
+      "errorCode": "MODEL_TIMEOUT",
+      "actualD1DelayMeasured": false
+    },
+    "note": "Original measurements remain the primary results; this independent rerun verifies the delivered reproduction script."
+  }
+}
