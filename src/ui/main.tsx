@@ -369,6 +369,7 @@ function App() {
                       </label>
                       <textarea
                         id="answer"
+                        disabled={busy}
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         placeholder="例：メーカー名と型番、交換したい部品、製作したいもの"

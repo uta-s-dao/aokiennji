@@ -189,3 +189,46 @@ test("未確定の調達相談をメールへ引き継ぎ、旧方式の対応�
   await expect(page.getByLabel("件名と本文")).toContainText(text);
   await expect(page.getByLabel("件名と本文")).not.toContainText("客先支給");
 });
+
+test("保存中は回答欄を無効にし、保存直後の次の回答を消さない", async ({
+  page,
+}) => {
+  let release!: () => void;
+  let saved!: () => void;
+  let first = true;
+  const released = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const responseHeld = new Promise<void>((resolve) => {
+    saved = resolve;
+  });
+  await page.route("**/api/v2/cases/*/answers", async (route) => {
+    if (!first) return route.continue();
+    first = false;
+    const response = await route.fetch();
+    saved();
+    await released;
+    await route.fulfill({ response });
+  });
+  try {
+    await page
+      .getByLabel("ご希望の内容")
+      .fill("リング材を客先支給して穴加工を依頼します。");
+    await page.getByRole("button", { name: "相談を始める" }).click();
+    await responseHeld;
+    await expect(page.getByRole("textbox")).toBeDisabled();
+  } finally {
+    release();
+  }
+  const text =
+    "材料も御社で調達できますか。リング材の加工も一緒に依頼したいです。";
+  await expect(
+    page.getByRole("button", { name: "次へ", exact: true }),
+  ).toBeVisible();
+  await page.getByLabel("回答", { exact: true }).fill(text);
+  await page.getByRole("button", { name: "次へ", exact: true }).click();
+  await expect(
+    page.getByText("解釈できていない入力を保持しています。"),
+  ).toBeVisible();
+  await expect(page.getByLabel("回答", { exact: true })).toHaveValue(text);
+});

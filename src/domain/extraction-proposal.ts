@@ -10,7 +10,12 @@ import {
   type Item,
 } from "./model";
 import { applyInput, newItem } from "./intake";
-import { isTentative, quoteContext } from "./grounding";
+import {
+  isTentative,
+  quoteContext,
+  hasUniqueItemContext,
+  unsafeToRecover,
+} from "./grounding";
 export type { ExtractionProposal } from "../generated/extraction";
 const bad = () => new AppError("INVALID_EXTRACTION");
 const enumCues: Record<string, RegExp> = {
@@ -52,6 +57,83 @@ function attributeSpecific(quote: string, key: string) {
       ),
   );
 }
+
+function restoreExplicitModels(
+  text: string,
+  proposal: ExtractionProposal,
+  existingLabels: string[],
+) {
+  if (unsafeToRecover(text)) return;
+  const matches = [
+    ...text.matchAll(/型番(?:は)?\s*[:：]?\s*([A-Za-z0-9][A-Za-z0-9_./-]*)/gu),
+  ];
+  for (const item of proposal.newItems) {
+    if (
+      item.profile !== "known_model" ||
+      proposal.changes.length >= 120 ||
+      !/^[A-Za-z0-9][A-Za-z0-9_./-]*$/.test(item.label) ||
+      proposal.changes.some((c) => c.itemRef === item.ref && c.key === "model")
+    )
+      continue;
+    const found = matches.filter((m) => m[1] === item.label);
+    if (found.length !== 1) continue;
+    const quote = found[0][0];
+    const after = text[found[0].index! + quote.length];
+    // A non-ASCII suffix/separator may still belong to the model number.
+    if (after && !/^[\s、,。！？!?をはがのでにへ]$/u.test(after)) continue;
+    if (
+      !hasUniqueItemContext(text, quote, item.label, [
+        ...existingLabels,
+        ...proposal.newItems
+          .filter((i) => i.ref !== item.ref)
+          .map((i) => i.label),
+      ])
+    )
+      continue;
+    proposal.changes.push({
+      itemRef: item.ref,
+      key: "model",
+      status: "known",
+      value: { text: item.label, number: null, unit: null },
+      quote,
+      operation: "set",
+      hardConstraint: true,
+    });
+  }
+}
+
+function recoverQuantityQuote(
+  text: string,
+  c: ExtractionProposal["changes"][number],
+  item: Item,
+  others: Item[],
+) {
+  // Only a redundant quantity label may be removed. Do not search for another
+  // value, manufacture source text, repair corrections, or change existing items.
+  if (
+    c.key !== "quantity" ||
+    c.status !== "known" ||
+    c.operation !== "set" ||
+    !c.hardConstraint ||
+    !c.value ||
+    c.quote !== "数量" + c.value.text
+  )
+    return null;
+  const matches = numericQuotes(text).filter((m) => m[0] === c.value!.text);
+  if (matches.length !== 1) return null;
+  const quote = matches[0][0];
+  if (
+    unsafeToRecover(text) ||
+    !hasUniqueItemContext(
+      text,
+      quote,
+      item.label,
+      others.map((i) => i.label),
+    )
+  )
+    return null;
+  return quote;
+}
 export function applyExtractionProposal(
   s: Snapshot,
   text: string,
@@ -60,7 +142,7 @@ export function applyExtractionProposal(
   categories: string[] = [],
 ): Snapshot {
   if (!validateExtractionProposal(raw)) throw bad();
-  const proposal = raw as ExtractionProposal;
+  const proposal = structuredClone(raw) as ExtractionProposal;
   if (!text.trim() || text.length > 2000 || proposal.ambiguities.length)
     throw bad();
   for (const quote of [...proposal.ambiguities, ...proposal.unprocessedQuotes])
@@ -84,6 +166,12 @@ export function applyExtractionProposal(
     additions.push(next);
   }
   if (s.brief.items.length + additions.length > 3) throw bad();
+  restoreExplicitModels(
+    text,
+    proposal,
+    s.brief.items.map((i) => i.label),
+  );
+  const allItems = [...s.brief.items, ...additions];
   const changes: Change[] = [];
   const tentative: { itemId: string; key: string }[] = [];
   const targets = new Set<string>();
@@ -91,7 +179,16 @@ export function applyExtractionProposal(
     const c = structuredClone(original);
     const itemId = refs.get(c.itemRef),
       def = fields[c.key];
-    if (!itemId || !def || !text.includes(c.quote)) throw bad();
+    if (!itemId || !def) throw bad();
+    const item = allItems.find((i) => i.id === itemId)!;
+    const otherItems = allItems.filter((i) => i.id !== itemId);
+    if (!text.includes(c.quote)) {
+      const recovered = additions.includes(item)
+        ? recoverQuantityQuote(text, c, item, otherItems)
+        : null;
+      if (!recovered) throw bad();
+      c.quote = recovered;
+    }
     const context = quoteContext(text, c.quote);
     // Extend only to an actual, unique clause. Do not invent a quote or join separate attributes.
     if (
@@ -107,9 +204,6 @@ export function applyExtractionProposal(
     const token = itemId + ":" + c.key;
     if (targets.has(token)) throw bad();
     targets.add(token);
-    const item =
-      s.brief.items.find((i) => i.id === itemId) ??
-      additions.find((i) => i.id === itemId)!;
     const addition = proposal.newItems.find((i) => refs.get(i.ref) === itemId);
     if (
       [...s.brief.items, ...additions].some(
@@ -130,6 +224,12 @@ export function applyExtractionProposal(
           (other) =>
             other.ref !== c.itemRef && addition.quote.includes(other.label),
         )
+      ) &&
+      !hasUniqueItemContext(
+        text,
+        c.quote,
+        item.label,
+        otherItems.map((i) => i.label),
       ) &&
       !(q?.itemId === itemId && q.fieldKey === c.key)
     )
