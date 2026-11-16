@@ -450,3 +450,25 @@ it("材料も御社で調達という明示変更を、旧支給方式へ戻さ�
       ?.text,
   ).toBe("company_sourced");
 });
+
+it("OpenAIへ渡すconst・enumスキーマには明示的なtypeを含める", () => {
+  const request = makeIntakeRequest(
+    makeSnapshot("schema-check"),
+    "架空の部品",
+    null,
+    config,
+    [],
+  );
+  function check(value: unknown) {
+    if (Array.isArray(value)) {
+      value.forEach(check);
+      return;
+    }
+    if (value && typeof value === "object") {
+      const node = value as Record<string, unknown>;
+      if ("const" in node || "enum" in node) expect(node.type).toBeDefined();
+      Object.values(node).forEach(check);
+    }
+  }
+  check(request.text.format.schema);
+});

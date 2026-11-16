@@ -10,7 +10,8 @@
   ],
   "properties": {
     "schemaVersion": {
-      "const": 1
+      "const": 1,
+      "type": "integer"
     },
     "newItems": {
       "type": "array",
@@ -46,7 +47,8 @@
               "replacement",
               "fabrication",
               "unknown"
-            ]
+            ],
+            "type": "string"
           },
           "category": {
             "type": [
@@ -86,7 +88,8 @@
             "enum": [
               "known",
               "unknown"
-            ]
+            ],
+            "type": "string"
           },
           "value": {
             "anyOf": [
@@ -134,7 +137,8 @@
               "set",
               "correct",
               "hypothetical"
-            ]
+            ],
+            "type": "string"
           },
           "hardConstraint": {
             "type": "boolean"

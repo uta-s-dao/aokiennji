@@ -1,0 +1,79 @@
+{
+  "kind": "live-intake-smoke",
+  "measuredAt": "2026-11-16T08:59:17.163Z",
+  "model": "gpt-5.6-terra",
+  "maxOutputTokens": 1024,
+  "timeoutMs": 3000,
+  "inputKind": "架空データのみ",
+  "readOnlyModelLookup": "HTTP 200",
+  "businessValidation": false,
+  "elapsedMs": 1146,
+  "httpStatus": 200,
+  "action": "ask",
+  "generationReservations": 1,
+  "state": "failed",
+  "errorCode": "MODEL_UNAVAILABLE",
+  "inputTokens": null,
+  "outputTokens": null,
+  "extractionFailed": true,
+  "itemCount": 0,
+  "unresolvedInputCount": 1,
+  "usageKnown": false,
+  "estimatedStandardCostUSD": null,
+  "costBasis": "公開料金による概算。実請求額ではない。利用量が返らない場合は不明。",
+  "pricingSource": "https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+  "limitations": [
+    "単発の疎通試験。品質・p95性能・未知20相談の合格ではない",
+    "会社の実資料は未投入。判定精度は未評価",
+    "疎通試験時点の通常プレビューは外部送信false。確認後の試用設定はpreviewAfterConfigurationに記録"
+  ],
+  "inputCountDiagnostic": {
+    "kind": "input-token-count",
+    "generation": false,
+    "httpStatus": 400,
+    "errorCode": "invalid_json_schema",
+    "errorParam": "text.format.schema",
+    "errorType": "invalid_request_error",
+    "message": "Invalid schema for response_format 'intake_proposal_v1': In context=('properties', 'schemaVersion'), schema must have a 'type' key."
+  },
+  "inputCountAfterFix": {
+    "kind": "input-token-count-after-schema-fix",
+    "generation": false,
+    "httpStatus": 200,
+    "inputTokens": 1262,
+    "errorCode": null
+  },
+  "repairAttemptStarted": true,
+  "afterSchemaFix": {
+    "measuredAt": "2026-11-16T09:07:02.678Z",
+    "httpStatus": 200,
+    "elapsedMs": 2975,
+    "action": "research_started",
+    "state": "completed",
+    "errorCode": null,
+    "inputTokens": 1262,
+    "outputTokens": 267,
+    "extractionFailed": false,
+    "itemCount": 1,
+    "unresolvedInputCount": 0,
+    "fieldKeys": [
+      "request_scope",
+      "manufacturer",
+      "model",
+      "quantity",
+      "material_supply"
+    ],
+    "usageKnown": true,
+    "estimatedStandardCostUSD": 0.005728
+  },
+  "totalGenerationReservations": 2,
+  "previewAfterConfiguration": {
+    "provider": "openai",
+    "externalEnabled": true,
+    "maxTotalCalls": 3,
+    "maxCallsPerCase": 1,
+    "separateCounterFromSmoke": true
+  },
+  "overallStatus": "single-case-confirmed-after-schema-fix",
+  "generationLimitPerAttempt": 1
+}

@@ -8,7 +8,13 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(async () => {
     const s = (await (await fetch("/api/v2/session")).json()) as {
       csrf: string;
+      extraction?: string;
+      externalEnabled?: boolean;
     };
+    if (s.externalEnabled || s.extraction === "openai")
+      throw new Error(
+        "実APIが有効なため、このデモ用試験を中止しました。INTAKE_PROVIDER=demo・EXTERNAL_ENABLED=falseで起動した環境を使ってください。",
+      );
     await fetch("/api/v2/admin/demo", {
       method: "POST",
       headers: {
