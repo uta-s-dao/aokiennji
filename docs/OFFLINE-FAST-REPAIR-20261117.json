@@ -1,0 +1,1194 @@
+{
+  "schemaVersion": 1,
+  "kind": "offline_saved_response_replay",
+  "createdAt": "2026-11-16T16:48:39.819Z",
+  "codeRevision": "3492f3740506977ec098c5576f03380eefc5c49f",
+  "sourceDigest": "e5b0804025ffe057dd4200c4bc626db2374a30b757abf95b078077e94615c9d5",
+  "sourceReport": "docs/LIVE-FAST-INTAKE-20261117.json",
+  "sourceReportDigest": "cf4b9742e07ba1b1de4f158b7f6337ec4798932d58f3e8e87c58a6e5c9558926",
+  "datasetDigest": "1a96a330885385e5271c7127e13b993b2b4099e1a5ce4562763bb5a517e97668",
+  "knowledgeDigest": "02a3c35dd8c987846247ac56317b6a1348e256c64f0364f9411950c75ddcca0d",
+  "harnessDigest": "731906de6b8aa3b22f85396f2d7cdef93c6f85fe261abc2b17e00e5523276009",
+  "networkDisabled": true,
+  "newApiGenerations": 0,
+  "inputCountRequests": 0,
+  "independentEvaluation": false,
+  "speedReevaluated": false,
+  "grading": "Original checks and predeclared E14 塗装:不要 equivalence; no live grade overwritten",
+  "qualityPass": 6,
+  "cases": 6,
+  "rows": [
+    {
+      "id": "fast-luna-full-E01",
+      "caseId": "E01",
+      "format": "full",
+      "originalLiveQualityPass": false,
+      "qualityPass": true,
+      "literalQualityPass": true,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "manufacturer",
+          "pass": true,
+          "actual": {
+            "text": "デモ工業",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "model",
+          "pass": true,
+          "actual": {
+            "text": "AX-100",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "quantity",
+          "pass": true,
+          "actual": {
+            "text": "2台",
+            "number": 2,
+            "unit": "台"
+          }
+        },
+        {
+          "name": "request_scope",
+          "pass": true,
+          "actual": {
+            "text": "purchase",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "zero_additional_questions",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "business_verdict",
+          "pass": true,
+          "actual": "can_handle"
+        }
+      ],
+      "literalChecks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "manufacturer",
+          "pass": true,
+          "actual": {
+            "text": "デモ工業",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "model",
+          "pass": true,
+          "actual": {
+            "text": "AX-100",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "quantity",
+          "pass": true,
+          "actual": {
+            "text": "2台",
+            "number": 2,
+            "unit": "台"
+          }
+        },
+        {
+          "name": "request_scope",
+          "pass": true,
+          "actual": {
+            "text": "purchase",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "zero_additional_questions",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "business_verdict",
+          "pass": true,
+          "actual": "can_handle"
+        }
+      ],
+      "extractionError": null,
+      "items": [
+        {
+          "label": "AX-100",
+          "fields": [
+            {
+              "key": "request_scope",
+              "value": {
+                "text": "purchase",
+                "number": null,
+                "unit": null
+              },
+              "quote": "2台購入したい"
+            },
+            {
+              "key": "manufacturer",
+              "value": {
+                "text": "デモ工業",
+                "number": null,
+                "unit": null
+              },
+              "quote": "メーカーはデモ工業"
+            },
+            {
+              "key": "quantity",
+              "value": {
+                "text": "2台",
+                "number": 2,
+                "unit": "台"
+              },
+              "quote": "2台購入"
+            },
+            {
+              "key": "model",
+              "value": {
+                "text": "AX-100",
+                "number": null,
+                "unit": null
+              },
+              "quote": "型番AX-100"
+            }
+          ]
+        }
+      ],
+      "nextQuestionField": null,
+      "verdict": "can_handle",
+      "mail": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E01）",
+        "body": "照会番号：AV-E01\n商品・加工・製作について相談します。\n\n【AX-100】\n依頼範囲：商品・材料の購入\nメーカー：デモ工業\n数量：2台\n型番：AX-100\n材料手配：該当なし\n\n確認日時：2026-11-16T16:48:39.794Z\nAX-100：承認済みの取扱分野に含まれます。\n今回の依頼：承認済みの取扱範囲と今回の必須条件が一致しています。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E01",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "id": "fast-luna-compact-E01",
+      "caseId": "E01",
+      "format": "compact",
+      "originalLiveQualityPass": false,
+      "qualityPass": true,
+      "literalQualityPass": true,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "manufacturer",
+          "pass": true,
+          "actual": {
+            "text": "デモ工業",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "model",
+          "pass": true,
+          "actual": {
+            "text": "AX-100",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "quantity",
+          "pass": true,
+          "actual": {
+            "text": "2台",
+            "number": 2,
+            "unit": "台"
+          }
+        },
+        {
+          "name": "request_scope",
+          "pass": true,
+          "actual": {
+            "text": "purchase",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "zero_additional_questions",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "business_verdict",
+          "pass": true,
+          "actual": "can_handle"
+        }
+      ],
+      "literalChecks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "manufacturer",
+          "pass": true,
+          "actual": {
+            "text": "デモ工業",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "model",
+          "pass": true,
+          "actual": {
+            "text": "AX-100",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "quantity",
+          "pass": true,
+          "actual": {
+            "text": "2台",
+            "number": 2,
+            "unit": "台"
+          }
+        },
+        {
+          "name": "request_scope",
+          "pass": true,
+          "actual": {
+            "text": "purchase",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "zero_additional_questions",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "business_verdict",
+          "pass": true,
+          "actual": "can_handle"
+        }
+      ],
+      "extractionError": null,
+      "items": [
+        {
+          "label": "AX-100",
+          "fields": [
+            {
+              "key": "request_scope",
+              "value": {
+                "text": "purchase",
+                "number": null,
+                "unit": null
+              },
+              "quote": "購入したい"
+            },
+            {
+              "key": "manufacturer",
+              "value": {
+                "text": "デモ工業",
+                "number": null,
+                "unit": null
+              },
+              "quote": "メーカーはデモ工業"
+            },
+            {
+              "key": "quantity",
+              "value": {
+                "text": "2台",
+                "number": 2,
+                "unit": "台"
+              },
+              "quote": "2台"
+            },
+            {
+              "key": "model",
+              "value": {
+                "text": "AX-100",
+                "number": null,
+                "unit": null
+              },
+              "quote": "型番AX-100"
+            }
+          ]
+        }
+      ],
+      "nextQuestionField": null,
+      "verdict": "can_handle",
+      "mail": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E01）",
+        "body": "照会番号：AV-E01\n商品・加工・製作について相談します。\n\n【AX-100】\n依頼範囲：商品・材料の購入\nメーカー：デモ工業\n数量：2台\n型番：AX-100\n材料手配：該当なし\n\n確認日時：2026-11-16T16:48:39.807Z\nAX-100：承認済みの取扱分野に含まれます。\n今回の依頼：承認済みの取扱範囲と今回の必須条件が一致しています。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E01",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "id": "fast-luna-compact-E07",
+      "caseId": "E07",
+      "format": "compact",
+      "originalLiveQualityPass": true,
+      "qualityPass": true,
+      "literalQualityPass": true,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "normal_temperature",
+          "pass": true,
+          "actual": {
+            "text": "680℃",
+            "number": 680,
+            "unit": "℃"
+          }
+        },
+        {
+          "name": "peak_temperature",
+          "pass": true,
+          "actual": {
+            "text": "820℃",
+            "number": 820,
+            "unit": "℃"
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        },
+        {
+          "name": "mail_excludes:780℃",
+          "pass": true,
+          "actual": false
+        }
+      ],
+      "literalChecks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "normal_temperature",
+          "pass": true,
+          "actual": {
+            "text": "680℃",
+            "number": 680,
+            "unit": "℃"
+          }
+        },
+        {
+          "name": "peak_temperature",
+          "pass": true,
+          "actual": {
+            "text": "820℃",
+            "number": 820,
+            "unit": "℃"
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        },
+        {
+          "name": "mail_excludes:780℃",
+          "pass": true,
+          "actual": false
+        }
+      ],
+      "extractionError": null,
+      "items": [
+        {
+          "label": "ガラス",
+          "fields": [
+            {
+              "key": "description",
+              "value": {
+                "text": "ガラス",
+                "number": null,
+                "unit": null
+              },
+              "quote": "ガラスの通常温度780℃で購入したいです。"
+            },
+            {
+              "key": "request_scope",
+              "value": {
+                "text": "purchase",
+                "number": null,
+                "unit": null
+              },
+              "quote": "ガラスの通常温度780℃で購入したいです。"
+            },
+            {
+              "key": "normal_temperature",
+              "value": {
+                "text": "680℃",
+                "number": 680,
+                "unit": "℃"
+              },
+              "quote": "通常温度を680℃に訂正します"
+            },
+            {
+              "key": "peak_temperature",
+              "value": {
+                "text": "820℃",
+                "number": 820,
+                "unit": "℃"
+              },
+              "quote": "最高温度は820℃です"
+            }
+          ]
+        }
+      ],
+      "nextQuestionField": "purpose",
+      "verdict": "needs_review",
+      "mail": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E07）",
+        "body": "照会番号：AV-E07\n商品・加工・製作について相談します。\n\n【ガラス】\n対象の説明：ガラス\n依頼範囲：商品・材料の購入\n材料手配：該当なし\n通常温度：680℃\n最高温度：820℃\n\n確認日時：2026-11-16T16:48:39.810Z\nガラス：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E07",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "id": "fast-luna-full-E07",
+      "caseId": "E07",
+      "format": "full",
+      "originalLiveQualityPass": true,
+      "qualityPass": true,
+      "literalQualityPass": true,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "normal_temperature",
+          "pass": true,
+          "actual": {
+            "text": "680℃",
+            "number": 680,
+            "unit": "℃"
+          }
+        },
+        {
+          "name": "peak_temperature",
+          "pass": true,
+          "actual": {
+            "text": "820℃",
+            "number": 820,
+            "unit": "℃"
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        },
+        {
+          "name": "mail_excludes:780℃",
+          "pass": true,
+          "actual": false
+        }
+      ],
+      "literalChecks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 1
+        },
+        {
+          "name": "normal_temperature",
+          "pass": true,
+          "actual": {
+            "text": "680℃",
+            "number": 680,
+            "unit": "℃"
+          }
+        },
+        {
+          "name": "peak_temperature",
+          "pass": true,
+          "actual": {
+            "text": "820℃",
+            "number": 820,
+            "unit": "℃"
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        },
+        {
+          "name": "mail_excludes:780℃",
+          "pass": true,
+          "actual": false
+        }
+      ],
+      "extractionError": null,
+      "items": [
+        {
+          "label": "ガラス",
+          "fields": [
+            {
+              "key": "description",
+              "value": {
+                "text": "ガラス",
+                "number": null,
+                "unit": null
+              },
+              "quote": "ガラスの通常温度780℃で購入したいです。"
+            },
+            {
+              "key": "request_scope",
+              "value": {
+                "text": "purchase",
+                "number": null,
+                "unit": null
+              },
+              "quote": "ガラスの通常温度780℃で購入したいです。"
+            },
+            {
+              "key": "normal_temperature",
+              "value": {
+                "text": "680℃",
+                "number": 680,
+                "unit": "℃"
+              },
+              "quote": "通常温度を680℃に訂正"
+            },
+            {
+              "key": "peak_temperature",
+              "value": {
+                "text": "820℃",
+                "number": 820,
+                "unit": "℃"
+              },
+              "quote": "最高温度は820℃"
+            }
+          ]
+        }
+      ],
+      "nextQuestionField": "purpose",
+      "verdict": "needs_review",
+      "mail": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E07）",
+        "body": "照会番号：AV-E07\n商品・加工・製作について相談します。\n\n【ガラス】\n対象の説明：ガラス\n依頼範囲：商品・材料の購入\n材料手配：該当なし\n通常温度：680℃\n最高温度：820℃\n\n確認日時：2026-11-16T16:48:39.812Z\nガラス：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E07",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "id": "fast-luna-full-E14",
+      "caseId": "E14",
+      "format": "full",
+      "originalLiveQualityPass": false,
+      "qualityPass": true,
+      "literalQualityPass": false,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 2
+        },
+        {
+          "name": "part:カバー",
+          "pass": true,
+          "actual": "カバー"
+        },
+        {
+          "name": "カバー:quantity",
+          "pass": true,
+          "actual": {
+            "text": "4組",
+            "number": 4,
+            "unit": "組"
+          }
+        },
+        {
+          "name": "カバー:contains:coating",
+          "pass": true,
+          "actual": {
+            "text": "不要",
+            "number": null,
+            "unit": null
+          },
+          "equivalence": "Original predeclared 塗装:不要 equivalence retained"
+        },
+        {
+          "name": "カバー:contains:destination",
+          "pass": true,
+          "actual": {
+            "text": "大阪",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "part:ネック",
+          "pass": true,
+          "actual": "ネック"
+        },
+        {
+          "name": "ネック:quantity",
+          "pass": true,
+          "actual": {
+            "text": "8組",
+            "number": 8,
+            "unit": "組"
+          }
+        },
+        {
+          "name": "ネック:contains:coating",
+          "pass": true,
+          "actual": {
+            "text": "外装塗装",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "ネック:contains:destination",
+          "pass": true,
+          "actual": {
+            "text": "神戸",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "literalChecks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 2
+        },
+        {
+          "name": "part:カバー",
+          "pass": true,
+          "actual": "カバー"
+        },
+        {
+          "name": "カバー:quantity",
+          "pass": true,
+          "actual": {
+            "text": "4組",
+            "number": 4,
+            "unit": "組"
+          }
+        },
+        {
+          "name": "カバー:contains:coating",
+          "pass": false,
+          "actual": {
+            "text": "不要",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "カバー:contains:destination",
+          "pass": true,
+          "actual": {
+            "text": "大阪",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "part:ネック",
+          "pass": true,
+          "actual": "ネック"
+        },
+        {
+          "name": "ネック:quantity",
+          "pass": true,
+          "actual": {
+            "text": "8組",
+            "number": 8,
+            "unit": "組"
+          }
+        },
+        {
+          "name": "ネック:contains:coating",
+          "pass": true,
+          "actual": {
+            "text": "外装塗装",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "ネック:contains:destination",
+          "pass": true,
+          "actual": {
+            "text": "神戸",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "extractionError": null,
+      "items": [
+        {
+          "label": "カバー",
+          "fields": [
+            {
+              "key": "quantity",
+              "value": {
+                "text": "4組",
+                "number": 4,
+                "unit": "組"
+              },
+              "quote": "カバーは4組"
+            },
+            {
+              "key": "coating",
+              "value": {
+                "text": "不要",
+                "number": null,
+                "unit": null
+              },
+              "quote": "塗装不要"
+            },
+            {
+              "key": "destination",
+              "value": {
+                "text": "大阪",
+                "number": null,
+                "unit": null
+              },
+              "quote": "配送先は大阪"
+            },
+            {
+              "key": "description",
+              "value": {
+                "text": "カバー",
+                "number": null,
+                "unit": null
+              },
+              "quote": "カバーは4組"
+            }
+          ]
+        },
+        {
+          "label": "ネック",
+          "fields": [
+            {
+              "key": "quantity",
+              "value": {
+                "text": "8組",
+                "number": 8,
+                "unit": "組"
+              },
+              "quote": "ネックは8組"
+            },
+            {
+              "key": "coating",
+              "value": {
+                "text": "外装塗装",
+                "number": null,
+                "unit": null
+              },
+              "quote": "外装塗装"
+            },
+            {
+              "key": "destination",
+              "value": {
+                "text": "神戸",
+                "number": null,
+                "unit": null
+              },
+              "quote": "配送先は神戸"
+            },
+            {
+              "key": "description",
+              "value": {
+                "text": "ネック",
+                "number": null,
+                "unit": null
+              },
+              "quote": "ネックは8組"
+            }
+          ]
+        }
+      ],
+      "nextQuestionField": "purpose",
+      "verdict": "needs_review",
+      "mail": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E14）",
+        "body": "照会番号：AV-E14\n商品・加工・製作について相談します。\n\n【カバー】\n数量：4組\n塗装：不要\n納入先：大阪\n対象の説明：カバー\n\n【ネック】\n数量：8組\n塗装：外装塗装\n納入先：神戸\n対象の説明：ネック\n\n確認日時：2026-11-16T16:48:39.815Z\nカバー：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\nネック：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E14",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    },
+    {
+      "id": "fast-luna-compact-E14",
+      "caseId": "E14",
+      "format": "compact",
+      "originalLiveQualityPass": false,
+      "qualityPass": true,
+      "literalQualityPass": false,
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 2
+        },
+        {
+          "name": "part:カバー",
+          "pass": true,
+          "actual": "カバー"
+        },
+        {
+          "name": "カバー:quantity",
+          "pass": true,
+          "actual": {
+            "text": "4組",
+            "number": 4,
+            "unit": "組"
+          }
+        },
+        {
+          "name": "カバー:contains:coating",
+          "pass": true,
+          "actual": {
+            "text": "不要",
+            "number": null,
+            "unit": null
+          },
+          "equivalence": "Original predeclared 塗装:不要 equivalence retained"
+        },
+        {
+          "name": "カバー:contains:destination",
+          "pass": true,
+          "actual": {
+            "text": "大阪",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "part:ネック",
+          "pass": true,
+          "actual": "ネック"
+        },
+        {
+          "name": "ネック:quantity",
+          "pass": true,
+          "actual": {
+            "text": "8組",
+            "number": 8,
+            "unit": "組"
+          }
+        },
+        {
+          "name": "ネック:contains:coating",
+          "pass": true,
+          "actual": {
+            "text": "外装塗装",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "ネック:contains:destination",
+          "pass": true,
+          "actual": {
+            "text": "神戸",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "literalChecks": [
+        {
+          "name": "extraction_completed",
+          "pass": true,
+          "actual": null
+        },
+        {
+          "name": "item_count",
+          "pass": true,
+          "actual": 2
+        },
+        {
+          "name": "part:カバー",
+          "pass": true,
+          "actual": "カバー"
+        },
+        {
+          "name": "カバー:quantity",
+          "pass": true,
+          "actual": {
+            "text": "4組",
+            "number": 4,
+            "unit": "組"
+          }
+        },
+        {
+          "name": "カバー:contains:coating",
+          "pass": false,
+          "actual": {
+            "text": "不要",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "カバー:contains:destination",
+          "pass": true,
+          "actual": {
+            "text": "大阪",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "part:ネック",
+          "pass": true,
+          "actual": "ネック"
+        },
+        {
+          "name": "ネック:quantity",
+          "pass": true,
+          "actual": {
+            "text": "8組",
+            "number": 8,
+            "unit": "組"
+          }
+        },
+        {
+          "name": "ネック:contains:coating",
+          "pass": true,
+          "actual": {
+            "text": "外装塗装",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "ネック:contains:destination",
+          "pass": true,
+          "actual": {
+            "text": "神戸",
+            "number": null,
+            "unit": null
+          }
+        },
+        {
+          "name": "no_unapproved_positive",
+          "pass": true,
+          "actual": "needs_review"
+        }
+      ],
+      "extractionError": null,
+      "items": [
+        {
+          "label": "カバー",
+          "fields": [
+            {
+              "key": "quantity",
+              "value": {
+                "text": "4組",
+                "number": 4,
+                "unit": "組"
+              },
+              "quote": "カバーは4組"
+            },
+            {
+              "key": "coating",
+              "value": {
+                "text": "不要",
+                "number": null,
+                "unit": null
+              },
+              "quote": "塗装不要"
+            },
+            {
+              "key": "destination",
+              "value": {
+                "text": "大阪",
+                "number": null,
+                "unit": null
+              },
+              "quote": "配送先は大阪"
+            },
+            {
+              "key": "description",
+              "value": {
+                "text": "カバー",
+                "number": null,
+                "unit": null
+              },
+              "quote": "カバー"
+            }
+          ]
+        },
+        {
+          "label": "ネック",
+          "fields": [
+            {
+              "key": "quantity",
+              "value": {
+                "text": "8組",
+                "number": 8,
+                "unit": "組"
+              },
+              "quote": "ネックは8組"
+            },
+            {
+              "key": "coating",
+              "value": {
+                "text": "外装塗装",
+                "number": null,
+                "unit": null
+              },
+              "quote": "外装塗装"
+            },
+            {
+              "key": "destination",
+              "value": {
+                "text": "神戸",
+                "number": null,
+                "unit": null
+              },
+              "quote": "配送先は神戸"
+            },
+            {
+              "key": "description",
+              "value": {
+                "text": "ネック",
+                "number": null,
+                "unit": null
+              },
+              "quote": "ネック"
+            }
+          ]
+        }
+      ],
+      "nextQuestionField": "purpose",
+      "verdict": "needs_review",
+      "mail": {
+        "subject": "商品・製作の取扱相談（照会番号 AV-E14）",
+        "body": "照会番号：AV-E14\n商品・加工・製作について相談します。\n\n【カバー】\n数量：4組\n塗装：不要\n納入先：大阪\n対象の説明：カバー\n\n【ネック】\n数量：8組\n塗装：外装塗装\n納入先：神戸\n対象の説明：ネック\n\n確認日時：2026-11-16T16:48:39.818Z\nカバー：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\nネック：取扱分野も担当者確認が必要です。\n今回の依頼：今回の条件での取扱可否は、担当者確認が必要です。\n\n追記：",
+        "mailto": null,
+        "shortened": false,
+        "reference": "AV-E14",
+        "notice": "メール起動は準備中です。相談内容の全文をコピーできます。"
+      }
+    }
+  ]
+}
