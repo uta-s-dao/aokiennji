@@ -5,7 +5,7 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ["**/*.ts", "**/*.tsx", "**/*.mjs"],
+    files: ["**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.cjs"],
     languageOptions: {
       globals: {
         console: "readonly",
@@ -27,5 +27,12 @@ export default tseslint.config(
         { argsIgnorePattern: "^_" },
       ],
     },
+  },
+  {
+    files: ["scripts/**/*.cjs"],
+    languageOptions: {
+      globals: { require: "readonly", module: "readonly", __dirname: "readonly" },
+    },
+    rules: { "@typescript-eslint/no-require-imports": "off" },
   },
 );

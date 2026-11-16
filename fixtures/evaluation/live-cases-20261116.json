@@ -1,0 +1,409 @@
+{
+  "schemaVersion": 1,
+  "authorship": "実装担当者が準備した機能評価ケース。独立未知20相談とは区別する。",
+  "dataKind": "架空データのみ",
+  "expectedNeverSentToModel": true,
+  "cases": [
+    {
+      "id": "E01",
+      "route": "known_model",
+      "input": "メーカーはデモ工業、型番AX-100を2台購入したいです。",
+      "expected": {
+        "items": 1,
+        "fields": {
+          "manufacturer": "デモ工業",
+          "model": "AX-100",
+          "quantity": {
+            "number": 2,
+            "unit": "台"
+          },
+          "request_scope": "purchase"
+        },
+        "additionalQuestions": 0,
+        "verdict": "can_handle"
+      }
+    },
+    {
+      "id": "E02",
+      "route": "known_model",
+      "input": "AX-100Bを1個買いたいです。AX-100とは別の型番です。",
+      "expected": {
+        "items": 1,
+        "fields": {
+          "model": "AX-100B",
+          "quantity": {
+            "number": 1,
+            "unit": "個"
+          },
+          "request_scope": "purchase"
+        },
+        "mustNotHandle": true
+      }
+    },
+    {
+      "id": "E03",
+      "route": "known_model",
+      "input": "架空社のZX-42を3個購入希望です。メーカーは架空社です。",
+      "expected": {
+        "items": 1,
+        "fields": {
+          "manufacturer": "架空社",
+          "model": "ZX-42",
+          "quantity": {
+            "number": 3,
+            "unit": "個"
+          }
+        },
+        "mustNotHandle": true
+      }
+    },
+    {
+      "id": "E04",
+      "route": "known_model",
+      "input": "型番AX-100を購入したいです。2027年2月1日の納入が必須です。",
+      "expected": {
+        "items": 1,
+        "fields": {
+          "model": "AX-100",
+          "request_scope": "purchase"
+        },
+        "requiredFieldContains": {
+          "required_date": "2月1日"
+        },
+        "mustNotHandle": true
+      }
+    },
+    {
+      "id": "E05",
+      "route": "replacement",
+      "input": "装置の点検窓用ガラスを4枚探しています。ガラス外径は100mm、見える穴の径は80mmです。",
+      "expected": {
+        "items": 1,
+        "fields": {
+          "outer_diameter": {
+            "number": 100,
+            "unit": "mm"
+          },
+          "opening_diameter": {
+            "number": 80,
+            "unit": "mm"
+          },
+          "quantity": {
+            "number": 4,
+            "unit": "枚"
+          }
+        },
+        "mustNotHandle": true
+      }
+    },
+    {
+      "id": "E06",
+      "route": "replacement",
+      "input": "メーカーが分からない交換用パッキンを8個購入したいです。用途は温水配管です。材質も分かりません。",
+      "expected": {
+        "items": 1,
+        "fields": {
+          "quantity": {
+            "number": 8,
+            "unit": "個"
+          },
+          "request_scope": "purchase"
+        },
+        "statuses": {
+          "manufacturer": "unknown",
+          "material": "unknown"
+        },
+        "mustNotHandle": true
+      }
+    },
+    {
+      "id": "E07",
+      "route": "replacement",
+      "input": "ガラスの通常温度を680℃に訂正します。最高温度は820℃です。",
+      "expected": {
+        "items": 1,
+        "fields": {
+          "normal_temperature": {
+            "number": 680,
+            "unit": "℃"
+          },
+          "peak_temperature": {
+            "number": 820,
+            "unit": "℃"
+          }
+        },
+        "mailMustNotContain": [
+          "780℃"
+        ],
+        "mustNotHandle": true
+      },
+      "prior": "ガラスの通常温度780℃で購入したいです。"
+    },
+    {
+      "id": "E08",
+      "route": "replacement",
+      "input": "80mmは見える穴の径です。ガラス外径は100mmに訂正します。",
+      "expected": {
+        "items": 1,
+        "fields": {
+          "outer_diameter": {
+            "number": 100,
+            "unit": "mm"
+          },
+          "opening_diameter": {
+            "number": 80,
+            "unit": "mm"
+          }
+        },
+        "mustNotHandle": true
+      },
+      "prior": "ガラスの外径80mmで購入したいです。"
+    },
+    {
+      "id": "E09",
+      "route": "fabrication",
+      "input": "図番D-61の架台全体を製作してください。粉体塗装が必要で、塗料は支給します。希望納入日は2027年1月20日です。",
+      "expected": {
+        "items": 1,
+        "fields": {
+          "request_scope": "fabrication"
+        },
+        "requiredFieldContains": {
+          "work_scope": "全体",
+          "coating": "粉体塗装",
+          "supplied_parts": "塗料",
+          "drawing_number": "D-61",
+          "required_date": "1月20日"
+        },
+        "mustNotInferCustomerMaterial": true,
+        "mustNotHandle": true,
+        "scope": "in_scope"
+      }
+    },
+    {
+      "id": "E10",
+      "route": "fabrication",
+      "input": "図面の架台を製作希望です。材料は当社調達でお願いします。リブは製作対象から除外してください。",
+      "expected": {
+        "items": 1,
+        "fields": {
+          "request_scope": "fabrication",
+          "material_supply": "company_sourced"
+        },
+        "requiredFieldContains": {
+          "excluded_work": "リブ"
+        },
+        "mustNotHandle": true,
+        "scope": "in_scope"
+      }
+    },
+    {
+      "id": "E11",
+      "route": "fabrication",
+      "input": "架台の幅は600mmに訂正します。高さ700mmは変更しません。",
+      "expected": {
+        "items": 1,
+        "fields": {
+          "width": {
+            "number": 600,
+            "unit": "mm"
+          },
+          "height": {
+            "number": 700,
+            "unit": "mm"
+          }
+        },
+        "mailMustNotContain": [
+          "幅：500mm"
+        ],
+        "mustNotHandle": true
+      },
+      "prior": "架台を製作したいです。幅500mm、高さ700mmです。"
+    },
+    {
+      "id": "E12",
+      "route": "fabrication",
+      "input": "図面名が旧仕様.pdfでも、こちらが最新です。架台の図面版をR3に変更してください。",
+      "expected": {
+        "items": 1,
+        "requiredFieldContains": {
+          "drawing_revision": "R3"
+        },
+        "mustNotHandle": true
+      },
+      "prior": "架台の図面版R2で製作を希望します。"
+    },
+    {
+      "id": "E13",
+      "route": "multiple",
+      "input": "ガラスは4枚で外径100mmです。パッキンは8個で内径80mmです。",
+      "expected": {
+        "items": 2,
+        "parts": [
+          {
+            "label": "ガラス",
+            "fields": {
+              "quantity": {
+                "number": 4,
+                "unit": "枚"
+              },
+              "outer_diameter": {
+                "number": 100,
+                "unit": "mm"
+              }
+            }
+          },
+          {
+            "label": "パッキン",
+            "fields": {
+              "quantity": {
+                "number": 8,
+                "unit": "個"
+              },
+              "inner_diameter": {
+                "number": 80,
+                "unit": "mm"
+              }
+            }
+          }
+        ],
+        "mustNotHandle": true
+      }
+    },
+    {
+      "id": "E14",
+      "route": "multiple",
+      "input": "カバーは4組、塗装不要、配送先は大阪です。ネックは8組、外装塗装、配送先は神戸です。",
+      "expected": {
+        "items": 2,
+        "parts": [
+          {
+            "label": "カバー",
+            "fields": {
+              "quantity": {
+                "number": 4,
+                "unit": "組"
+              }
+            },
+            "contains": {
+              "coating": "塗装不要",
+              "destination": "大阪"
+            }
+          },
+          {
+            "label": "ネック",
+            "fields": {
+              "quantity": {
+                "number": 8,
+                "unit": "組"
+              }
+            },
+            "contains": {
+              "coating": "外装塗装",
+              "destination": "神戸"
+            }
+          }
+        ],
+        "mustNotHandle": true
+      }
+    },
+    {
+      "id": "E15",
+      "route": "multiple",
+      "input": "パッキンの数量だけ10個に変更します。ガラスは変更しません。",
+      "expected": {
+        "items": 2,
+        "parts": [
+          {
+            "label": "ガラス",
+            "fields": {
+              "quantity": {
+                "number": 4,
+                "unit": "枚"
+              }
+            }
+          },
+          {
+            "label": "パッキン",
+            "fields": {
+              "quantity": {
+                "number": 10,
+                "unit": "個"
+              }
+            }
+          }
+        ],
+        "mustNotHandle": true
+      },
+      "prior": "ガラス4枚、パッキン8個"
+    },
+    {
+      "id": "E16",
+      "route": "multiple",
+      "input": "材質を鉄に変更してください。どちらの部品かはまだ決めていません。",
+      "expected": {
+        "safeUnresolved": true,
+        "mustNotHandle": true
+      },
+      "prior": "ガラス4枚、パッキン8個"
+    },
+    {
+      "id": "E17",
+      "route": "unknown",
+      "input": "用途は開示できません。メーカー不明の部品を探しています。材質も分かりません。",
+      "expected": {
+        "items": 1,
+        "statuses": {
+          "purpose": "unknown",
+          "manufacturer": "unknown",
+          "material": "unknown"
+        },
+        "mustNotHandle": true
+      }
+    },
+    {
+      "id": "E18",
+      "route": "unknown",
+      "input": "リング材を客先支給して穴加工を依頼します。",
+      "expected": {
+        "items": 1,
+        "fields": {
+          "request_scope": "processing",
+          "material_supply": "customer_supplied"
+        },
+        "mustNotHandle": true,
+        "verdict": "out_of_scope"
+      }
+    },
+    {
+      "id": "E19",
+      "route": "unknown",
+      "input": "材料も御社で調達できますか。リング材の加工も一緒に依頼したいです。",
+      "expected": {
+        "items": 1,
+        "fields": {
+          "request_scope": "processing",
+          "material_supply": "company_sourced"
+        },
+        "mailMustNotContain": [
+          "客先支給"
+        ],
+        "mustNotHandle": true
+      },
+      "prior": "リング材を客先支給して穴加工を依頼します。"
+    },
+    {
+      "id": "E20",
+      "route": "unknown",
+      "input": "SUS316ならどうでしょうか。まだ材質の変更は決めていません。",
+      "expected": {
+        "items": 1,
+        "fields": {
+          "material": "SUS304"
+        },
+        "mustNotHandle": true
+      },
+      "prior": "リング材はSUS304を購入したいです。"
+    }
+  ]
+}
