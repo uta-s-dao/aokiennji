@@ -40,6 +40,18 @@ const correction =
 const explicitCorrection = (text: string) =>
   correction.test(text) &&
   !/(?:変更|訂正)(?:は)?(?:しない|しません|していません)/.test(text);
+function attributeSpecific(quote: string, key: string) {
+  const expected = cues[key] ?? [fields[key].label];
+  return !Object.entries(fields).some(
+    ([other, def]) =>
+      other !== key &&
+      def.units &&
+      (other === "quantity" ? [def.label] : (cues[other] ?? [def.label])).some(
+        (label) =>
+          !expected.some((own) => own.includes(label)) && quote.includes(label),
+      ),
+  );
+}
 export function applyExtractionProposal(
   s: Snapshot,
   text: string,
@@ -84,6 +96,7 @@ export function applyExtractionProposal(
     // Extend only to an actual, unique clause. Do not invent a quote or join separate attributes.
     if (
       def.units &&
+      attributeSpecific(context, c.key) &&
       numericQuotes(context).length === 1 &&
       (numericQuotes(c.quote).length === 0 ||
         (c.operation === "correct" &&
@@ -165,6 +178,7 @@ export function applyExtractionProposal(
         throw bad();
       const expected = cues[c.key] ?? [def.label];
       const direct = q?.itemId === itemId && q.fieldKey === c.key;
+      if (!attributeSpecific(c.quote, c.key)) throw bad();
       if (!direct && !expected.some((label) => c.quote.includes(label)))
         throw bad();
       const numbers = numericQuotes(c.quote);
@@ -206,7 +220,10 @@ export function applyExtractionProposal(
       if (
         c.operation !== "correct" ||
         (!(q?.itemId === itemId && q.fieldKey === c.key) &&
-          !explicitCorrection(context) &&
+          !(
+            explicitCorrection(c.quote) ||
+            (attributeSpecific(context, c.key) && explicitCorrection(context))
+          ) &&
           !(
             c.key === "material_supply" &&
             /(?:材料も|材料を|御社で).{0,12}調達/.test(c.quote)

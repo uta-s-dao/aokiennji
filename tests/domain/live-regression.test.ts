@@ -347,3 +347,26 @@ it("識別用の補助値で顧客が明示した説明・商品名の不明を�
     applyExtractionProposal(makeSnapshot("unknown-name"), text, null, p),
   ).toThrow();
 });
+
+it("通常温度が不明の文で、最高温度の数値を通常温度へ引用補正しない", () => {
+  const s = seed(dataset.cases.find((c) => c.id === "E07") as Sample);
+  const text = "ガラスの通常温度は不明、最高温度820℃に変更します。";
+  const p: ExtractionProposal = {
+    schemaVersion: 1,
+    newItems: [],
+    changes: [
+      {
+        itemRef: s.brief.items[0].id,
+        key: "normal_temperature",
+        status: "known",
+        value: { text: "820℃", number: 820, unit: "℃" },
+        quote: "通常温度",
+        operation: "correct",
+        hardConstraint: true,
+      },
+    ],
+    ambiguities: [],
+    unprocessedQuotes: [],
+  };
+  expect(() => applyExtractionProposal(s, text, null, p)).toThrow();
+});
