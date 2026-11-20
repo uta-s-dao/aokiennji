@@ -26,6 +26,11 @@ for (const file of files) {
   let content = await readFile(file, "utf8");
   if (file === "src/adapters/openai-intake.ts")
     content = content.replaceAll("https://api.openai.com/v1/responses", "");
+  if (file === "src/adapters/partner-web.ts")
+    content = content
+      .replaceAll("https://api.search.brave.com/res/v1/web/search", "")
+      .replaceAll("https://r.jina.ai/", "")
+      .replaceAll("https://${host}/", "");
   if (file.endsWith(".schema.json"))
     content = content.replaceAll(
       "https://json-schema.org/draft/2020-12/schema",
@@ -39,5 +44,5 @@ if (failures.length) {
   process.exit(1);
 }
 console.log(
-  `isolation: ${files.length} source/config files checked; no legacy dependency; only the dedicated OpenAI endpoint is allowlisted`,
+  `isolation: ${files.length} source/config files checked; no legacy dependency; only dedicated OpenAI/Brave/Reader endpoints and explicit partner HTTPS host template are allowlisted`,
 );

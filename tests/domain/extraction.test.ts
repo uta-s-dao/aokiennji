@@ -81,6 +81,33 @@ function response(
   );
 }
 describe("引用付きの変更案", () => {
+  it("メーカーや型番の指定がないという回答を、同じ発言の用途とともに記録する", () => {
+    const initial = extractDemo(makeSnapshot("case"), "ガラス製品を購入したい");
+    const itemRef = initial.brief.items[0].id;
+    const quote = "メーカーや型番の指定はありません";
+    const second = "手元で使う交換用のガラス容器です。";
+    const p: ExtractionProposal = {
+      ...proposal(), newItems: [],
+      changes: [
+        ...["manufacturer", "model"].map((key) => ({
+          itemRef, key, status: "unknown" as const, value: null,
+          quote, operation: "set" as const, hardConstraint: false,
+        })),
+        { itemRef, key: "purpose", status: "known",
+          value: { text: "交換用", number: null, unit: null },
+          quote: second, operation: "set", hardConstraint: false },
+      ],
+    };
+    const capture = (sentence: string) =>
+      applyExtractionProposal(initial, sentence + "。" + second, null, p);
+    const result = capture(quote);
+    for (const key of ["model", "manufacturer"])
+      expect(result.brief.items[0].fields.find((field) => field.key === key)?.status).toBe("unknown");
+    expect(result.brief.items[0].fields.find((field) => field.key === "purpose")?.value?.text).toBe("交換用");
+    expect(() => capture(quote + "か")).toThrow("INVALID_EXTRACTION");
+    p.changes[0].key = "material";
+    expect(() => capture(quote)).toThrow("INVALID_EXTRACTION");
+  });
   it("新規品目はサーバー発行IDで保存し、モデルに案件状態を渡さない", () => {
     const s = makeSnapshot("c");
     const p = proposal();
@@ -290,6 +317,54 @@ describe("引用付きの変更案", () => {
   });
 });
 describe("OpenAI接続と停止", () => {
+  const settings = {
+    APP_MODE: "local-demo",
+    INTAKE_PROVIDER: "openai",
+    EXTERNAL_ENABLED: "true",
+    OPENAI_API_KEY: "test",
+    INTAKE_MODEL: "model",
+    INTAKE_MAX_OUTPUT_TOKENS: "1024",
+    INTAKE_MAX_CALLS_TOTAL: "3",
+    INTAKE_MAX_CALLS_PER_CASE: "1",
+  };
+  it("明示したローカル設定だけで両方の回数上限を解除する", () => {
+    expect(intakeConfig(settings)).toMatchObject({
+      maxCallsTotal: 3,
+      maxCallsPerCase: 1,
+    });
+    expect(
+      intakeConfig({
+        ...settings,
+        INTAKE_UNLIMITED_LOCAL: "true",
+        INTAKE_MAX_CALLS_TOTAL: undefined,
+        INTAKE_MAX_CALLS_PER_CASE: undefined,
+      }),
+    ).toMatchObject({
+      maxCallsTotal: null,
+      maxCallsPerCase: null,
+      maxOutputTokens: 1024,
+    });
+  });
+  it.each([undefined, "hosted-trial", "hosted-public", "production"])(
+    "ローカル以外の%sでは回数制限の解除を拒否する",
+    (APP_MODE) => {
+      expect(() =>
+        intakeConfig({ ...settings, APP_MODE, INTAKE_UNLIMITED_LOCAL: "true" }),
+      ).toThrow("CONFIG_MISSING");
+    },
+  );
+  it("解除フラグの不正値と出力上限の欠落を拒否する", () => {
+    expect(() =>
+      intakeConfig({ ...settings, INTAKE_UNLIMITED_LOCAL: "yes" }),
+    ).toThrow("CONFIG_MISSING");
+    expect(() =>
+      intakeConfig({
+        ...settings,
+        INTAKE_UNLIMITED_LOCAL: "true",
+        INTAKE_MAX_OUTPUT_TOKENS: undefined,
+      }),
+    ).toThrow("CONFIG_MISSING");
+  });
   it("明示設定不足は接続前に拒否", () => {
     expect(() =>
       intakeConfig({

@@ -4,7 +4,7 @@ import {
   convertV4MiniflareOptions,
   Response as MFResponse,
 } from "miniflare";
-import { readFile } from "node:fs/promises";
+import { migrate } from "../helpers/migrate";
 import type { Item } from "../../src/domain/model";
 it("軽量モデルの短い変更案を実Worker/D1で会話2ターン保存し、温度訂正をメールへ渡す", async () => {
   let calls = 0;
@@ -110,17 +110,7 @@ it("軽量モデルの短い変更案を実Worker/D1で会話2ターン保存し
   );
   try {
     const db = await mf.getD1Database("DB");
-    for (const name of [
-      "0001.sql",
-      "0002_event_payload.sql",
-      "0003_intake_calls.sql",
-      "0004_intake_totals.sql",
-    ])
-      await db.exec(
-        (await readFile("migrations/" + name, "utf8"))
-          .replace(/--[^\n]*/g, "")
-          .replace(/\n/g, " "),
-      );
+    await migrate(db);
     const origin = "http://127.0.0.1",
       sessionResponse = await mf.dispatchFetch(origin + "/api/v2/session"),
       session = (await sessionResponse.json()) as { csrf: string },

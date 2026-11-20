@@ -1,0 +1,16 @@
+{
+  "sheet": "仕入",
+  "headerRow": 1,
+  "columns": {
+    "name": "仕入先",
+    "item": "取扱い品",
+    "website": "HP"
+  },
+  "capabilities": [],
+  "sourceKey": "purchasing-ledger",
+  "expectedHeaders": {
+    "name": "仕入先",
+    "item": "取扱い品",
+    "website": "HP"
+  }
+}

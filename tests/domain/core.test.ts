@@ -61,13 +61,13 @@ describe("聞き取りと訂正", () => {
       expect(chooseNextQuestion(s, rs)?.fieldKey).not.toBe(q.fieldKey);
     },
   );
-  it("I06 未登録は補助2問、I09 6問上限", () => {
+  it("不足条件が残る間は2回答や6問を理由に打ち切らない", () => {
     const s = start("名前不明の交換部品");
     s.fallbackCount = 2;
-    expect(chooseNextQuestion(s, [])).toBeNull();
+    expect(chooseNextQuestion(s, [])).not.toBeNull();
     s.fallbackCount = 0;
     s.brief.questionsAsked = 6;
-    expect(chooseNextQuestion(s, rs)).toBeNull();
+    expect(chooseNextQuestion(s, rs)).not.toBeNull();
   });
   it("I07 明示調査とI08 空調査拒否", () => {
     expect(chooseNextQuestion(start("名前不明の部品"), [], true)).toBeNull();
@@ -205,9 +205,10 @@ describe("根拠と判定", () => {
     expect(decide(start(), []).verdict).toBe("needs_review");
   });
   it("R07/R15 未確認の必須納期や材質を無視しない", () => {
-    const s = change(start(), "required_date", "来月上旬");
+    const s = change(start(), "required_date", "来月上旬必着");
     expect(decide(s).verdict).toBe("needs_review");
-    expect(decide(s).items[0].missingFields).toContain("required_date");
+    expect(decide(s).items[0].missingFields).not.toContain("required_date");
+    expect(decide(s).items[0].reason).toContain("希望日");
   });
   it("R11 肯定・否定の競合を確認待ちにする", () => {
     expect(

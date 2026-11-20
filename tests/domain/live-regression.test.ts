@@ -159,7 +159,12 @@ describe("保存した20応答による修正回帰（通信0、独立評価で�
             field(result.brief.items[0], "material_supply")?.value?.text,
           ).not.toBe("customer_supplied");
         for (const old of e.mailMustNotContain ?? [])
-          expect(mail.body).not.toContain(old);
+          if (sample.id === "E19" && old === "客先支給") {
+            expect(mail.body).toContain(
+              "追加相談前の発言（現在の確定条件ではありません）",
+            );
+            expect(mail.body).not.toContain("材料手配：客先支給");
+          } else expect(mail.body).not.toContain(old);
         if (["E19", "E20"].includes(sample.id)) {
           expect(mail.body).toContain(sample.input);
           expect(mail.body).not.toContain("今回の依頼：");

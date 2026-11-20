@@ -22,6 +22,8 @@ it("設計版1.1の契約を使用し、旧版・不正な肯定・内部フィ�
     1,
   );
   expect(validateResearchBrief(b)).toBe(true);
+  expect(validateResearchBrief({ ...b, questionsAsked: 12 })).toBe(true);
+  expect(validateResearchBrief({ ...b, questionsAsked: 101 })).toBe(false);
   expect(validateResearchBrief({ ...b, schemaVersion: 1 })).toBe(false);
   const r = decideAvailability(
     b,

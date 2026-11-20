@@ -376,3 +376,14 @@ footer {
     animation: none;
   }
 }
+
+.received-conditions {
+  margin: 1.5rem 0;
+  padding-top: 1rem;
+  border-top: 1px solid #dce2d8;
+}
+.received-conditions h2 { margin: 0 0 .5rem; font-size: 1rem; }
+.received-conditions dl { display: flex; flex-wrap: wrap; gap: .2rem 1.25rem; margin: .35rem 0; }
+.received-conditions dl div { display: flex; align-items: baseline; gap: .4rem; }
+.received-conditions dt { color: #51655a; font-size: .88rem; }
+.received-conditions dd { margin: 0; overflow-wrap: anywhere; }

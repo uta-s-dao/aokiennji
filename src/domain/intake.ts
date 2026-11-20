@@ -8,9 +8,11 @@ import {
   type Question,
   type CapabilityRule,
   type ResearchBrief,
+  type IntakeAxes,
 } from "./model";
-import { fields } from "./fields";
-import { resolveCategories } from "./category";
+import { capacityTokens, fields, flexibleCondition, parseCapacity, requiredDateIsHard } from "./fields";
+import { nextDialogueQuestion } from "./dialogue";
+import { ambiguousCapacity, explicitHoleLayout, groundedBodyStructure } from "./grounding";
 import {
   validateResearchBrief,
   validateField,
@@ -27,7 +29,7 @@ export function makeSnapshot(caseId: string): Snapshot {
       attachmentRefs: [],
       questionsAsked: 0,
       knowledgeRevision: 0,
-      questionPolicyVersion: "v1.1-local-1",
+      questionPolicyVersion: "v1.2-chat-first-1",
     },
     inputs: [],
     overflow: [],
@@ -53,7 +55,7 @@ export function applyInput(
     s.brief.items.push(i);
   }
   if (s.brief.items.length > 3) throw new AppError("SPLIT_REQUIRED");
-  for (const c of changes) {
+  for (let c of changes) {
     const item = s.brief.items.find((i) => i.id === c.itemId);
     const def = fields[c.key];
     if (
@@ -68,8 +70,8 @@ export function applyInput(
     if (
       c.hardConstraint === false &&
       status === "known" &&
-      !["purpose", "description", "destination"].includes(c.key) &&
-      !/任意|変更可/.test(c.quote)
+      !["purpose", "description", "destination", "required_date"].includes(c.key) &&
+      !flexibleCondition.test(c.quote)
     )
       throw new AppError("INVALID_INPUT");
     if (
@@ -77,13 +79,29 @@ export function applyInput(
       (!c.conflicts || c.conflicts.length < 2 || c.conflicts.length > 4)
     )
       throw new AppError("INVALID_INPUT");
+    if (c.key === "body_structure" && status === "known" &&
+        groundedBodyStructure(event.text, c.quote.replace(/[。！.!]$/, "")) !== c.text)
+      throw new AppError("INVALID_INPUT");
+    if (c.key === "capacity" && status === "known") {
+      const parsed = parseCapacity(c.text ?? "");
+      const stated = capacityTokens(c.quote);
+      const evidence = stated.length === 1 ? parseCapacity(stated[0][0]) : null;
+      const supplied = c.number == null && c.unit == null
+        ? parsed
+        : c.number == null || !c.unit ? null : parseCapacity(`${c.number}${c.unit}`);
+      if (!parsed || supplied?.text !== parsed.text || evidence?.text !== parsed.text || ambiguousCapacity(c.quote))
+        throw new AppError("INVALID_INPUT");
+      c = { ...c, ...parsed };
+    }
+    if (c.key === "hole_layout" && status === "known" && !explicitHoleLayout(c.quote, true))
+      throw new AppError("INVALID_INPUT");
     if (status === "known") {
       if (typeof c.text !== "string" || !c.text || c.text.length > 300)
         throw new AppError("INVALID_INPUT");
       if (def.values && !def.values.includes(c.text))
         throw new AppError("INVALID_INPUT");
       if (
-        !def.values &&
+        !def.values && c.key !== "capacity" &&
         !c.quote.includes(c.text) &&
         !(c.number != null && c.quote.includes(String(c.number)))
       )
@@ -106,11 +124,29 @@ export function applyInput(
       status === "not_applicable" &&
       !(
         c.key === "material_supply" &&
-        item.fields.find((f) => f.key === "request_scope")?.value?.text ===
-          "purchase"
+        item.fields.find((f) => f.key === "request_scope")?.value?.text === "purchase"
       )
     )
       throw new AppError("INVALID_INPUT");
+    if (["overall_length", "outer_diameter", "inner_diameter", "opening_diameter", "hole_diameter", "width", "height", "depth", "thickness"].includes(c.key) && status === "known" &&
+      s.dimensionCandidates?.some((d) => d.itemId === item.id && d.number === c.number && d.unit === c.unit)) {
+      item.fields = item.fields.filter((f) => f.key !== "dimension_unspecified");
+      item.notes = item.notes.filter((note) => !note.startsWith("寸法種別は未確認："));
+      s.dimensionCandidates = s.dimensionCandidates.filter((d) => d.itemId !== item.id);
+    }
+    if (c.key === "dimension_unspecified" && ["unknown", "skipped"].includes(status)) {
+      const candidate = s.dimensionCandidates?.find((d) => d.itemId === item.id);
+      if (candidate) {
+        item.notes = item.notes.filter((note) => !note.startsWith("寸法種別は未確認："));
+        item.notes.push(`寸法種別は未確認：${candidate.text}（申告原文：${candidate.quote}。種別の回答：${c.quote}）`);
+      }
+    }
+    if (c.key === "dimension_unspecified" && status === "known") {
+      item.notes = item.notes.filter((note) => !note.startsWith("寸法種別は未確認："));
+      s.dimensionCandidates = (s.dimensionCandidates ?? []).filter((d) => d.itemId !== item.id);
+      s.dimensionCandidates.push({ itemId: item.id, eventId: event.id, quote: c.quote, text: c.text!, number: c.number!, unit: c.unit! });
+    }
+    if (c.key === "product_name" && status === "known") item.label = c.text!.slice(0, 100);
     item.fields = item.fields.filter((f) => f.key !== c.key);
     item.fields.push({
       key: c.key,
@@ -123,14 +159,33 @@ export function applyInput(
       source: event.type,
       eventId: event.id,
       quote: c.quote,
-      hardConstraint:
-        c.hardConstraint ??
-        (status === "known" &&
-          !["purpose", "description", "destination"].includes(c.key)),
+      hardConstraint: c.hardConstraint ??
+        (status === "known" && (c.key === "required_date"
+          ? requiredDateIsHard(c.quote)
+          : !["purpose", "description", "destination"].includes(c.key))),
       ...(status === "conflict" ? { conflicts: c.conflicts } : {}),
     });
   }
   for (const item of s.brief.items) {
+    const body = item.fields.find((field) => field.key === "body_structure");
+    const inner = item.fields.find((field) => field.key === "inner_diameter");
+    if (body?.value?.text === "solid") {
+      if (inner?.value || inner?.status === "conflict")
+        throw new AppError("INVALID_INPUT");
+      if (inner?.status !== "not_applicable") {
+        item.fields = item.fields.filter((field) => field.key !== "inner_diameter");
+        item.fields.push({
+          ...body,
+          key: "inner_diameter",
+          label: fields.inner_diameter.label,
+          status: "not_applicable",
+          value: null,
+          hardConstraint: false,
+        });
+      }
+    } else if (body?.value?.text === "hollow" && inner?.status === "not_applicable") {
+      item.fields = item.fields.filter((field) => field.key !== "inner_diameter");
+    }
     const scope = item.fields.find((f) => f.key === "request_scope");
     const supply = item.fields.find((f) => f.key === "material_supply");
     if (
@@ -184,120 +239,14 @@ export function hasClue(s: Snapshot) {
     ) || s.brief.attachmentRefs.length > 0
   );
 }
-const prompts: Record<string, string> = {
-  manufacturer: "メーカー名は分かりますか？",
-  model: "型番は分かりますか？",
-  purpose: "何に使うものですか？",
-  description: "どのようなものをお探しですか？",
-  request_scope: "商品・材料の購入、加工、製作のどれをご希望ですか？",
-  material_supply: "材料はお客様からの支給ですか？",
-  work_scope: "どの部位・作業をご依頼ですか？",
-};
 export function chooseNextQuestion(
   s: Snapshot,
   rules: CapabilityRule[],
   force = false,
+  axes?: IntakeAxes,
+  partnerIntake = false,
 ): Question | null {
-  if (
-    !force &&
-    s.brief.questionsAsked < 6 &&
-    s.unresolvedInputs?.length &&
-    !s.recoveryOffered
-  )
-    return {
-      id: "input-recovery",
-      itemId: s.brief.items.length === 1 ? s.brief.items[0].id : null,
-      fieldKey: "description",
-      text: "確認待ちの相談があります。内容を確定して入力するか、メール相談へ進めます。",
-      inputType: "text",
-      options: [],
-      allowUnknown: true,
-      allowSkip: true,
-    };
-  if (s.brief.questionsAsked >= 6 && !hasClue(s)) return null;
-  if (!hasClue(s))
-    return {
-      id: "initial",
-      itemId: null,
-      fieldKey: "description",
-      text: "名称・用途・写真のいずれかを教えてください。",
-      inputType: "text",
-      options: [],
-      allowUnknown: true,
-      allowSkip: true,
-    };
-  if (force || s.brief.questionsAsked >= 6 || s.overflow.length) return null;
-  for (const item of resolveCategories(s.brief.items, rules)) {
-    const applicable = rules.filter(
-      (r) =>
-        r.approvalStatus === "approved" &&
-        r.validUntil &&
-        Date.parse(r.validUntil) > Date.now() &&
-        r.category === item.category,
-    );
-    const supply = item.fields.find((f) => f.key === "request_scope")?.value
-      ?.text;
-    const keys = [
-      ...new Set([
-        ...item.fields.filter((f) => f.status === "conflict").map((f) => f.key),
-        ...(applicable.some((r) =>
-          r.predicates.some((p) => p.field === "request_scope"),
-        )
-          ? ["request_scope"]
-          : []),
-        ...(["processing", "fabrication"].includes(supply ?? "") &&
-        applicable.some((r) =>
-          r.predicates.some((p) => p.field === "material_supply"),
-        )
-          ? ["material_supply"]
-          : []),
-        ...applicable.flatMap((r) => r.requiredFields),
-        ...(s.fallbackCount < 2
-          ? item.profile === "known_model"
-            ? item.fields.some((f) => f.key === "model" && f.status === "known")
-              ? []
-              : ["model"]
-            : item.profile === "fabrication"
-              ? ["work_scope", "purpose"]
-              : ["purpose", "mounting"]
-          : []),
-      ]),
-    ];
-    for (const key of keys) {
-      const f = item.fields.find((f) => f.key === key);
-      if (f && f.status !== "not_asked" && f.status !== "conflict") continue;
-      if (
-        f?.status === "conflict" &&
-        s.inputs.some((e) => e.id.startsWith("question-" + item.id + "-" + key))
-      )
-        continue;
-      if (!fields[key]) continue;
-      const opts = fields[key].values ?? [];
-      const names: Record<string, string> = {
-        purchase: "商品・材料の購入",
-        processing: "加工",
-        fabrication: "製作",
-        customer_supplied: "客先支給",
-        company_sourced: "当社調達",
-        mixed: "一部支給",
-      };
-      return {
-        id: `${item.id}:${key}`,
-        itemId: item.id,
-        fieldKey: key,
-        text: prompts[key] ?? `${fields[key].label}は分かりますか？`,
-        inputType: opts.length
-          ? "select"
-          : fields[key].units
-            ? "number"
-            : "text",
-        options: opts.map((v) => ({ id: v, label: names[v] ?? v })),
-        allowUnknown: true,
-        allowSkip: true,
-      };
-    }
-  }
-  return null;
+  return nextDialogueQuestion(s, rules, force, axes, partnerIntake);
 }
 export function makeResearchBrief(
   s: Snapshot,

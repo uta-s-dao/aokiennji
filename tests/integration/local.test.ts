@@ -1,6 +1,6 @@
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
-import { readFile } from "node:fs/promises";
+import { migrate } from "../helpers/migrate";
 import {
   runJob,
   flushOutbox,
@@ -105,12 +105,7 @@ beforeAll(async () => {
     }),
   );
   db = (await mf.getD1Database("DB")) as unknown as D1Database;
-  const sql =
-    (await readFile("migrations/0001.sql", "utf8")) +
-    (await readFile("migrations/0002_event_payload.sql", "utf8")) +
-    (await readFile("migrations/0003_intake_calls.sql", "utf8")) +
-    (await readFile("migrations/0004_intake_totals.sql", "utf8"));
-  await db.exec(sql.replace(/--[^\n]*/g, "").replace(/\n/g, " "));
+  await migrate(db);
   env = {
     DB: db,
     FILES: (await mf.getR2Bucket("FILES")) as unknown as R2Bucket,
@@ -508,4 +503,130 @@ describe("ローカルAPIとD1/R2", () => {
     expect(job!.lease_token).toBe(current!.lease_token);
     expect(job!.status).toBe("completed");
   });
+});
+
+it("訂正の返答・DB現在値・結果理由・メール文が同じ温度を示す", async () => {
+  const c = await client(),
+    cid = await create(c);
+  const first = await initial(c, cid, "ガラス 通常温度780℃");
+  expect(first.status).toBe(200);
+  expect(first.body.notice).toBe("");
+  const q = first.body.question as { id: string };
+  const corrected = await c.call(`/cases/${cid}/answers`, "POST", {
+    mutationId: "customer-temperature-correction",
+    expectedRevision: 1,
+    questionId: q.id,
+    answer: { type: "text", text: "ガラス 通常温度680℃、最高温度820℃" },
+  });
+  expect(corrected.status).toBe(200);
+  expect(corrected.body.notice).toContain("通常温度を680℃に変更しました");
+  expect(corrected.body.notice).not.toContain("780℃");
+  const replay = await c.call(`/cases/${cid}/answers`, "POST", {
+    mutationId: "customer-temperature-correction",
+    expectedRevision: 1,
+    questionId: q.id,
+    answer: { type: "text", text: "ガラス 通常温度680℃、最高温度820℃" },
+  });
+  expect(replay.body).toEqual(corrected.body);
+  const research = await c.call(`/cases/${cid}/research`, "POST", {
+    mutationId: "customer-research",
+    expectedRevision: 2,
+  });
+  await runJob(env, String(research.body.jobId));
+  const current = await c.call(`/cases/${cid}`);
+  expect(current.body).toMatchObject({
+    revision: 3,
+    items: [
+      {
+        fields: expect.arrayContaining([
+          expect.objectContaining({
+            key: "normal_temperature",
+            value: expect.objectContaining({ number: 680 }),
+          }),
+          expect.objectContaining({
+            key: "peak_temperature",
+            value: expect.objectContaining({ number: 820 }),
+          }),
+        ]),
+      },
+    ],
+    result: {
+      verdict: "needs_review",
+      items: [expect.objectContaining({ missingFields: [] })],
+    },
+  });
+  const result = current.body.result as { items: { reason: string }[] };
+  expect(
+    (current.body.items as { fields: { key: string }[] }[])[0].fields.some(
+      (f) => f.key === "purpose",
+    ),
+  ).toBe(false);
+  expect(result.items[0].reason).toContain("680℃");
+  expect(result.items[0].reason).toContain("820℃");
+  const mail = await c.call(`/cases/${cid}/mail-draft`, "POST", {});
+  expect(mail.body.body).toContain(result.items[0].reason);
+  expect(mail.body.body).not.toContain("780℃");
+});
+
+it("保存エラー時は成功通知を返さず、現在値と履歴も変えない", async () => {
+  const c = await client(),
+    cid = await create(c);
+  const first = await initial(c, cid, "ガラス4枚、パッキン8個");
+  const state = await c.call(`/cases/${cid}`);
+  const items = state.body.items as { id: string }[];
+  const failed = await c.call(`/cases/${cid}/fields`, "PATCH", {
+    mutationId: "bad-field-copy",
+    expectedRevision: 1,
+    text: "10℃",
+    change: {
+      itemId: items[0].id,
+      key: "outer_diameter",
+      text: "10℃",
+      number: 10,
+      unit: "℃",
+    },
+  });
+  expect(first.status).toBe(200);
+  expect(failed.status).toBe(400);
+  expect(failed.body).not.toHaveProperty("notice");
+  expect((await c.call(`/cases/${cid}`)).body).toEqual(state.body);
+});
+
+it("6問を超えて品目別に続け、明示的な途中調査の後も回答できる", async () => {
+  const c = await client(),
+    cid = await create(c);
+  let r = await initial(c, cid, "名前不明の交換部品です");
+  const seen = new Set<string>();
+  for (let n = 0; n < 8; n++) {
+    const q = r.body.question as { id: string; fieldKey: string };
+    expect(q).toBeTruthy();
+    expect(seen.has(q.id)).toBe(false);
+    seen.add(q.id);
+    r = await c.call(`/cases/${cid}/answers`, "POST", {
+      mutationId: "long-dialogue-" + n,
+      expectedRevision: r.body.revision,
+      questionId: q.id,
+      answer: { type: n % 2 ? "skip" : "unknown" },
+    });
+    expect(r.status).toBe(200);
+    expect(r.body.jobId).toBeNull();
+  }
+  expect(r.body.question).toBeTruthy();
+  const research = await c.call(`/cases/${cid}/research`, "POST", {
+    mutationId: "long-dialogue-research",
+    expectedRevision: r.body.revision,
+  });
+  await runJob(env, String(research.body.jobId));
+  const current = await c.call(`/cases/${cid}`);
+  expect(current.body.result).toBeTruthy();
+  const q = current.body.question as { id: string };
+  expect(q).toBeTruthy();
+  const continued = await c.call(`/cases/${cid}/answers`, "POST", {
+    mutationId: "long-dialogue-continue",
+    expectedRevision: current.body.revision,
+    questionId: q.id,
+    answer: { type: "unknown" },
+  });
+  expect(continued.status).toBe(200);
+  expect(continued.body.question).toBeTruthy();
 });

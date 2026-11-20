@@ -5,9 +5,12 @@ import {
   rules,
   sources,
   audit,
+  canPublishPage,
 } from "./adapters/store";
 import { id, type ResearchBrief } from "./domain/model";
-import { decideAvailability } from "./domain/decision";
+import { loadPartnerMaster } from "./adapters/partner-master";
+import { researchPartners } from "./adapters/partner-research";
+import { decideAvailability, toPublicResult } from "./domain/decision";
 export async function flushOutbox(e: Env) {
   await stmt(
     e,
@@ -66,14 +69,64 @@ export async function runJob(e: Env, jobId: string) {
   if (!claim.meta.changes) return;
   job = { ...job, lease_token: token };
   const brief: ResearchBrief = JSON.parse(job.snapshot);
-  // Local adapters perform no external I/O. Budget persists with the job, including after lease recovery.
-  const result = decideAvailability(
+  const [rs, ss, master] = await Promise.all([
+    rules(e),
+    sources(e),
+    e.APP_MODE === "local-demo" ? loadPartnerMaster(e) : null,
+  ]);
+  const report = master ? await researchPartners(e, job, brief, master) : null;
+  // Once an actual partner master is in use, demo rules cannot confer approval.
+  const realMaster = master && master.reasonCode !== "not_imported";
+  const incomplete =
+    brief.attachmentRefs.length > 0 ||
+    (report &&
+      ((realMaster && report.master.status !== "completed") ||
+        ["failed", "incomplete", "disabled", "blocked"].includes(
+          report.webStatus,
+        )));
+  let result = decideAvailability(
     brief,
-    await rules(e),
-    await sources(e),
+    realMaster ? rs.filter((r) => !r.isDemo) : rs,
+    realMaster ? ss.filter((s) => !s.is_demo) : ss,
     jobId,
-    brief.attachmentRefs.length ? "partial" : "completed",
+    incomplete ? "partial" : "completed",
   );
+  if (report) {
+    for (const item of result.items) {
+      if (item.verdict === "needs_review") {
+        const missing = (report.followup?.staffTasks ?? [])
+          .filter((task) =>
+            task.itemId === item.itemId &&
+            (task.customerFieldStatus === "not_asked" ||
+              task.customerFieldStatus === "conflict"),
+          )
+          .map((task) => task.fieldKey);
+        item.missingFields = [...new Set([...item.missingFields, ...missing])].slice(0, 40);
+      }
+      if (
+        item.reasonCode === "RESEARCH_INCOMPLETE" &&
+        report.webStatus === "disabled"
+      ) {
+        item.reason =
+          "登録資料との照合は完了しました。公開サイトの検索は現在利用できないため、今回の条件で手配できるかは担当者が確認します。";
+      }
+      const publicPages = report.pages.filter(
+        (p) =>
+          p.itemId === item.itemId &&
+          p.confirmed.length &&
+          canPublishPage(e, p.url),
+      );
+      if (publicPages.length)
+        item.webFindings = publicPages
+          .slice(0, 4)
+          .map(({ url, checkedAt, confirmed, unconfirmed }) => ({
+            url,
+            checkedAt,
+            confirmed,
+            unconfirmed,
+          }));
+    }
+  }
   if (brief.attachmentRefs.length) {
     for (const i of result.items) {
       if (
@@ -89,6 +142,7 @@ export async function runJob(e: Env, jobId: string) {
       }
     }
   }
+  result = toPublicResult(result);
   const guard = id(),
     end = Date.now();
   try {
@@ -110,6 +164,16 @@ export async function runJob(e: Env, jobId: string) {
         JSON.stringify(result),
         end,
       ),
+      ...(report
+        ? [
+            stmt(
+              e,
+              "INSERT INTO partner_reports(job_id,report_json) VALUES(?,?)",
+              jobId,
+              JSON.stringify(report),
+            ),
+          ]
+        : []),
       ...result.items.flatMap((i) =>
         [...i.evidence, ...i.scopeAssessment.evidence].map((ev) =>
           stmt(
@@ -118,7 +182,7 @@ export async function runJob(e: Env, jobId: string) {
             id(),
             jobId,
             i.itemId,
-            "demo-source",
+            rs.find((rule) => rule.id === ev.id)!.sourceId,
             ev.id,
             ev.label,
             end,
@@ -135,12 +199,29 @@ export async function runJob(e: Env, jobId: string) {
     ]);
   } catch (err) {
     if (String(err).includes("CHECK") || String(err).includes("UNIQUE")) {
-      await stmt(
-        e,
-        "UPDATE research_jobs SET status='superseded' WHERE id=? AND lease_token=? AND status='running'",
-        jobId,
-        token,
-      ).run();
+      await e.DB.batch([
+        stmt(
+          e,
+          `UPDATE research_jobs SET status='superseded',stage='資料または条件が更新されました'
+          WHERE id=? AND lease_token=? AND status='running'
+            AND (knowledge_revision<>(SELECT revision FROM knowledge WHERE id=1)
+              OR NOT EXISTS(SELECT 1 FROM cases c WHERE c.id=research_jobs.case_id AND c.revision=research_jobs.input_revision AND c.deleted=0 AND c.expires_at>?))`,
+          jobId,
+          token,
+          end,
+        ),
+        stmt(
+          e,
+          `UPDATE cases SET phase='collecting'
+          WHERE id=? AND revision=? AND phase='researching' AND deleted=0
+            AND EXISTS(SELECT 1 FROM research_jobs WHERE id=? AND status='superseded' AND lease_token=?)
+            AND NOT EXISTS(SELECT 1 FROM research_jobs WHERE case_id=cases.id AND input_revision=cases.revision AND status IN ('queued','running'))`,
+          job.case_id,
+          job.input_revision,
+          jobId,
+          token,
+        ),
+      ]);
       return;
     }
     await audit(e, job.case_id, "JOB_STORAGE_FAILED");

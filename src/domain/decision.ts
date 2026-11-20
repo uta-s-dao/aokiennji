@@ -10,6 +10,7 @@ import {
 } from "./model";
 import { fields, normalized, present } from "./fields";
 import { resolveCategories } from "./category";
+import { customerReason } from "./customer-copy";
 import {
   validateCapabilityRule,
   validatePublicResult,
@@ -239,7 +240,15 @@ export function decideAvailability(
       } else if (
         rules.some(
           (r) =>
-            r.category === i.category &&
+            (r.category === i.category ||
+              r.modelAliases.some((alias) =>
+                i.fields.some(
+                  (f) =>
+                    f.key === "model" &&
+                    f.status === "known" &&
+                    f.value?.text.toUpperCase() === alias.toUpperCase(),
+                ),
+              )) &&
             r.validUntil &&
             Date.parse(r.validUntil) <= time,
         )
@@ -252,7 +261,28 @@ export function decideAvailability(
       ) {
         reasonCode = "RESEARCH_INCOMPLETE";
         reason = "調査が未完了です。入力内容を保持してメール相談できます。";
+        if (status === "failed") {
+          verdict = "needs_review";
+          resultRules = [];
+        }
       }
+      // Missing customer input is different from a supplied condition for which
+      // company evidence is missing. Never ask customers to re-enter the latter.
+      const missingFields = [
+        ...new Set([
+          ...missing,
+          ...hard
+            .filter((f) => f.status === "not_asked" || f.status === "conflict")
+            .map((f) => f.key),
+        ]),
+      ].filter((k) => {
+        const field = i.fields.find((f) => f.key === k);
+        return (
+          !field || field.status === "not_asked" || field.status === "conflict"
+        );
+      });
+      if (reasonCode !== "APPROVED_EXCLUSION_MATCH")
+        reason = customerReason(i, reasonCode, missingFields, pendingInput);
       return {
         itemId: i.id,
         label: i.label,
@@ -260,10 +290,10 @@ export function decideAvailability(
           status: scopeStatus,
           reason:
             scopeStatus === "in_scope"
-              ? "承認済みの取扱分野に含まれます。"
+              ? `${i.label.length <= 40 ? i.label : "この品目"}は、${verdict === "can_handle" ? "当社の取扱対象です。" : "取扱いをご相談いただける分野です。"}`
               : scopeStatus === "out_of_scope"
                 ? "承認済み資料で取扱分野の対象外です。"
-                : "取扱分野も担当者確認が必要です。",
+                : "この品目を取り扱えるか、担当者の確認が必要です。",
           evidence: scopeRules.slice(0, 8).map((r) => publicEvidence(r, time)),
         },
         verdict,
@@ -272,21 +302,15 @@ export function decideAvailability(
         conditions: pendingInput
           ? []
           : i.fields
-              .filter((f) => f.hardConstraint && f.value)
-              .map((f) => `${f.label}：${present(f)}`)
+              .filter((f) => f.status === "known" && f.value)
+              .map((f) => {
+                const text = `${f.label}：${present(f)}`;
+                return text.length <= 160
+                  ? text
+                  : `${text.slice(0, 140)}…（全文は入力内容で確認）`;
+              })
               .slice(0, 10),
-        missingFields: [
-          ...new Set([
-            ...missing,
-            ...hard
-              .filter(
-                (f) =>
-                  f.status !== "known" ||
-                  !supported.some((r) => r.coveredFields.includes(f.key)),
-              )
-              .map((f) => f.key),
-          ]),
-        ],
+        missingFields,
         evidence: resultRules.slice(0, 8).map((r) => publicEvidence(r, time)),
       };
     },
@@ -356,6 +380,11 @@ export function toPublicResult(r: PublicResult): PublicResult {
       conditions: i.conditions,
       missingFields: i.missingFields,
       evidence: i.evidence.map(evidence),
+      ...(i.webFindings?.length && {
+        webFindings: i.webFindings.map(({url, checkedAt, confirmed, unconfirmed}) => ({
+          url, checkedAt, confirmed, unconfirmed,
+        })),
+      }),
     })),
     createdAt: r.createdAt,
     stale: r.stale,

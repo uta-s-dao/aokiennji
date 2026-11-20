@@ -26,6 +26,7 @@ export type InputEvent = {
   id: string;
   text: string;
   type: "customer_text" | "selection" | "field_edit";
+  partialFor?: { itemId: string; fieldKey: string };
 };
 export type Change = {
   itemId: string;
@@ -38,6 +39,7 @@ export type Change = {
   hardConstraint?: boolean;
   conflicts?: { text: string; number: number | null; unit: string | null }[];
 };
+export type IntakeAxes = { itemId: string; fieldKeys: string[] }[];
 export type Snapshot = {
   brief: ResearchBrief;
   inputs: InputEvent[];
@@ -49,6 +51,9 @@ export type Snapshot = {
   unresolvedInputs?: InputEvent[];
   pendingChanges?: { eventId: string; itemId: string; key: string }[];
   recoveryOffered?: boolean;
+  questionAttempts?: Record<string, number>;
+  deferredQuestions?: string[];
+  dimensionCandidates?: { itemId: string; eventId: string; quote: string; text: string; number: number; unit: string }[];
 };
 export type Source = {
   id: string;

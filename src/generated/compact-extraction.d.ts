@@ -36,8 +36,11 @@ export interface CompactExtractionProposal {
       | "dn"
       | "dr"
       | "co"
+      | "ol"
+      | "ud"
       | "od"
       | "id"
+      | "bs"
       | "ap"
       | "wd"
       | "ht"
@@ -52,7 +55,14 @@ export interface CompactExtractionProposal {
       | "mt"
       | "qt"
       | "dt"
-      | "to";
+      | "to"
+      | "mk"
+      | "hd"
+      | "hc"
+      | "hl"
+      | "cp"
+      | "tl"
+      | "da";
     v: string | null;
     q: string;
     o: "s" | "c" | "h";

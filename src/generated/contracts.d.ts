@@ -84,6 +84,10 @@ export type ItemResult = {
    * @maxItems 8
    */
   evidence: PublicEvidence[];
+  /**
+   * @maxItems 4
+   */
+  webFindings?: PublicWebFinding[];
 };
 export type ScopeAssessment = {
   status: "in_scope" | "out_of_scope" | "unconfirmed";
@@ -227,4 +231,17 @@ export interface PublicEvidence {
   label: string;
   url: string | null;
   checkedAt: string;
+}
+export interface PublicWebFinding {
+  url: string;
+  checkedAt: string;
+  /**
+   * @minItems 1
+   * @maxItems 24
+   */
+  confirmed: string[];
+  /**
+   * @maxItems 40
+   */
+  unconfirmed: string[];
 }

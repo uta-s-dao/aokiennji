@@ -2,6 +2,10 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import type { Item, Question, PublicResult } from "../domain/model";
 import { fields, labels, present } from "../domain/fields";
+import { customerItemName, customerNextStep } from "../domain/customer-copy";
+import type { ResearchFollowupAnswer } from "../domain/research-followup";
+import { ResearchQuestion, type ResultQuestion } from "./research-question";
+import { PartnerReview } from "./partner-review";
 import "./style.css";
 type CaseView = {
   caseId: string;
@@ -13,9 +17,12 @@ type CaseView = {
   questionsAsked: number;
   overflow: string[];
   unresolvedInputs?: string[];
+  canRestoreIntake?: boolean;
+  pendingFieldKeys?: {itemId:string;key:string}[];
   attachments: { id: string; name: string; analysis: string }[];
   job: { id: string; status: string; stage: string; deadline: number } | null;
   result: PublicResult | null;
+  followup?: ResultQuestion | null;
 };
 type Draft = {
   subject: string;
@@ -53,6 +60,9 @@ async function request<T = Record<string, unknown>>(
 const uuid = () => crypto.randomUUID();
 function App() {
   const [provider, setProvider] = useState("demo");
+  const [hostedTrial, setHostedTrial] = useState(
+    location.pathname.startsWith("/availability-v2/"),
+  );
   const [ready, setReady] = useState(false),
     [caseId, setCaseId] = useState(localStorage.getItem("av2_case") ?? ""),
     [view, setView] = useState<CaseView | null>(null),
@@ -66,17 +76,32 @@ function App() {
   const questionRef = useRef<HTMLHeadingElement>(null),
     mutation = useRef<{ key: string; id: string } | null>(null);
   useEffect(() => {
-    request<{ csrf: string; extraction: string }>("/session")
+    request<{ csrf: string; extraction: string; mode?: string }>("/session")
       .then((s) => {
         csrf = s.csrf;
         setProvider(s.extraction);
+        setHostedTrial(s.mode === "hosted-trial");
         setReady(true);
       })
       .catch((e) => setError(String(e)));
   }, []);
   const refresh = useCallback(async () => {
     if (caseId) {
-      const v = await request<CaseView>("/cases/" + caseId);
+      let v = await request<CaseView>("/cases/" + caseId);
+      if (v.canRestoreIntake) {
+        try {
+          await request("/cases/" + caseId + "/restore-intake", "POST", {
+            expectedRevision: v.revision,
+          });
+        } catch (err) {
+          // Another tab may have already restored or edited the same consultation.
+          const latest = await request<CaseView>("/cases/" + caseId);
+          if (latest.canRestoreIntake) throw err;
+          setView(latest);
+          return latest;
+        }
+        v = await request<CaseView>("/cases/" + caseId);
+      }
       setView(v);
       return v as CaseView;
     }
@@ -188,13 +213,42 @@ function App() {
       setDraft(null);
     });
   }
+  async function answerResearchQuestion(answer: ResearchFollowupAnswer) {
+    await work(async () => {
+      const offer = view?.followup;
+      if (!offer || !view) return;
+      const response = await request<{ jobId: string | null }>(
+        `/cases/${caseId}/followup`,
+        "POST",
+        {
+          mutationId: keyFor(JSON.stringify([offer.id, answer])),
+          expectedRevision: view.revision,
+          jobId: offer.jobId,
+          questionId: offer.id,
+          answer,
+        },
+      );
+      setNotice(
+        response.jobId
+          ? "回答を反映してもう一度調べます。"
+          : "回答を記録しました。現在の条件で担当者に相談できます。",
+      );
+      await refresh();
+      setDraft(null);
+    });
+  }
   async function research() {
     await work(async () => {
       if (!view) return;
-      await request(`/cases/${caseId}/research`, "POST", {
-        mutationId: keyFor("research"),
-        expectedRevision: view.revision,
-      });
+      const response = await request<{ notice: string | null }>(
+        `/cases/${caseId}/research`,
+        "POST",
+        {
+          mutationId: keyFor("research"),
+          expectedRevision: view.revision,
+        },
+      );
+      if (response.notice) setNotice(response.notice);
       await refresh();
       setEditing(false);
       setDraft(null);
@@ -213,23 +267,27 @@ function App() {
       const code = def.values
         ? (Object.keys(labels).find((k) => labels[k] === value) ?? value)
         : value;
-      await request(`/cases/${caseId}/fields`, "PATCH", {
-        mutationId: keyFor(itemId + key + value + optional),
-        expectedRevision: view.revision,
-        text: value + (optional ? "（任意・変更可）" : ""),
-        change: {
-          itemId,
-          key,
-          text: code,
-          ...(def.units
-            ? { number: m ? Number(m[1]) : null, unit: m?.[2] || null }
-            : {}),
-          hardConstraint: !optional,
+      const response = await request<{ notice: string }>(
+        `/cases/${caseId}/fields`,
+        "PATCH",
+        {
+          mutationId: keyFor(itemId + key + value + optional),
+          expectedRevision: view.revision,
+          text: value + (optional ? "（任意・変更可）" : ""),
+          change: {
+            itemId,
+            key,
+            text: code,
+            ...(def.units
+              ? { number: m ? Number(m[1]) : null, unit: m?.[2] || null }
+              : {}),
+            hardConstraint: !optional,
+          },
         },
-      });
+      );
       await refresh();
       setDraft(null);
-      setNotice("変更を保存しました。現在の条件で再調査できます。");
+      setNotice(response.notice);
     });
   }
   async function upload(file: File, itemId?: string, supersedes?: string) {
@@ -285,7 +343,40 @@ function App() {
   }
   const researching =
       !!view?.job && ["queued", "running"].includes(view.job.status),
-    result = view?.result && !editing && !researching ? view.result : null;
+    result =
+      view?.result &&
+      !editing &&
+      !researching &&
+      !(view.phase === "collecting" && view.question)
+        ? view.result
+        : null,
+    nextSteps = result?.items.map(customerNextStep) ?? [],
+    sharedNextStep =
+      nextSteps.length && nextSteps.every((text) => text === nextSteps[0])
+        ? nextSteps[0]
+        : null;
+  const inputForm = (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        void answer({ type: "text", text: input });
+      }}
+    >
+      <label htmlFor="answer">{view ? "回答" : "ご希望の内容"}</label>
+      <textarea
+        id="answer"
+        disabled={busy}
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder={view ? "分かる範囲でお答えください。ほかの条件や訂正も一緒に伝えられます。" : "例：メーカー名と型番、交換したい部品、製作したいもの"}
+        rows={4}
+        maxLength={2000}
+      />
+      <button className="primary" disabled={busy || !input.trim()}>
+        {busy ? "回答を確認中…" : view ? "次へ" : "相談を始める"}
+      </button>
+    </form>
+  );
   return (
     <>
       <header>
@@ -294,26 +385,33 @@ function App() {
             A
           </span>
           <span>
-            商品・製作の取扱確認<small>ローカルデモ · 架空資料で動作確認</small>
+            商品・製作の取扱確認
+            <small>
+              {hostedTrial
+                ? "管理者向け試用 · 架空資料・AI送信なし"
+                : "ローカル試用"}
+            </small>
           </span>
         </div>
         <nav>
-          <button
-            onClick={() => {
-              setAdmin(!admin);
-              location.hash = admin ? "" : "admin";
-            }}
-          >
-            管理
-          </button>
+          {!hostedTrial && (
+            <button
+              onClick={() => {
+                setAdmin(!admin);
+                location.hash = admin ? "" : "admin";
+              }}
+            >
+              管理
+            </button>
+          )}
           <button disabled={busy} onClick={reset}>
             新しい相談
           </button>
         </nav>
       </header>
       <main>
-        {admin ? (
-          <Admin />
+        {admin && !hostedTrial ? (
+          <Admin currentCaseId={caseId} />
         ) : (
           <>
             <div className="steps" aria-label="相談の流れ">
@@ -346,44 +444,19 @@ function App() {
               </section>
             )}
             {ready &&
-              (!view || view.phase === "collecting") &&
+              (!view || view.phase === "collecting" || !!view.question) &&
               !editing &&
-              !result &&
+              (!result || !!view?.question) &&
               !researching && (
                 <section className="question-card">
                   {view && (
                     <h1 ref={questionRef} tabIndex={-1}>
                       {view.question?.text ??
-                        "入力内容を確認して調査へ進めます。"}
+                        "分かる情報があれば追記できます。"}
                     </h1>
                   )}
-                  {(!view || view.question?.inputType !== "select") && (
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        void answer({ type: "text", text: input });
-                      }}
-                    >
-                      <label htmlFor="answer">
-                        {view ? "回答" : "ご希望の内容"}
-                      </label>
-                      <textarea
-                        id="answer"
-                        disabled={busy}
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        placeholder="例：メーカー名と型番、交換したい部品、製作したいもの"
-                        rows={4}
-                        maxLength={2000}
-                      />
-                      <button
-                        className="primary"
-                        disabled={busy || !input.trim()}
-                      >
-                        {busy ? "保存中…" : view ? "次へ" : "相談を始める"}
-                      </button>
-                    </form>
-                  )}
+                  {(!hostedTrial || view?.question?.inputType !== "select") &&
+                    inputForm}
                   {view?.question?.options.map((o) => (
                     <button
                       className="option"
@@ -410,6 +483,47 @@ function App() {
                       </button>
                     </div>
                   )}
+                  {!hostedTrial &&
+                    !!view?.items.length &&
+                    (!view.unresolvedInputs?.length ||
+                      view.pendingFieldKeys) && (
+                      <section
+                        className="received-conditions"
+                        aria-label="ここまでに伺った条件"
+                      >
+                        <h2>ここまでに伺った条件</h2>
+                        {view.items.map((item) => (
+                          <div key={item.id}>
+                            <strong>{item.label}</strong>
+                            <dl>
+                              {item.fields
+                                .filter(
+                                  (f) =>
+                                    (f.status === "known" ||
+                                      f.status === "unknown" ||
+                                      f.status === "skipped") &&
+                                    !(
+                                      ["description", "product_name"].includes(
+                                        f.key,
+                                      ) && f.value?.text === item.label
+                                    ) &&
+                                    !f.key.startsWith("equivalent_") &&
+                                    !view.pendingFieldKeys?.some(
+                                      (p) =>
+                                        p.itemId === item.id && p.key === f.key,
+                                    ),
+                                )
+                                .map((f) => (
+                                  <div key={f.key}>
+                                    <dt>{f.label}</dt>
+                                    <dd>{present(f)}</dd>
+                                  </div>
+                                ))}
+                            </dl>
+                          </div>
+                        ))}
+                      </section>
+                    )}
                   {view?.overflow.length ? (
                     <div className="notice">
                       <p>
@@ -499,11 +613,75 @@ function App() {
                     条件または資料が更新されています。再調査してください。
                   </p>
                 )}
+                {view?.followup && (
+                  <ResearchQuestion
+                    key={view.followup.id}
+                    offer={view.followup}
+                    busy={busy}
+                    itemLabel={
+                      view.items.find((i) => i.id === view.followup?.itemId)
+                        ?.label
+                    }
+                    onAnswer={answerResearchQuestion}
+                  />
+                )}
                 {result.items.map((i) => (
                   <article key={i.itemId}>
-                    <h2>{i.label}</h2>
-                    <p className="scope">{i.scopeAssessment.reason}</p>
-                    <p>{i.reason}</p>
+                    <h2>{customerItemName(i)}</h2>
+                    {!view?.question &&
+                      view?.items
+                        .find((item) => item.id === i.itemId)
+                        ?.fields.some((f) =>
+                          ["unknown", "skipped", "conflict"].includes(f.status),
+                        ) && (
+                        <p>
+                          分からなかった条件：
+                          {view.items
+                            .find((item) => item.id === i.itemId)!
+                            .fields.filter((f) =>
+                              ["unknown", "skipped", "conflict"].includes(
+                                f.status,
+                              ),
+                            )
+                            .map((f) => fields[f.key]?.label ?? f.label)
+                            .join("、")}
+                        </p>
+                      )}
+                    {i.scopeAssessment.status === "in_scope" &&
+                      i.verdict !== "can_handle" && (
+                        <p className="scope">{i.scopeAssessment.reason}</p>
+                      )}
+                    {i.reasonCode !== "APPROVED_SCOPE_MATCH" ? (
+                      <p>{i.reason}</p>
+                    ) : result.items.length > 1 ? (
+                      <p>取扱可能です。</p>
+                    ) : null}
+                    {!sharedNextStep && !view?.question && !view?.followup && (
+                      <p className="next-step">{customerNextStep(i)}</p>
+                    )}
+                    {view?.items
+                      .find((item) => item.id === i.itemId)
+                      ?.notes.filter((n) => n.startsWith("寸法種別は未確認"))
+                      .map((note) => (
+                        <p key={note}>{note}</p>
+                      ))}
+                    {i.webFindings?.map((page) => (
+                      <section key={page.url}>
+                        <h3>公開ページで確認した条件</h3>
+                        <ul>
+                          {page.confirmed.map((v) => (
+                            <li key={v}>{v}</li>
+                          ))}
+                        </ul>
+                        {!!page.unconfirmed.length && (
+                          <p>未確認：{page.unconfirmed.join("、")}</p>
+                        )}
+                        <a href={page.url} target="_blank" rel="noreferrer">
+                          {new URL(page.url).hostname}
+                        </a>
+                        <small>確認日時：{page.checkedAt}</small>
+                      </section>
+                    ))}
                     <details>
                       <summary>根拠・確認した条件</summary>
                       <ul>
@@ -511,6 +689,9 @@ function App() {
                           <li key={n}>{v}</li>
                         ))}
                       </ul>
+                      <p>
+                        在庫確保、正式納期、価格、技術的適合を保証する回答ではありません。
+                      </p>
                       {[...i.scopeAssessment.evidence, ...i.evidence]
                         .filter(
                           (ev, n, a) =>
@@ -518,34 +699,51 @@ function App() {
                         )
                         .map((ev) => (
                           <p key={ev.id}>
-                            {ev.label}
+                            {ev.url ? (
+                              <a href={ev.url} target="_blank" rel="noreferrer">
+                                {ev.label}
+                              </a>
+                            ) : (
+                              ev.label
+                            )}
                             <small>確認日時：{ev.checkedAt}</small>
                           </p>
                         ))}
                     </details>
                     {i.missingFields.length > 0 && (
-                      <button
-                        onClick={() => {
-                          setEditing(true);
-                          setTimeout(
-                            () =>
-                              document
-                                .getElementById(
-                                  `edit-${i.itemId}-${i.missingFields[0]}`,
-                                )
-                                ?.focus(),
-                            50,
-                          );
-                        }}
-                      >
-                        不足条件を修正する
-                      </button>
+                      <div>
+                        <p>
+                          照会前に確認する項目{" "}
+                          {i.missingFields.map((key) => fields[key]?.label ?? key).join("、")}
+                        </p>
+                        <button
+                          onClick={() => {
+                            setEditing(true);
+                            setTimeout(
+                              () =>
+                                document
+                                  .getElementById(
+                                    `edit-${i.itemId}-${i.missingFields[0]}`,
+                                  )
+                                  ?.focus(),
+                              50,
+                            );
+                          }}
+                        >
+                          不足条件を修正する
+                        </button>
+                      </div>
                     )}
                   </article>
                 ))}
-                <p className="muted">
-                  在庫確保、正式納期、価格、技術的適合を保証する回答ではありません。
-                </p>
+                {sharedNextStep && !view?.question && !view?.followup && (
+                  <p className="next-step">{sharedNextStep}</p>
+                )}
+                {view?.question && (
+                  <p>
+                    まだ確認できる項目があります。チャットの質問を続けられます。
+                  </p>
+                )}
                 <div className="actions">
                   <button
                     className="primary"
@@ -567,18 +765,50 @@ function App() {
                 </div>
               </section>
             )}
-            {!!view?.unresolvedInputs?.length && (
+            {result && !view?.question && !view?.followup && (
+              <section className="question-card">
+                <h2>追加の相談・訂正</h2>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void answer({ type: "text", text: input });
+                  }}
+                >
+                  <label htmlFor="followup">回答</label>
+                  <textarea
+                    id="followup"
+                    value={input}
+                    disabled={busy}
+                    onChange={(e) => setInput(e.target.value)}
+                    rows={3}
+                    maxLength={2000}
+                  />
+                  <button className="primary" disabled={busy || !input.trim()}>
+                    送信
+                  </button>
+                </form>
+              </section>
+            )}
+            {!!view?.unresolvedInputs?.length && !result && (
               <section className="notice" role="status">
-                <p>解釈できていない入力を保持しています。</p>
                 <p>
-                  最新の相談が未確認のため、以前の条件だけでは取扱可否を確定しません。
+                  {view.question
+                    ? "確認できる条件を、チャットで続けて伺います。"
+                    : "残った確認事項は、担当者に相談できます。"}
                 </p>
-                {view.unresolvedInputs.map((t, i) => (
-                  <p key={i}>{t}</p>
-                ))}
-                <button disabled={busy} onClick={prepareMail}>
-                  入力内容でメール文を作成
-                </button>
+                <p>以前の条件による判定は保留しています。</p>
+                <details>
+                  <summary>確認待ちの相談内容</summary>
+                  {view.unresolvedInputs.map((t, i) => (
+                    <p key={i}>{t}</p>
+                  ))}
+                </details>
+                <details>
+                  <summary>ここまでの内容で担当者へ相談する場合</summary>
+                  <button disabled={busy} onClick={prepareMail}>
+                    このままメールで相談する
+                  </button>
+                </details>
               </section>
             )}
             {view && (
@@ -594,7 +824,7 @@ function App() {
                 <h1>入力内容を確認・修正</h1>
                 {!!view.unresolvedInputs?.length && (
                   <p>
-                    以下は前回の入力値です。確認待ちの相談内容を反映してから再調査してください。
+                    追加相談前の条件です。変更が未定なら、このままメールで相談できます。
                   </p>
                 )}
                 {view.items.map((item) => (
@@ -694,18 +924,19 @@ function App() {
               </section>
             )}
             <details className="privacy">
-              <summary>このデモと情報の扱い</summary>
+              <summary>相談内容と情報の扱い</summary>
               <p>
-                架空の資料を使うローカル試作です。
+                {hostedTrial
+                  ? "架空の資料を使う管理者向け試用です。"
+                  : "ローカル環境の登録資料で取扱条件を確認します。"}
                 {provider === "openai"
                   ? "自由文の必要な内容をOpenAI APIへ送り、入力条件を抽出します。"
                   : provider === "disabled"
                     ? "自由文の自動抽出は停止中です。"
                     : "自由文は簡易のデモ抽出で処理します。"}
-                実際の会社の取扱判断には利用できません。
-                {provider === "openai"
-                  ? "写真・図面と会社資料は外部へ送りません。Web検索は未接続です。"
-                  : "AI・Web検索への送信は行いません。"}
+                {hostedTrial
+                  ? "試用には架空の判断資料を使用しています。"
+                  : "協力会社の照合後、候補が0件でWeb検索が有効な場合は、検索用の条件を外部サービスに送ります。仕入先一覧や図面は送信しません。"}
                 案件・添付の暫定保管期限は作成から30日です。
               </p>
               {view && (
@@ -825,13 +1056,13 @@ function FieldEditor({
     </form>
   );
 }
-function Admin() {
+function Admin({currentCaseId}: {currentCaseId: string}) {
   const [token, setToken] = useState(""),
     [data, setData] = useState<{
       rules: unknown[];
       sources: unknown[];
       knowledgeRevision: number;
-      cases: unknown[];
+      cases: {id: string; phase: string; created_at: number}[];
       failures: unknown[];
     } | null>(null),
     [rule, setRule] = useState(""),
@@ -851,7 +1082,7 @@ function Admin() {
         rules: unknown[];
         sources: unknown[];
         knowledgeRevision: number;
-        cases: unknown[];
+        cases: {id: string; phase: string; created_at: number}[];
         failures: unknown[];
       }>("/admin/state", "GET", undefined, headers),
     );
@@ -864,7 +1095,7 @@ function Admin() {
         id="admin-token"
         type="password"
         value={token}
-        onChange={(e) => setToken(e.target.value)}
+        onChange={(e) => { setToken(e.target.value); setData(null); }}
       />
       <div className="actions">
         <button onClick={() => action(load)}>読み込む</button>
@@ -883,6 +1114,7 @@ function Admin() {
       <p role="status">{message}</p>
       {data && (
         <>
+          <PartnerReview cases={data.cases} currentCaseId={currentCaseId} load={path => request(path, "GET", undefined, headers)} />
           <p>判断資料の版：{data.knowledgeRevision}</p>
           <h2>ルール一覧</h2>
           {data.rules.map((r, n) => (

@@ -11,7 +11,6 @@ import {
 import {
   makeSnapshot,
   applyInput,
-  chooseNextQuestion,
   makeResearchBrief,
   newItem,
   hasClue,
@@ -19,10 +18,13 @@ import {
 import { fields } from "../domain/fields";
 import { resolveCategories } from "../domain/category";
 import { makeMailDraft } from "../domain/mail";
+import { recordDialogueAnswer } from "../domain/dialogue";
+import { savedReply } from "../domain/customer-copy";
 import { checkRule } from "../domain/decision";
+import { restoreOpeningTurn } from "../adapters/restore-intake";
 import { extractDemo } from "../adapters/extraction";
 import { configuredIntake } from "../adapters/intake-service";
-import { intakeProvider } from "../adapters/openai-intake";
+import { intakeProvider, unlimitedLocalIntake } from "../adapters/openai-intake";
 import {
   type Env,
   type CaseRow,
@@ -40,6 +42,10 @@ import {
   audit,
 } from "../adapters/store";
 import { flushOutbox, expireJobs, maintenance } from "../research-worker";
+import { applyResearchFollowup, toPublicResearchFollowup, type ResearchFollowupAnswer } from "../domain/research-followup";
+import { closeFollowup, recordFollowup, resultDialogue } from "../adapters/research-followup-store";
+import { intakeQuestion } from "../adapters/partner-research";
+import { loadPartnerMaster } from "../adapters/partner-master";
 import fixture from "../../fixtures/demo/knowledge.json";
 import { validateIntakeResponse } from "../generated/validators.js";
 export const json = (
@@ -105,7 +111,7 @@ function snapshot(c: CaseRow) {
 async function responseFor(e: Env, c: CaseRow, s: Snapshot, force = false) {
   const rs = await rules(e);
   s.brief.items = resolveCategories(s.brief.items, rs);
-  const q = chooseNextQuestion(s, rs, force);
+  const q = await intakeQuestion(e, s, rs, force);
   const k = await knowledge(e);
   s.brief.knowledgeRevision = k;
   const can = hasClue(s) && !s.overflow.length;
@@ -145,13 +151,7 @@ async function responseFor(e: Env, c: CaseRow, s: Snapshot, force = false) {
       question: q,
       jobId: job?.id ?? null,
       canResearch: can,
-      notice: s.overflow.length
-        ? "4品目以上の入力を保持しました。未処理内容を別案件へ分割してください。"
-        : s.extractionFailed
-          ? "自由文の確認を完了できませんでした。入力を保持しています。再入力・修正またはメール相談できます。"
-          : s.unresolvedInputs?.length
-            ? "変更候補・確認待ちの相談を保持しています。内容を確定して入力するか、メールで相談できます。"
-            : null,
+      notice: force ? null : savedReply(snapshot(c), s),
     },
   };
 }
@@ -247,20 +247,39 @@ export async function api(
       c.id,
       c.revision,
     ).first();
+    const result = await currentResult(e, c);
+    const dialogue = await resultDialogue(e, c, result);
     return json({
       caseId: c.id,
       revision: c.revision,
       phase: c.phase,
       items: s.brief.items,
       overflow: s.overflow,
-      question:
-        c.phase === "collecting" ? chooseNextQuestion(s, await rules(e)) : null,
+      question: dialogue ? null : await intakeQuestion(e, s, await rules(e)),
+      followup: dialogue?.offer
+        ? { jobId: dialogue.jobId, ...toPublicResearchFollowup(dialogue.offer) }
+        : null,
       canResearch: hasClue(s) && !s.overflow.length,
       attachments,
       job: j,
-      result: await currentResult(e, c),
+      result,
       questionsAsked: s.brief.questionsAsked,
       unresolvedInputs: (s.unresolvedInputs ?? []).map((e) => e.text),
+      pendingFieldKeys:
+        s.unresolvedInputs?.length &&
+        s.unresolvedInputs.every((event) => event.partialFor)
+          ? [
+              ...(s.pendingChanges ?? []).map(({ itemId, key }) => ({
+                itemId,
+                key,
+              })),
+              ...s.unresolvedInputs.map((event) => ({
+                itemId: event.partialFor!.itemId,
+                key: event.partialFor!.fieldKey,
+              })),
+            ]
+          : undefined,
+      canRestoreIntake: c.phase === "collecting" && !!restoreOpeningTurn(s),
     });
   }
   if (route === "" && method === "DELETE") {
@@ -277,6 +296,97 @@ export async function api(
     ctx.waitUntil(maintenance(e));
     return json({ deleted: true });
   }
+  if (route === "restore-intake" && method === "POST") {
+    const b = await body(req);
+    if (!Number.isInteger(b.expectedRevision))
+      throw new AppError("INVALID_INPUT");
+    const mutationId = "restore-opening:" + b.expectedRevision;
+    const previous = await prior(e, c.id, mutationId);
+    if (previous) return json(previous);
+    revision(b, c);
+    const restored =
+      c.phase === "collecting" && restoreOpeningTurn(snapshot(c));
+    if (!restored) throw new AppError("REVISION_CONFLICT", 409);
+    const { job, response } = await responseFor(e, c, restored);
+    const result = await commit(e, c, mutationId, restored, response, job);
+    if (job) ctx.waitUntil(flushOutbox(e));
+    return json(result);
+  }
+  if (route === "followup" && method === "POST") {
+    const b = await body(req);
+    const mutationId = text(b.mutationId, 128);
+    const previous = await prior(e, c.id, mutationId);
+    if (previous) return json(previous);
+    revision(b, c);
+    const dialogue = await resultDialogue(e, c, await currentResult(e, c));
+    if (
+      !dialogue?.offer ||
+      dialogue.jobId !== b.jobId ||
+      dialogue.offer.id !== b.questionId
+    )
+      throw new AppError("STALE_RESEARCH_FOLLOWUP", 409);
+    const answer = b.answer as ResearchFollowupAnswer | undefined;
+    if (
+      !answer ||
+      typeof answer !== "object" ||
+      Array.isArray(answer) ||
+      Object.keys(answer).some(
+        (key) => !["status", "choice", "value"].includes(key),
+      ) ||
+      (answer.value !== undefined &&
+        (!answer.value ||
+          typeof answer.value !== "object" ||
+          Array.isArray(answer.value) ||
+          Object.keys(answer.value).some(
+            (key) => !["text", "number", "unit"].includes(key),
+          ))) ||
+      (answer.status !== "known" &&
+        (answer.choice !== undefined || answer.value !== undefined)) ||
+      (answer.status === "known" &&
+        (dialogue.offer.kind === "equivalent_allowed"
+          ? answer.value !== undefined
+          : answer.choice !== undefined))
+    )
+      throw new AppError("INVALID_INPUT");
+    const s = snapshot(c);
+    if (s.inputs.length >= 100) throw new AppError("RATE_LIMITED", 429);
+    const eventId = id();
+    const applied = applyResearchFollowup(
+      s.brief,
+      dialogue.offer,
+      answer,
+      eventId,
+    );
+    const statements = recordFollowup(e, c, dialogue.jobId, applied.record);
+    s.brief = applied.brief;
+    const answerText =
+      dialogue.offer.options.find(
+        (option) => option.value === (answer.choice ?? answer.status),
+      )?.label ?? answer.value?.text;
+    if (!answerText) throw new AppError("INVALID_INPUT");
+    s.inputs.push({
+      id: eventId,
+      type: answer.value ? "customer_text" : "selection",
+      text: answerText,
+    });
+    if (!applied.restart)
+      return json(
+        await closeFollowup(e, c, mutationId, s, applied.record, statements),
+      );
+    const { job } = await responseFor(e, c, s, true);
+    if (!job) throw new AppError("INVALID_INPUT");
+    const response = await commit(
+      e,
+      c,
+      mutationId,
+      s,
+      { jobId: job.id, revision: c.revision + 1, phase: "researching" },
+      job,
+      statements,
+    );
+    ctx.waitUntil(flushOutbox(e));
+    return json(response);
+  }
   if (
     ["answers", "fields", "research", "split"].includes(route) &&
     ["POST", "PATCH"].includes(method)
@@ -288,8 +398,9 @@ export async function api(
     revision(b, c);
     let s = snapshot(c);
     if (route === "answers") {
-      const q = chooseNextQuestion(s, await rules(e));
-      if (c.phase !== "collecting")
+      const completedDialogue = c.phase === "completed" && await resultDialogue(e, c, await currentResult(e, c));
+      const q = completedDialogue ? null : await intakeQuestion(e, s, await rules(e));
+      if (c.phase === "researching")
         throw new AppError("REVISION_CONFLICT", 409);
       if (q && b.questionId !== q.id) throw new AppError("INVALID_INPUT");
       const answer = b.answer as {
@@ -309,7 +420,8 @@ export async function api(
             code: s.extractionError ?? "UNKNOWN",
           });
       } else {
-        if (!q?.itemId) throw new AppError("INVALID_INPUT");
+        if (!q || (!q.itemId && q.id !== "input-recovery"))
+          throw new AppError("INVALID_INPUT");
         const value =
           answer.type === "option"
             ? q.options.find((o) => o.id === answer.optionId)
@@ -323,15 +435,23 @@ export async function api(
             (answer.type === "unknown" ? "分からない" : "スキップ"),
           type: "selection",
         };
-        if (q.id === "input-recovery") {
+        if (q.id === "input-recovery" || q.id.startsWith("clarify:")) {
           s.inputs.push(event);
           s.recoveryOffered = true;
         } else
           s = applyInput(s, event, [
             {
-              itemId: q.itemId,
-              key: q.fieldKey,
-              text: value?.id,
+              itemId: q.itemId!,
+              key:
+                q.fieldKey === "inner_diameter" &&
+                value?.id === "not_applicable"
+                  ? "body_structure"
+                  : q.fieldKey,
+              text:
+                q.fieldKey === "inner_diameter" &&
+                value?.id === "not_applicable"
+                  ? "solid"
+                  : value?.id,
               quote: event.text,
               status:
                 answer.type === "unknown"
@@ -342,9 +462,9 @@ export async function api(
             },
           ]);
       }
-      if (q?.id === "input-recovery") s.recoveryOffered = true;
-      if (c.revision > 0) {
-        s.brief.questionsAsked = Math.min(6, s.brief.questionsAsked + 1);
+      recordDialogueAnswer(snapshot(c), s, q, answer.type, answer.text);
+      if (q && c.revision > 0) {
+        s.brief.questionsAsked += 1;
         s.fallbackCount++;
       }
     } else if (route === "fields") {
@@ -388,10 +508,11 @@ export async function api(
         await e.DB.batch([
           stmt(
             e,
-            "INSERT INTO write_guards VALUES (?,EXISTS(SELECT 1 FROM cases WHERE id=? AND revision=? AND deleted=0 AND expires_at>?))",
+            "INSERT INTO write_guards VALUES (?,EXISTS(SELECT 1 FROM cases WHERE id=? AND revision=? AND snapshot IS ? AND deleted=0 AND expires_at>?))",
             g,
             c.id,
             c.revision,
+            c.snapshot,
             Date.now(),
           ),
           stmt(
@@ -441,8 +562,7 @@ export async function api(
               caseId: c.id,
               revision: c.revision + 1,
               canResearch: hasClue(s) && !s.overflow.length,
-              notice:
-                "変更を保存しました。「この内容で調べる」で再調査できます。",
+              notice: savedReply(snapshot(c), s),
             },
           }
         : await responseFor(e, c, s, route === "research");
@@ -592,10 +712,11 @@ async function upload(req: Request, e: Env, c: CaseRow) {
     await e.DB.batch([
       stmt(
         e,
-        "INSERT INTO write_guards VALUES (?,EXISTS(SELECT 1 FROM cases WHERE id=? AND revision=? AND deleted=0 AND expires_at>?))",
+        "INSERT INTO write_guards VALUES (?,EXISTS(SELECT 1 FROM cases WHERE id=? AND revision=? AND snapshot IS ? AND deleted=0 AND expires_at>?))",
         g,
         c.id,
         c.revision,
+        c.snapshot,
         Date.now(),
       ),
       stmt(
@@ -674,6 +795,7 @@ async function admin(req: Request, e: Env, owner: string) {
   if (p.endsWith("/intake-status") && method === "GET")
     return json({
       provider: intakeProvider(e),
+      unlimitedLocal: unlimitedLocalIntake(e),
       calls: await stmt(
         e,
         "SELECT calls AS count FROM intake_totals WHERE id=1",
@@ -691,6 +813,8 @@ async function admin(req: Request, e: Env, owner: string) {
     await audit(e, null, "INTAKE_RESUMED");
     return json({ ok: true });
   }
+  if (p === "/api/v2/admin/partners" && method === "GET")
+    return json(await loadPartnerMaster(e));
   const caseMatch = p.match(/^\/api\/v2\/admin\/cases\/([^/]+)$/);
   if (caseMatch && method === "GET") {
     const row = await stmt(
@@ -700,12 +824,17 @@ async function admin(req: Request, e: Env, owner: string) {
       Date.now(),
     ).first<CaseRow>();
     if (!row) throw new AppError("NOT_FOUND", 404);
+    const result = await currentResult(e, row);
+    const report = result && !result.stale
+      ? await stmt(e, "SELECT report_json FROM partner_reports WHERE job_id=?", result.jobId).first<{report_json: string}>()
+      : null;
     return json({
       caseId: row.id,
       revision: row.revision,
       phase: row.phase,
       items: snapshot(row).brief.items,
-      result: await currentResult(e, row),
+      result,
+      partnerReport: report ? JSON.parse(report.report_json) : null,
       attachments: (
         await stmt(
           e,

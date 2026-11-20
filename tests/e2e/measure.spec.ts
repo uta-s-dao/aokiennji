@@ -47,7 +47,7 @@ test("ローカルの選択100操作・自由文30入力・調査20案件を計�
     const t = performance.now();
     await page.getByRole("button", { name: "相談を始める" }).click();
     await expect(
-      page.getByRole("heading", { name: "何に使うものですか？" }),
+      page.getByRole("heading", { name: /は何に使いますか？/ }),
     ).toBeVisible();
     if (freeText.length < 30) freeText.push(performance.now() - t);
     let t2 = performance.now();

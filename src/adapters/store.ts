@@ -16,6 +16,7 @@ export type Env = {
   CONTACT_EMAIL: string;
   INTAKE_MODEL: string;
   INTAKE_PROVIDER?: string;
+  INTAKE_UNLIMITED_LOCAL?: string;
   OPENAI_API_KEY?: string;
   INTAKE_MAX_OUTPUT_TOKENS?: string;
   INTAKE_MAX_CALLS_TOTAL?: string;
@@ -24,6 +25,13 @@ export type Env = {
   INTAKE_REASONING?: string;
   RESEARCH_MODEL: string;
   EXTERNAL_ENABLED: string;
+  PARTNER_WEB_ENABLED?: string;
+  PARTNER_WEB_PROVIDER?: string;
+  PARTNER_WEB_READER?: string;
+  JINA_API_KEY?: string;
+  BRAVE_SEARCH_API_KEY?: string;
+  PARTNER_WEB_ALLOWED_HOSTS?: string;
+  PARTNER_WEB_PUBLIC_HOSTS?: string;
 };
 export type CaseRow = {
   id: string;
@@ -56,12 +64,26 @@ export async function knowledge(e: Env) {
   }>())!.revision;
 }
 export async function rules(e: Env): Promise<CapabilityRule[]> {
-  return (
-    await stmt(e, "SELECT json FROM capability_rules").all<{ json: string }>()
-  ).results.map((r) => JSON.parse(r.json));
+  const query = e.APP_MODE === "hosted-public"
+    ? `SELECT r.json FROM capability_rules r JOIN sources s ON s.id=r.source_id
+       WHERE s.is_demo=0 AND s.public_allowed=1`
+    : "SELECT json FROM capability_rules";
+  const rows = (await stmt(e, query).all<{ json: string }>()).results;
+  const parsed = rows.map((r) => JSON.parse(r.json) as CapabilityRule);
+  if (e.APP_MODE !== "hosted-public") return parsed;
+  const now = Date.now();
+  return parsed.filter((rule) =>
+    rule.isDemo === false &&
+    rule.approvalStatus === "approved" &&
+    !!rule.approvedAt && Date.parse(rule.approvedAt) <= now &&
+    !!rule.validUntil && Date.parse(rule.validUntil) > now
+  );
 }
 export async function sources(e: Env): Promise<Source[]> {
-  return (await stmt(e, "SELECT * FROM sources").all<Source>()).results;
+  const query = e.APP_MODE === "hosted-public"
+    ? "SELECT * FROM sources WHERE is_demo=0 AND public_allowed=1"
+    : "SELECT * FROM sources";
+  return (await stmt(e, query).all<Source>()).results;
 }
 export async function owned(e: Env, caseId: string, owner: string) {
   const c = await stmt(
@@ -121,18 +143,21 @@ export async function commit(
   s: Snapshot,
   response: unknown,
   job: JobRow | null = null,
+  prerequisites: D1PreparedStatement[] = [],
 ) {
   const guard = id(),
     t = Date.now(),
     rev = c.revision + 1;
   s.brief.revision = rev;
   const statements = [
+    ...prerequisites,
     stmt(
       e,
-      "INSERT INTO write_guards VALUES (?,EXISTS(SELECT 1 FROM cases WHERE id=? AND revision=? AND deleted=0 AND expires_at>?))",
+      "INSERT INTO write_guards VALUES (?,EXISTS(SELECT 1 FROM cases WHERE id=? AND revision=? AND snapshot IS ? AND deleted=0 AND expires_at>?))",
       guard,
       c.id,
       c.revision,
+      c.snapshot,
       t,
     ),
     stmt(
@@ -201,6 +226,9 @@ export async function currentResult(
   ).first<{ public_json: string }>();
   if (!row) return null;
   const r: PublicResult = JSON.parse(row.public_json);
+  for (const i of r.items) {
+    if (i.webFindings) i.webFindings = i.webFindings.filter(p => canPublishPage(e, p.url));
+  }
   const rev = await knowledge(e);
   const rs = await rules(e);
   const expired = r.items
@@ -232,9 +260,17 @@ export async function currentResult(
         evidence: [],
       };
       i.evidence = [];
+      delete i.webFindings;
     }
   }
   return r;
+}
+export function canPublishPage(e: Env, url: string) {
+  try {
+    const u = new URL(url);
+    const approved = (e.PARTNER_WEB_PUBLIC_HOSTS ?? "").toLowerCase().split(",").map(s => s.trim());
+    return u.protocol === "https:" && !u.username && !u.password && !u.port && approved.includes(u.hostname);
+  } catch { return false; }
 }
 export async function audit(
   e: Env,

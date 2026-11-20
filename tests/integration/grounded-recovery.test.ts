@@ -4,7 +4,7 @@ import {
   convertV4MiniflareOptions,
   Response as MFResponse,
 } from "miniflare";
-import { readFile } from "node:fs/promises";
+import { migrate } from "../helpers/migrate";
 import recorded from "../../docs/LIVE-FAST-INTAKE-20261117.json";
 import dataset from "../../fixtures/evaluation/live-cases-20261116.json";
 import type { Item } from "../../src/domain/model";
@@ -72,17 +72,7 @@ it("保存済みLuna応答の型番/引用/品目を実Worker/D1へ保存し、�
   );
   try {
     const db = await mf.getD1Database("DB");
-    for (const name of [
-      "0001.sql",
-      "0002_event_payload.sql",
-      "0003_intake_calls.sql",
-      "0004_intake_totals.sql",
-    ])
-      await db.exec(
-        (await readFile("migrations/" + name, "utf8"))
-          .replace(/--[^\n]*/g, "")
-          .replace(/\n/g, " "),
-      );
+    await migrate(db);
     const origin = "http://127.0.0.1",
       sessionResponse = await mf.dispatchFetch(origin + "/api/v2/session"),
       session = (await sessionResponse.json()) as { csrf: string },

@@ -1,6 +1,7 @@
+import { dimensionKeys, dimensionAliases, resolveDimensionAnswer, resolveDimensionDesignation } from "./dimensions";
 import type { ExtractionProposal } from "../generated/extraction";
 import { validateExtractionProposal } from "../generated/validators.js";
-import { fields, labels, normalized } from "./fields";
+import { capacityCues, capacityNumberPattern, fields, labels, normalized, parseCapacity, flexibleCondition, requiredDateIsHard } from "./fields";
 import {
   AppError,
   id,
@@ -11,6 +12,12 @@ import {
 } from "./model";
 import { applyInput, newItem } from "./intake";
 import {
+  ambiguousCapacity,
+  attributeClause,
+  drillingOperation,
+  ownedDrillingRequest,
+  explicitHoleLayout,
+  groundedBodyStructure,
   isTentative,
   quoteContext,
   hasUniqueItemContext,
@@ -26,20 +33,29 @@ const enumCues: Record<string, RegExp> = {
   company_sourced:
     /当社調達|御社.{0,5}調達|材料.{0,5}調達|材料も|company_sourced/,
   mixed: /一部支給|mixed/,
+  hollow: /空洞|中空/,
+  solid: /無垢|中実|詰まって/,
 };
 const cues: Record<string, string[]> = {
+  overall_length: ["全長", "長さ"],
   outer_diameter: ["外径"],
   inner_diameter: ["内径"],
-  opening_diameter: ["見える穴", "穴径", "開口径"],
+  opening_diameter: ["見える穴の径", "見える穴", "穴径", "開口径"],
+  hole_diameter: ["穴径", "穴の直径", "穴の径"],
+  hole_count: ["穴数", "穴", "か所", "箇所"],
   normal_temperature: ["通常温度", "通常"],
   peak_temperature: ["最高温度", "最高", "ピーク"],
   quantity: ["数量", "個", "枚", "組", "台", "本"],
+  capacity: [...capacityCues],
 };
-const numericQuotes = (text: string) => [
-  ...text.matchAll(
-    /(-?\d+(?:\.\d+)?)\s*(mm|cm|m|℃|°C|MPa|kPa|Pa|秒|分|時間|個|枚|組|台|本|kg)/g,
-  ),
-];
+const numericQuotePattern = new RegExp(
+  String.raw`${capacityNumberPattern}|(-?\d+(?:\.\d+)?)\s*(mm|cm|m(?![lLｌＬℓ])|℃|°C|MPa|kPa|Pa|秒|分|時間|か所|箇所|穴|個|枚|組|台|本|kg)`,
+  "gu",
+);
+const numericQuotes = (text: string) =>
+  [...text.matchAll(numericQuotePattern)].map((match) => [
+    match[0], match[1] ?? match[3], match[2] ?? match[4],
+  ]);
 const correction =
   /訂正|ではなく|変更|正しく|最新|じゃなく|ではない|から.{0,30}に/;
 const explicitCorrection = (text: string) =>
@@ -143,14 +159,33 @@ export function applyExtractionProposal(
 ): Snapshot {
   if (!validateExtractionProposal(raw)) throw bad();
   const proposal = structuredClone(raw) as ExtractionProposal;
-  if (!text.trim() || text.length > 2000 || proposal.ambiguities.length)
+  if (!text.trim() || text.length > 2000)
     throw bad();
   for (const quote of [...proposal.ambiguities, ...proposal.unprocessedQuotes])
     if (!text.includes(quote)) throw bad();
+  // A dimension without an axis is a valid retained condition, not an extraction failure.
+  for (const list of [proposal.ambiguities, proposal.unprocessedQuotes]) {
+    for (const quote of [...list]) {
+      const token = quote.match(/^(\d+(?:\.\d+)?)\s*(mm|cm|m)$/);
+      if (!token || explicitHoleLayout(quoteContext(text, quote), q?.fieldKey === "hole_layout")) continue;
+      const candidates = [
+        ...s.brief.items.map((i) => ({ ref: i.id, label: i.label })),
+        ...proposal.newItems.map((i) => ({ ref: i.ref, label: i.label })),
+      ];
+      const owners = candidates.filter((i) => candidates.length === 1 || hasUniqueItemContext(text, quote, i.label, candidates.filter((o) => o.ref !== i.ref).map((o) => o.label)));
+      if (owners.length !== 1 || proposal.changes.some((c) => c.itemRef === owners[0].ref && c.key === "dimension_unspecified")) continue;
+      proposal.changes.push({ itemRef: owners[0].ref, key: "dimension_unspecified", status: "known", value: {text: Number(token[1]) + token[2], number: Number(token[1]), unit: token[2]}, quote, operation: "set", hardConstraint: true });
+      list.splice(list.indexOf(quote), 1);
+    }
+  }
+  if (proposal.ambiguities.length) throw bad();
+  const resolved = resolveDimensionAnswer(s, text, q);
+  if (resolved) return resolved;
   if (proposal.unprocessedQuotes.length) {
     // An incomplete extraction must not silently drop any customer condition.
     throw bad();
   }
+  s = resolveDimensionDesignation(s, text, q) ?? s;
   const refs = new Map(s.brief.items.map((i) => [i.id, i.id]));
   const additions: Item[] = [];
   for (const item of proposal.newItems) {
@@ -177,6 +212,12 @@ export function applyExtractionProposal(
   const targets = new Set<string>();
   for (const original of proposal.changes) {
     const c = structuredClone(original);
+    // A model cannot turn an unlabelled length into a specific dimension.
+    if (dimensionKeys.includes(c.key) && c.value?.unit && ["mm", "cm", "m"].includes(c.value.unit) &&
+      !(q?.itemId === refs.get(c.itemRef) && q?.fieldKey === c.key) &&
+      !dimensionKeys.some((key) => dimensionAliases(key).some((label) => quoteContext(text, c.quote).includes(label)))) {
+      c.key = "dimension_unspecified";
+    }
     const itemId = refs.get(c.itemRef),
       def = fields[c.key];
     if (!itemId || !def) throw bad();
@@ -235,12 +276,19 @@ export function applyExtractionProposal(
     )
       throw bad();
     if (c.status === "unknown") {
-      if (
-        c.value !== null ||
-        !/分か(?:ら|りません)|わか(?:ら|りません)|不明|未確認|非開示|開示.{0,3}(?:できない|できません|しない|しません)|(?:答え|回答)(?:られない|られません|できない|できません)/.test(
+      const preference = context.split(/[、，,]/u).at(-1)?.trim()
+        .match(/^(.*?)(?:の)?指定(?:は|が)?ありません[。！!]?$/u);
+      const acknowledgesNoPreference =
+        !!preference &&
+        /指定(?:は|が)?ありません[。！!]?$/u.test(c.quote) &&
+        !item.fields.some((field) => field.key === c.key && field.status === "known") &&
+        (preference[1].split(/や|と|・|及び|および/u).includes(def.label) ||
+          (q?.itemId === itemId && q.fieldKey === c.key && /^(?:特に)?$/u.test(preference[1])));
+      const acknowledgesUnknown =
+        /分か(?:ら|りません)|わか(?:ら|りません)|不明|未定|指定(?:は|が)?なし|指定(?:は|が)?無|決まっていない|決めていない|後で決め|未確認|非開示|開示.{0,3}(?:できない|できません|しない|しません)|(?:答え|回答)(?:られない|られません|できない|できません)/.test(
           c.quote,
-        )
-      )
+        );
+      if (c.value !== null || (!acknowledgesUnknown && !acknowledgesNoPreference))
         throw bad();
       if (c.operation === "hypothetical") {
         tentative.push({ itemId, key: c.key });
@@ -255,15 +303,46 @@ export function applyExtractionProposal(
       });
       continue;
     }
+    const direct = q?.itemId === itemId && q.fieldKey === c.key;
     const v = c.value;
     if (!v) throw bad();
-    if (def.values) {
+    if (c.key === "body_structure" && c.operation !== "hypothetical" &&
+        groundedBodyStructure(text, c.quote.replace(/[。！.!]$/, "")) !== v.text)
+      throw bad();
+    if (c.key === "capacity") {
+      const parsed = parseCapacity(v.text);
+      const supplied = v.number === null || !v.unit ? null : parseCapacity(`${v.number}${v.unit}`);
+      const numbers = numericQuotes(c.quote);
+      const evidence = numbers.length === 1 ? parseCapacity(numbers[0][0]) : null;
+      if (!parsed || !supplied || parsed.text !== supplied.text || evidence?.text !== parsed.text ||
+          !attributeSpecific(c.quote, c.key) ||
+          (c.operation !== "hypothetical" && ambiguousCapacity(attributeClause(text, c.quote))) ||
+          (!direct && !capacityCues.some((label) => c.quote.includes(label))))
+        throw bad();
+      Object.assign(v, parsed);
+    } else if (def.values) {
+      const owned = v.text === "customer_supplied"
+        ? ownedDrillingRequest(attributeClause(text, c.quote))
+        : null;
+      const ownedWorkpiece = !!owned && (
+        c.quote.includes(owned.owned) ||
+        (/^(?:手持ち|手元|当方所有)/.test(c.quote) && owned.owned.startsWith(c.quote))
+      );
+      if (v.text === "processing" && c.operation !== "hypothetical" &&
+          drillingOperation.test(c.quote) &&
+          /(?:あけ|開け|加工).{0,7}(?:ない|ません|不要|なし|無し|せず)/.test(attributeClause(text, c.quote)))
+        throw bad();
+      if (c.key === "material_supply" && v.text === "customer_supplied" &&
+          /塗料|ペンキ/.test(c.quote) && !/材料(?:全体|一式|全部)?(?:を|も).{0,8}支給/.test(c.quote))
+        throw bad();
       if (
         v.number !== null ||
         v.unit !== null ||
         !def.values.includes(v.text) ||
         !(
           enumCues[v.text]?.test(c.quote) ||
+          (v.text === "processing" && drillingOperation.test(c.quote)) ||
+          ownedWorkpiece ||
           c.quote.includes(labels[v.text] ?? v.text)
         )
       )
@@ -277,9 +356,8 @@ export function applyExtractionProposal(
       )
         throw bad();
       const expected = cues[c.key] ?? [def.label];
-      const direct = q?.itemId === itemId && q.fieldKey === c.key;
       if (!attributeSpecific(c.quote, c.key)) throw bad();
-      if (!direct && !expected.some((label) => c.quote.includes(label)))
+      if (c.key !== "dimension_unspecified" && !direct && !expected.some((label) => c.quote.includes(label)))
         throw bad();
       const numbers = numericQuotes(c.quote);
       const exact = numbers.some(
@@ -293,6 +371,9 @@ export function applyExtractionProposal(
       v.unit !== null ||
       !c.quote.includes(v.text)
     )
+      throw bad();
+    if (c.key === "hole_layout" && c.operation !== "hypothetical" &&
+        (!explicitHoleLayout(c.quote, direct) || !explicitHoleLayout(attributeClause(text, c.quote), direct)))
       throw bad();
     if (
       ["model", "material", "manufacturer"].includes(c.key) &&
@@ -333,10 +414,11 @@ export function applyExtractionProposal(
     }
     if (
       !c.hardConstraint &&
-      !["purpose", "description", "destination"].includes(c.key) &&
-      !/任意|変更可/.test(c.quote)
+      !["purpose", "description", "destination", "required_date"].includes(c.key) &&
+      !flexibleCondition.test(c.quote)
     )
       throw bad();
+    if (c.key === "required_date" && requiredDateIsHard(context)) c.quote = context;
     changes.push({
       itemId,
       key: c.key,
@@ -345,7 +427,7 @@ export function applyExtractionProposal(
       number: v.number,
       unit: v.unit,
       quote: c.quote,
-      hardConstraint: c.hardConstraint,
+      hardConstraint: c.key === "required_date" ? requiredDateIsHard(context) : c.hardConstraint,
     });
   }
   // A validated label is a customer-grounded identity; it cannot supply specifications or a business verdict.

@@ -6,6 +6,25 @@ import { compile } from "json-schema-to-typescript";
 const schema = JSON.parse(
   await readFile("docs/design/contracts.schema.json", "utf8"),
 );
+// Approved chat-first policy: retain the original design copy, extend only the
+// count statistic to the existing 100-input abuse limit. Counts no longer end intake.
+schema.$defs.ResearchBrief.properties.questionsAsked.maximum = 100;
+// Public web references are independent of company approval rules. Older
+// results omit this optional field and remain valid.
+schema.$defs.PublicWebFinding = {
+  type: "object",
+  additionalProperties: false,
+  required: ["url", "checkedAt", "confirmed", "unconfirmed"],
+  properties: {
+    url: {type: "string", pattern: "^https://", maxLength: 2000},
+    checkedAt: {type: "string", format: "date-time"},
+    confirmed: {type: "array", minItems: 1, maxItems: 24, items: {type: "string", minLength: 1, maxLength: 300}},
+    unconfirmed: {type: "array", maxItems: 40, items: {type: "string", minLength: 1, maxLength: 300}},
+  },
+};
+schema.$defs.ItemResult.properties.webFindings = {
+  type: "array", maxItems: 4, items: {$ref: "#/$defs/PublicWebFinding"},
+};
 const ajv = new Ajv({
   strict: false,
   code: { source: true, esm: true },

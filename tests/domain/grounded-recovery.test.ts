@@ -15,6 +15,7 @@ import {
 } from "../../src/domain/intake";
 import { decideAvailability } from "../../src/domain/decision";
 import { makeMailDraft } from "../../src/domain/mail";
+import { savedReply } from "../../src/domain/customer-copy";
 import type { CapabilityRule, Source, Snapshot } from "../../src/domain/model";
 
 type Row = {
@@ -86,6 +87,9 @@ for (const row of rows)
     expect(row.rawWireProposal).toEqual(original);
     expect(result.extractionFailed).toBe(false);
     expect(result.unresolvedInputs).toEqual([]);
+    const reply = savedReply(s, result);
+    expect(reply.length).toBeLessThanOrEqual(160);
+    expect(reply).not.toContain("として保存しました");
     const decision = decideAvailability(
         makeResearchBrief(result, 2, 1),
         rules,
@@ -110,6 +114,12 @@ for (const row of rows)
         820,
       );
       expect(mail.body).not.toContain("780℃");
+      expect(reply).toContain("680℃");
+      expect(reply).not.toContain("780℃");
+      expect(decision.items[0].reason).toContain("680℃");
+      expect(decision.items[0].missingFields).not.toContain(
+        "normal_temperature",
+      );
       expect(decision.verdict).not.toBe("can_handle");
     } else {
       expect(field(result, "カバー", "quantity")?.value?.number).toBe(4);

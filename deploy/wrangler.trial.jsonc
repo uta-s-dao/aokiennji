@@ -1,0 +1,61 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "aoki-availability-v2-admin-trial",
+  "account_id": "d3121128ede9b31f2747b188487f0995",
+  "main": "../src/hosted/trial-worker.ts",
+  "compatibility_date": "2026-11-16",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [],
+  "assets": {
+    "directory": "../dist/hosted-trial-ui",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+  "vars": {
+    "APP_MODE": "hosted-trial",
+    "TRIAL_ORIGIN": "https://aoki-enji.official-b.workers.dev",
+    "LOCAL_ADMIN_TOKEN": "",
+    "CONTACT_EMAIL": "",
+    "INTAKE_PROVIDER": "demo",
+    "INTAKE_MODEL": "disabled",
+    "RESEARCH_MODEL": "disabled",
+    "EXTERNAL_ENABLED": "false"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "aoki-availability-v2-admin-trial",
+      "database_id": "e6e0ece5-a122-4fd5-88a9-1aa93b5b6e1b",
+      "migrations_dir": "../migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "FILES",
+      "bucket_name": "aoki-availability-v2-admin-trial-files"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "RESEARCH_QUEUE",
+        "queue": "aoki-availability-v2-admin-trial-research"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "aoki-availability-v2-admin-trial-research",
+        "max_batch_size": 1,
+        "max_batch_timeout": 1,
+        "max_retries": 1
+      }
+    ]
+  },
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  }
+}

@@ -1,7 +1,11 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["n", "c", "u"],
+  "required": [
+    "n",
+    "c",
+    "u"
+  ],
   "properties": {
     "n": {
       "type": "array",
@@ -9,11 +13,20 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["i", "n", "q", "p"],
+        "required": [
+          "i",
+          "n",
+          "q",
+          "p"
+        ],
         "properties": {
           "i": {
             "type": "string",
-            "enum": ["n1", "n2", "n3"]
+            "enum": [
+              "n1",
+              "n2",
+              "n3"
+            ]
           },
           "n": {
             "type": "string",
@@ -27,7 +40,12 @@
           },
           "p": {
             "type": "string",
-            "enum": ["m", "r", "f", "u"]
+            "enum": [
+              "m",
+              "r",
+              "f",
+              "u"
+            ]
           }
         }
       }
@@ -38,11 +56,25 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["i", "k", "v", "q", "o", "h"],
+        "required": [
+          "i",
+          "k",
+          "v",
+          "q",
+          "o",
+          "h"
+        ],
         "properties": {
           "i": {
             "type": "string",
-            "enum": ["0", "1", "2", "n1", "n2", "n3"]
+            "enum": [
+              "0",
+              "1",
+              "2",
+              "n1",
+              "n2",
+              "n3"
+            ]
           },
           "k": {
             "type": "string",
@@ -62,8 +94,11 @@
               "dn",
               "dr",
               "co",
+              "ol",
+              "ud",
               "od",
               "id",
+              "bs",
               "ap",
               "wd",
               "ht",
@@ -78,11 +113,21 @@
               "mt",
               "qt",
               "dt",
-              "to"
+              "to",
+              "mk",
+              "hd",
+              "hc",
+              "hl",
+              "cp",
+              "tl",
+              "da"
             ]
           },
           "v": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "minLength": 1,
             "maxLength": 300
           },
@@ -93,7 +138,11 @@
           },
           "o": {
             "type": "string",
-            "enum": ["s", "c", "h"]
+            "enum": [
+              "s",
+              "c",
+              "h"
+            ]
           },
           "h": {
             "type": "boolean"

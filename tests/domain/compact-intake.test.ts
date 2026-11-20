@@ -156,3 +156,131 @@ it("不正な形式や推論設定は接続予約前に拒否する", () => {
     "CONFIG_MISSING",
   );
 });
+
+it.each(["full", "compact"] as const)(
+  "モデルの%s応答で既存品目の形状説明を保持しつつ中空と内径を保存する",
+  async (format) => {
+    const original = makeSnapshot("c");
+    const firstText = "耐熱ガラスで円筒状の部品を製作したいです。";
+    const proposal = {
+      schemaVersion: 1,
+      newItems: [
+        {
+          ref: "new",
+          label: "円筒状の部品",
+          quote: firstText,
+          profile: "fabrication",
+          category: null,
+        },
+      ],
+      changes: [],
+      ambiguities: [],
+      unprocessedQuotes: [],
+    };
+    const initial = applyExtractionProposal(
+      original,
+      firstText,
+      null,
+      proposal,
+    );
+    const item = initial.brief.items[0];
+    const bodyQuote = "中は空洞です";
+    const innerQuote = "内径は30mmです";
+    const secondText = `${bodyQuote}。${innerQuote}。`;
+    const response =
+      format === "compact"
+        ? {
+            n: [],
+            c: [
+              { i: "0", k: "bs", v: "hollow", q: bodyQuote, o: "s", h: true },
+              { i: "0", k: "id", v: "30mm", q: innerQuote, o: "s", h: true },
+            ],
+            u: [],
+          }
+        : {
+            ...proposal,
+            newItems: [],
+            changes: [
+              {
+                itemRef: item.id,
+                key: "body_structure",
+                status: "known",
+                value: { text: "hollow", number: null, unit: null },
+                quote: bodyQuote,
+                operation: "set",
+                hardConstraint: true,
+              },
+              {
+                itemRef: item.id,
+                key: "inner_diameter",
+                status: "known",
+                value: { text: "30mm", number: 30, unit: "mm" },
+                quote: innerQuote,
+                operation: "set",
+                hardConstraint: true,
+              },
+            ],
+          };
+    const transport = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            status: "completed",
+            output: [
+              {
+                type: "message",
+                content: [
+                  { type: "output_text", text: JSON.stringify(response) },
+                ],
+              },
+            ],
+          }),
+        ),
+    );
+    const captured = await extractOnce(
+      new OpenAIIntakeExtractor({ ...cfg, format }, [], transport),
+      initial,
+      secondText,
+      null,
+    );
+    expect(transport).toHaveBeenCalledTimes(1);
+    expect(captured.extractionFailed).toBe(false);
+    expect(captured.brief.items).toHaveLength(1);
+    expect(captured.brief.items[0].fields).toEqual(
+      expect.arrayContaining([
+        item.fields.find((field) => field.key === "description"),
+        expect.objectContaining({
+          key: "body_structure",
+          value: { text: "hollow", number: null, unit: null },
+          quote: bodyQuote,
+        }),
+        expect.objectContaining({
+          key: "inner_diameter",
+          value: { text: "30mm", number: 30, unit: "mm" },
+          quote: innerQuote,
+        }),
+      ]),
+    );
+  },
+);
+
+it.each([
+  ["仮に無垢です", "無垢"],
+  ["無垢ではありません", "無垢"],
+  ["空洞か、無垢です", "無垢です"],
+  ["空洞です。無垢です", "無垢です"],
+  ["無垢です。内径は30mmです", "無垢です"],
+])("モデルの提案から確定できない中実を拒否する: %s", (text, quote) => {
+  const initial = extractDemo(
+    makeSnapshot("c"),
+    "耐熱ガラスで円筒状の部品を製作したいです。",
+  );
+  const proposal = decodeCompactProposal(initial, {
+    n: [],
+    c: [{ i: "0", k: "bs", v: "solid", q: quote, o: "s", h: true }],
+    u: [],
+  });
+  expect(() => applyExtractionProposal(initial, text, null, proposal)).toThrow(
+    "INVALID_EXTRACTION",
+  );
+});

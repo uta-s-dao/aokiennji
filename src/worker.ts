@@ -51,6 +51,8 @@ const messages: Record<string, string> = {
     "同じ入力を処理中です。入力を保持して、少し待ってから再試行してください。",
   REVISION_CONFLICT:
     "別の更新がありました。最新の内容を確認し、もう一度操作してください。",
+  STALE_RESEARCH_FOLLOWUP: "条件または調査結果が更新されました。最新の結果をご確認ください。",
+  INVALID_RESEARCH_FOLLOWUP: "回答の選択肢、値、単位を確認してください。",
   NOT_OWNER: "この相談にアクセスできません。",
   EXPIRED: "相談の保管期限が切れたか、削除されています。",
   RATE_LIMITED: "利用上限に達しました。時間をおいて再試行してください。",

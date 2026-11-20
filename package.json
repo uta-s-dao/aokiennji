@@ -18,6 +18,7 @@
     "eval:live": "node scripts/eval-live.mjs",
     "contracts:generate": "node scripts/generate-contracts.mjs",
     "demo:seed": "node scripts/demo-seed.mjs",
+    "partners:import": "node scripts/import-partners.mjs",
     "rules:import": "node scripts/import-rules.mjs",
     "check": "npm run typecheck && npm run lint && npm run test:contracts && npm run test:domain && npm run test:integration && npm run test:isolation && npm run build",
     "measure:local": "playwright test measure.spec.ts --project desktop",

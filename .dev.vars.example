@@ -6,7 +6,21 @@ INTAKE_MODEL=disabled
 # 軽量聞き取り候補: INTAKE_MODEL=gpt-6-luna / compact / none
 INTAKE_FORMAT=compact
 INTAKE_REASONING=none
-# openaiに切り替える際はすべて正の整数で明示設定してください。
+# local-demoのみ有効。trueなら累計・案件別の回数上限を適用しません。
+INTAKE_UNLIMITED_LOCAL=true
+# 出力トークン上限は常に必要。回数上限は上記がfalse/未指定の場合に適用。
 INTAKE_MAX_OUTPUT_TOKENS=1024
 INTAKE_MAX_CALLS_TOTAL=20
 INTAKE_MAX_CALLS_PER_CASE=3
+
+
+# 協力会社マスタ照合が正常完了し、全品目で一致・要確認が0件の場合の検索
+PARTNER_WEB_ENABLED=false
+PARTNER_WEB_PROVIDER=brave
+BRAVE_SEARCH_API_KEY=
+# 本文を直接取得してよいホスト、お客様の結果へ引用してよいホスト（完全一致、カンマ区切り）
+PARTNER_WEB_ALLOWED_HOSTS=
+PARTNER_WEB_PUBLIC_HOSTS=
+# 新しく見つかった会社の本文をJina Readerで調べる場合はjina。検索結果のURLを送信します。
+PARTNER_WEB_READER=disabled
+JINA_API_KEY=

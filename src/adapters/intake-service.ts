@@ -1,11 +1,20 @@
 import { id, AppError, type Snapshot, type Question } from "../domain/model";
-import { extractOnce, demoExtractor, DisabledExtractor } from "./extraction";
+import {
+  DEFAULT_EXTRACTION_TIMEOUT_MS,
+  DisabledExtractor,
+  demoExtractor,
+  extractOnce,
+} from "./extraction";
+import { completeExplicitFields, recoverExplicitTurn } from "./explicit-intake";
 import {
   intakeProvider,
   intakeConfig,
   OpenAIIntakeExtractor,
 } from "./openai-intake";
 import { type Env, type CaseRow, stmt, rules } from "./store";
+const LOCAL_OPENAI_TIMEOUT_MS = 30_000;
+const CALL_SETTLEMENT_GRACE_MS = 500;
+
 type CallRow = {
   id: string;
   fingerprint: string;
@@ -44,6 +53,10 @@ export async function configuredIntake(
   if (provider === "disabled")
     return extractOnce(new DisabledExtractor(), s, text, q);
   const config = intakeConfig(e);
+  const localOpenAI = e.APP_MODE === "local-demo";
+  const timeoutMs = localOpenAI
+    ? LOCAL_OPENAI_TIMEOUT_MS
+    : DEFAULT_EXTRACTION_TIMEOUT_MS;
   const digest = await crypto.subtle.digest(
     "SHA-256",
     new TextEncoder().encode(
@@ -78,10 +91,12 @@ export async function configuredIntake(
       throw new AppError("INVALID_INPUT");
     if (previous.result_json)
       return JSON.parse(previous.result_json) as Snapshot;
-    if (Date.now() - previous.created_at < 3500)
+    if (Date.now() - previous.created_at < timeoutMs + CALL_SETTLEMENT_GRACE_MS)
       throw new AppError("INTAKE_PENDING", 409);
     // A worker crash may leave an externally billed call without a known result. Do not issue it again.
-    const fallback = await failedIntake(s, text, "MODEL_RESULT_UNKNOWN");
+    const fallback =
+      (localOpenAI ? recoverExplicitTurn(s, text, q) : null) ??
+      (await failedIntake(s, text, "MODEL_RESULT_UNKNOWN"));
     const updated = await stmt(
       e,
       "UPDATE intake_calls SET state='unknown',error_code='MODEL_RESULT_UNKNOWN',result_json=? WHERE id=? AND state='pending'",
@@ -100,12 +115,14 @@ export async function configuredIntake(
     await e.DB.batch([
       stmt(
         e,
-        "INSERT INTO write_guards VALUES (?,EXISTS(SELECT 1 FROM cases WHERE id=? AND revision=? AND deleted=0 AND expires_at>?) AND (SELECT blocked_reason IS NULL FROM intake_controls WHERE id=1) AND (SELECT calls FROM intake_totals WHERE id=1)<? AND (SELECT COUNT(*) FROM intake_calls WHERE case_id=?)<?)",
+        "INSERT INTO write_guards VALUES (?,EXISTS(SELECT 1 FROM cases WHERE id=? AND revision=? AND deleted=0 AND expires_at>?) AND (SELECT blocked_reason IS NULL FROM intake_controls WHERE id=1) AND (? IS NULL OR (SELECT calls FROM intake_totals WHERE id=1)<?) AND (? IS NULL OR (SELECT COUNT(*) FROM intake_calls WHERE case_id=?)<?))",
         guard,
         c.id,
         c.revision,
         Date.now(),
         config.maxCallsTotal,
+        config.maxCallsTotal,
+        config.maxCallsPerCase,
         c.id,
         config.maxCallsPerCase,
       ),
@@ -161,13 +178,25 @@ export async function configuredIntake(
         ).run();
     },
   );
-  const result = await extractOnce(extractor, s, text, q);
+  const attempt = await extractOnce(extractor, s, text, q, timeoutMs);
+  const errorCode = attempt.extractionError ?? null;
+  const canRecover =
+    localOpenAI &&
+    attempt.extractionFailed &&
+    (errorCode === "MODEL_TIMEOUT" ||
+      errorCode === "MODEL_UNAVAILABLE" ||
+      errorCode === "INVALID_EXTRACTION");
+  const result = canRecover
+    ? (recoverExplicitTurn(s, text, q) ?? attempt)
+    : localOpenAI && !attempt.extractionFailed
+      ? completeExplicitFields(s, attempt, text, q)
+      : attempt;
   const saved = await stmt(
     e,
     "UPDATE intake_calls SET state=?,result_json=?,error_code=? WHERE id=? AND state='pending'",
-    result.extractionFailed ? "failed" : "completed",
+    attempt.extractionFailed ? "failed" : "completed",
     JSON.stringify(result),
-    result.extractionError ?? null,
+    errorCode,
     callId,
   ).run();
   if (!saved.meta.changes) {
@@ -175,15 +204,11 @@ export async function configuredIntake(
     if (stored?.result_json) return JSON.parse(stored.result_json) as Snapshot;
     throw new AppError("INTAKE_PENDING", 409);
   }
-  if (
-    ["MODEL_AUTH_FAILED", "MODEL_RATE_LIMITED"].includes(
-      result.extractionError ?? "",
-    )
-  )
+  if (["MODEL_AUTH_FAILED", "MODEL_RATE_LIMITED"].includes(errorCode ?? ""))
     await stmt(
       e,
       "UPDATE intake_controls SET blocked_reason=? WHERE id=1",
-      result.extractionError,
+      errorCode,
     ).run();
   return result;
 }

@@ -1,0 +1,382 @@
+{
+  "kind": "customer_reply_local_ui_verification",
+  "date": "2026-11-17",
+  "baseRevision": "378e8ce7048aa7fe315baa95a2b23e18ee30d8d7",
+  "sourceDigest": "52bc64f337688799274d67081391e3364e59bc8e3349bf9cf2f245d3cee9ac08",
+  "sourceDirty": true,
+  "externalApiGenerations": 0,
+  "testCounts": {
+    "domain": 181,
+    "contracts": 1,
+    "integration": 29,
+    "ui": 20
+  },
+  "checks": [
+    "typecheck",
+    "lint",
+    "isolation33",
+    "Vite build",
+    "Worker dry-run build"
+  ],
+  "scope": "架空データを使ったローカル実UI。実モデルの新規評価・会社実資料・本番検証とは区別する。",
+  "records": [
+    {
+      "test": "flows-温度訂正を返答し、実画面・保存値・結果・メールへ引き継ぐ-desktop",
+      "sha256": "293dc3f9a3278f4951fc4d15cff6253311f8050993a495a9180da563bf66c588",
+      "record": {
+        "kind": "actual_local_ui",
+        "turns": [
+          {
+            "speaker": "お客様",
+            "text": "ガラス 通常温度780℃"
+          },
+          {
+            "speaker": "システム",
+            "text": "ガラスの通常温度は780℃として保存しました。"
+          },
+          {
+            "speaker": "システム",
+            "text": "ガラスは何に使いますか？"
+          },
+          {
+            "speaker": "お客様",
+            "text": "ガラス 通常温度680℃、最高温度820℃"
+          },
+          {
+            "speaker": "システム",
+            "text": "ガラスの通常温度を680℃に変更しました。ガラスの最高温度は820℃として保存しました。"
+          },
+          {
+            "speaker": "システム",
+            "text": "ガラスは何に使いますか？"
+          },
+          {
+            "speaker": "お客様",
+            "text": "用途は点検窓です"
+          },
+          {
+            "speaker": "システム",
+            "text": "ガラスの用途は「点検窓です」として保存しました。"
+          },
+          {
+            "speaker": "システム",
+            "text": "今回の確認結果\n\n担当者確認が必要です\nガラス\n\nこの品目を取り扱えるか、担当者の確認が必要です。\n\n通常温度（680℃）・最高温度（820℃）への対応は、登録資料だけでは確認できませんでした。\n\n入力内容をまとめたメール文で、担当者に取扱可否を相談できます。\n\n根拠・確認した条件\n\n在庫確保、正式納期、価格、技術的適合を保証する回答ではありません。\n\nメールで相談する\n相談内容をコピー\n再調査"
+          }
+        ],
+        "state": {
+          "caseId": "cba6d623-9e3d-4cd0-838b-bd79ed048c0d",
+          "revision": 3,
+          "phase": "completed",
+          "items": [
+            {
+              "id": "1f784b5d-87fc-47bf-9ac6-4534c457fa93",
+              "label": "ガラス",
+              "profile": "replacement",
+              "category": null,
+              "fields": [
+                {
+                  "key": "description",
+                  "label": "対象の説明",
+                  "status": "known",
+                  "value": {
+                    "text": "ガラス",
+                    "number": null,
+                    "unit": null
+                  },
+                  "source": "customer_text",
+                  "eventId": "1a493ce9-dea9-4621-adcf-28e1f6e040f1",
+                  "quote": "ガラス 通常温度780℃",
+                  "hardConstraint": false
+                },
+                {
+                  "key": "normal_temperature",
+                  "label": "通常温度",
+                  "status": "known",
+                  "value": {
+                    "text": "680℃",
+                    "number": 680,
+                    "unit": "℃"
+                  },
+                  "source": "customer_text",
+                  "eventId": "f163b2a5-f0c9-45a3-ba71-f1b41befbb7d",
+                  "quote": "通常温度680℃",
+                  "hardConstraint": true
+                },
+                {
+                  "key": "peak_temperature",
+                  "label": "最高温度",
+                  "status": "known",
+                  "value": {
+                    "text": "820℃",
+                    "number": 820,
+                    "unit": "℃"
+                  },
+                  "source": "customer_text",
+                  "eventId": "f163b2a5-f0c9-45a3-ba71-f1b41befbb7d",
+                  "quote": "最高温度820℃",
+                  "hardConstraint": true
+                },
+                {
+                  "key": "purpose",
+                  "label": "用途",
+                  "status": "known",
+                  "value": {
+                    "text": "点検窓です",
+                    "number": null,
+                    "unit": null
+                  },
+                  "source": "customer_text",
+                  "eventId": "b057a186-5c2e-4492-a1fb-52c979fc7998",
+                  "quote": "用途は点検窓です",
+                  "hardConstraint": false
+                }
+              ],
+              "notes": []
+            }
+          ],
+          "overflow": [],
+          "question": null,
+          "canResearch": true,
+          "attachments": [],
+          "job": {
+            "id": "53cb935f-86f5-4082-b210-e17a63ae653e",
+            "status": "completed",
+            "stage": "結果を整理済み",
+            "deadline": 1794852731285
+          },
+          "result": {
+            "kind": "public_result",
+            "caseId": "cba6d623-9e3d-4cd0-838b-bd79ed048c0d",
+            "jobId": "53cb935f-86f5-4082-b210-e17a63ae653e",
+            "inputRevision": 3,
+            "knowledgeRevision": 169,
+            "status": "completed",
+            "verdict": "needs_review",
+            "headline": "担当者確認が必要です",
+            "items": [
+              {
+                "itemId": "1f784b5d-87fc-47bf-9ac6-4534c457fa93",
+                "label": "ガラス",
+                "scopeAssessment": {
+                  "status": "unconfirmed",
+                  "reason": "この品目を取り扱えるか、担当者の確認が必要です。",
+                  "evidence": []
+                },
+                "verdict": "needs_review",
+                "reasonCode": "NO_APPROVED_SCOPE",
+                "reason": "通常温度（680℃）・最高温度（820℃）への対応は、登録資料だけでは確認できませんでした。",
+                "conditions": [
+                  "対象の説明：ガラス",
+                  "通常温度：680℃",
+                  "最高温度：820℃",
+                  "用途：点検窓です"
+                ],
+                "missingFields": [],
+                "evidence": []
+              }
+            ],
+            "createdAt": "2026-11-16T18:11:11.297Z",
+            "stale": false,
+            "mailDraftAvailable": true
+          },
+          "questionsAsked": 2,
+          "unresolvedInputs": []
+        },
+        "mail": "商品・製作の取扱相談（照会番号 AV-CBA6D623）\n\n照会番号：AV-CBA6D623\n商品・加工・製作について相談します。\n\n【ガラス】\n対象の説明：ガラス\n通常温度：680℃\n最高温度：820℃\n用途：点検窓です\n\n確認日時：2026-11-16T18:11:11.297Z\nガラス：この品目を取り扱えるか、担当者の確認が必要です。\n今回の依頼：通常温度（680℃）・最高温度（820℃）への対応は、登録資料だけでは確認できませんでした。\n次のご相談：入力内容をまとめたメール文で、担当者に取扱可否を相談できます。\n\n追記："
+      }
+    },
+    {
+      "test": "flows-温度訂正を返答し、実画面・保存値・結果・メールへ引き継ぐ-mobile",
+      "sha256": "4d03cfd2af742b808d83b551ef801af9cb751435becd418e9fc795659d7cc007",
+      "record": {
+        "kind": "actual_local_ui",
+        "turns": [
+          {
+            "speaker": "お客様",
+            "text": "ガラス 通常温度780℃"
+          },
+          {
+            "speaker": "システム",
+            "text": "ガラスの通常温度は780℃として保存しました。"
+          },
+          {
+            "speaker": "システム",
+            "text": "ガラスは何に使いますか？"
+          },
+          {
+            "speaker": "お客様",
+            "text": "ガラス 通常温度680℃、最高温度820℃"
+          },
+          {
+            "speaker": "システム",
+            "text": "ガラスの通常温度を680℃に変更しました。ガラスの最高温度は820℃として保存しました。"
+          },
+          {
+            "speaker": "システム",
+            "text": "ガラスは何に使いますか？"
+          },
+          {
+            "speaker": "お客様",
+            "text": "用途は点検窓です"
+          },
+          {
+            "speaker": "システム",
+            "text": "ガラスの用途は「点検窓です」として保存しました。"
+          },
+          {
+            "speaker": "システム",
+            "text": "今回の確認結果\n\n担当者確認が必要です\nガラス\n\nこの品目を取り扱えるか、担当者の確認が必要です。\n\n通常温度（680℃）・最高温度（820℃）への対応は、登録資料だけでは確認できませんでした。\n\n入力内容をまとめたメール文で、担当者に取扱可否を相談できます。\n\n根拠・確認した条件\n\n在庫確保、正式納期、価格、技術的適合を保証する回答ではありません。\n\nメールで相談する\n相談内容をコピー\n再調査"
+          }
+        ],
+        "state": {
+          "caseId": "9057aa39-f40f-4471-8339-960ddfc8f531",
+          "revision": 3,
+          "phase": "completed",
+          "items": [
+            {
+              "id": "3c095182-531a-4a4f-84a9-bd91d63a52fb",
+              "label": "ガラス",
+              "profile": "replacement",
+              "category": null,
+              "fields": [
+                {
+                  "key": "description",
+                  "label": "対象の説明",
+                  "status": "known",
+                  "value": {
+                    "text": "ガラス",
+                    "number": null,
+                    "unit": null
+                  },
+                  "source": "customer_text",
+                  "eventId": "87fb44fc-a5c3-4047-8488-c8601db5b270",
+                  "quote": "ガラス 通常温度780℃",
+                  "hardConstraint": false
+                },
+                {
+                  "key": "normal_temperature",
+                  "label": "通常温度",
+                  "status": "known",
+                  "value": {
+                    "text": "680℃",
+                    "number": 680,
+                    "unit": "℃"
+                  },
+                  "source": "customer_text",
+                  "eventId": "d474306c-96fa-4e62-bb21-ce8dcf53cbf0",
+                  "quote": "通常温度680℃",
+                  "hardConstraint": true
+                },
+                {
+                  "key": "peak_temperature",
+                  "label": "最高温度",
+                  "status": "known",
+                  "value": {
+                    "text": "820℃",
+                    "number": 820,
+                    "unit": "℃"
+                  },
+                  "source": "customer_text",
+                  "eventId": "d474306c-96fa-4e62-bb21-ce8dcf53cbf0",
+                  "quote": "最高温度820℃",
+                  "hardConstraint": true
+                },
+                {
+                  "key": "purpose",
+                  "label": "用途",
+                  "status": "known",
+                  "value": {
+                    "text": "点検窓です",
+                    "number": null,
+                    "unit": null
+                  },
+                  "source": "customer_text",
+                  "eventId": "002e0aae-c057-46b6-bc9b-34ad3d9c639f",
+                  "quote": "用途は点検窓です",
+                  "hardConstraint": false
+                }
+              ],
+              "notes": []
+            }
+          ],
+          "overflow": [],
+          "question": null,
+          "canResearch": true,
+          "attachments": [],
+          "job": {
+            "id": "b60f6b6f-25cb-4a89-a89d-62887acd9096",
+            "status": "completed",
+            "stage": "結果を整理済み",
+            "deadline": 1794852736917
+          },
+          "result": {
+            "kind": "public_result",
+            "caseId": "9057aa39-f40f-4471-8339-960ddfc8f531",
+            "jobId": "b60f6b6f-25cb-4a89-a89d-62887acd9096",
+            "inputRevision": 3,
+            "knowledgeRevision": 179,
+            "status": "completed",
+            "verdict": "needs_review",
+            "headline": "担当者確認が必要です",
+            "items": [
+              {
+                "itemId": "3c095182-531a-4a4f-84a9-bd91d63a52fb",
+                "label": "ガラス",
+                "scopeAssessment": {
+                  "status": "unconfirmed",
+                  "reason": "この品目を取り扱えるか、担当者の確認が必要です。",
+                  "evidence": []
+                },
+                "verdict": "needs_review",
+                "reasonCode": "NO_APPROVED_SCOPE",
+                "reason": "通常温度（680℃）・最高温度（820℃）への対応は、登録資料だけでは確認できませんでした。",
+                "conditions": [
+                  "対象の説明：ガラス",
+                  "通常温度：680℃",
+                  "最高温度：820℃",
+                  "用途：点検窓です"
+                ],
+                "missingFields": [],
+                "evidence": []
+              }
+            ],
+            "createdAt": "2026-11-16T18:11:16.928Z",
+            "stale": false,
+            "mailDraftAvailable": true
+          },
+          "questionsAsked": 2,
+          "unresolvedInputs": []
+        },
+        "mail": "商品・製作の取扱相談（照会番号 AV-9057AA39）\n\n照会番号：AV-9057AA39\n商品・加工・製作について相談します。\n\n【ガラス】\n対象の説明：ガラス\n通常温度：680℃\n最高温度：820℃\n用途：点検窓です\n\n確認日時：2026-11-16T18:11:16.928Z\nガラス：この品目を取り扱えるか、担当者の確認が必要です。\n今回の依頼：通常温度（680℃）・最高温度（820℃）への対応は、登録資料だけでは確認できませんでした。\n次のご相談：入力内容をまとめたメール文で、担当者に取扱可否を相談できます。\n\n追記："
+      }
+    },
+    {
+      "test": "flows-部品別の条件を読みやすく説明し、会社確認と未入力を分ける-desktop",
+      "sha256": "a40cb8327d43e0503f898812ce058fb02c60ec80ee4271390832e72324eb6017",
+      "record": {
+        "kind": "actual_local_ui",
+        "input": "カバーは4組、塗装不要、配送先は大阪です。ネックは8組、外装塗装、配送先は神戸です。",
+        "notice": "カバーの数量は4組として保存しました。カバーの塗装は「塗装不要」として保存しました。カバーの納入先は「大阪です」として保存しました。ネックの数量は8組として保存しました。ネックの塗装は「外装塗装」として保存しました。ネックの納入先は「神戸です」として保存しました。",
+        "detailsExpanded": true,
+        "resultText": "今回の確認結果\n\n担当者確認が必要です\nカバー\n\nこの品目を取り扱えるか、担当者の確認が必要です。\n\n数量（4組）・塗装（塗装不要）への対応は、登録資料だけでは確認できませんでした。\n\n入力内容をまとめたメール文で、担当者に取扱可否を相談できます。\n\n根拠・確認した条件\n対象の説明：カバー\n数量：4組\n塗装：塗装不要\n納入先：大阪です\nネック\n\nこの品目を取り扱えるか、担当者の確認が必要です。\n\n数量（8組）・塗装（外装塗装）への対応は、登録資料だけでは確認できませんでした。\n\n入力内容をまとめたメール文で、担当者に取扱可否を相談できます。\n\n根拠・確認した条件\n対象の説明：ネック\n数量：8組\n塗装：外装塗装\n納入先：神戸です\n\n在庫確保、正式納期、価格、技術的適合を保証する回答ではありません。\n\nメールで相談する\n相談内容をコピー\n再調査",
+        "mail": "商品・製作の取扱相談（照会番号 AV-A042B56F）\n\n照会番号：AV-A042B56F\n商品・加工・製作について相談します。\n\n【カバー】\n対象の説明：カバー\n数量：4組\n塗装：塗装不要\n納入先：大阪です\n\n【ネック】\n対象の説明：ネック\n数量：8組\n塗装：外装塗装\n納入先：神戸です\n\n確認日時：2026-11-16T18:11:11.865Z\nカバー：この品目を取り扱えるか、担当者の確認が必要です。\n今回の依頼：数量（4組）・塗装（塗装不要）への対応は、登録資料だけでは確認できませんでした。\n次のご相談：入力内容をまとめたメール文で、担当者に取扱可否を相談できます。\nネック：この品目を取り扱えるか、担当者の確認が必要です。\n今回の依頼：数量（8組）・塗装（外装塗装）への対応は、登録資料だけでは確認できませんでした。\n次のご相談：入力内容をまとめたメール文で、担当者に取扱可否を相談できます。\n\n追記："
+      }
+    },
+    {
+      "test": "flows-部品別の条件を読みやすく説明し、会社確認と未入力を分ける-mobile",
+      "sha256": "ede559b71ababe56e44519222165b560c177563ce24f3d417ad6cf19ee880720",
+      "record": {
+        "kind": "actual_local_ui",
+        "input": "カバーは4組、塗装不要、配送先は大阪です。ネックは8組、外装塗装、配送先は神戸です。",
+        "notice": "カバーの数量は4組として保存しました。カバーの塗装は「塗装不要」として保存しました。カバーの納入先は「大阪です」として保存しました。ネックの数量は8組として保存しました。ネックの塗装は「外装塗装」として保存しました。ネックの納入先は「神戸です」として保存しました。",
+        "detailsExpanded": true,
+        "resultText": "今回の確認結果\n\n担当者確認が必要です\nカバー\n\nこの品目を取り扱えるか、担当者の確認が必要です。\n\n数量（4組）・塗装（塗装不要）への対応は、登録資料だけでは確認できませんでした。\n\n入力内容をまとめたメール文で、担当者に取扱可否を相談できます。\n\n根拠・確認した条件\n対象の説明：カバー\n数量：4組\n塗装：塗装不要\n納入先：大阪です\nネック\n\nこの品目を取り扱えるか、担当者の確認が必要です。\n\n数量（8組）・塗装（外装塗装）への対応は、登録資料だけでは確認できませんでした。\n\n入力内容をまとめたメール文で、担当者に取扱可否を相談できます。\n\n根拠・確認した条件\n対象の説明：ネック\n数量：8組\n塗装：外装塗装\n納入先：神戸です\n\n在庫確保、正式納期、価格、技術的適合を保証する回答ではありません。\n\nメールで相談する\n相談内容をコピー\n再調査",
+        "mail": "商品・製作の取扱相談（照会番号 AV-192B296C）\n\n照会番号：AV-192B296C\n商品・加工・製作について相談します。\n\n【カバー】\n対象の説明：カバー\n数量：4組\n塗装：塗装不要\n納入先：大阪です\n\n【ネック】\n対象の説明：ネック\n数量：8組\n塗装：外装塗装\n納入先：神戸です\n\n確認日時：2026-11-16T18:11:17.496Z\nカバー：この品目を取り扱えるか、担当者の確認が必要です。\n今回の依頼：数量（4組）・塗装（塗装不要）への対応は、登録資料だけでは確認できませんでした。\n次のご相談：入力内容をまとめたメール文で、担当者に取扱可否を相談できます。\nネック：この品目を取り扱えるか、担当者の確認が必要です。\n今回の依頼：数量（8組）・塗装（外装塗装）への対応は、登録資料だけでは確認できませんでした。\n次のご相談：入力内容をまとめたメール文で、担当者に取扱可否を相談できます。\n\n追記："
+      }
+    }
+  ],
+  "lastUiRun": {
+    "status": "passed",
+    "failedTests": []
+  }
+}
